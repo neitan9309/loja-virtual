@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luxury Store - Sua loja de luxo online</title>
+    <meta name="description" content="Luxury Store - Produtos de luxo, moda, perfumaria e artigos esportivos. Qualidade e elegância em um só lugar.">
+    <meta name="theme-color" content="#c9a96e">
+    <meta property="og:title" content="Luxury Store - Sua loja de luxo online">
+    <meta property="og:description" content="Produtos de luxo, moda, perfumaria e artigos esportivos">
+    <meta property="og:type" content="website">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👔</text></svg>">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="https://images.pexels.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "Luxury Store",
+        "url": "https://luxurystore.com.br",
+        "description": "Sua loja de luxo online com produtos exclusivos",
+        "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://luxurystore.com.br/search?q={search_term_string}",
+            "query-input": "required name=search_term_string"
+        }
+    }
+    </script>
+</head>
+<body>
+    <a href="#main-content" class="skip-link">Pular para o conteúdo principal</a>
+    <div aria-live="polite" aria-atomic="true" id="announcer" class="sr-only"></div>
+
+    <!-- ============ HEADER ============ -->
+    <header class="header" id="header" itemscope itemtype="https://schema.org/Store">
+        <div class="header-container">
+            <button class="menu-toggle" id="menuToggle" aria-label="Abrir menu" aria-expanded="false">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <a href="/" class="logo" aria-label="Luxury Store - Página inicial">LUXURY</a>
+
+            <nav class="nav-menu" id="navMenu" role="navigation" aria-label="Menu principal">
+                <div class="mobile-menu-header">
+                    <span class="mobile-menu-title">Menu</span>
+                    <button class="close-menu" id="closeMenu" aria-label="Fechar menu">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div class="dropdown" data-category="vestuario">
+                    <a href="/categoria?category=vestuario" class="nav-link dropdown-toggle" aria-haspopup="true" aria-expanded="false">
+                        <span class="dropdown-label">Vestuário</span>
+                        <i class="fas fa-chevron-down dropdown-icon"></i>
+                    </a>
+                    <div class="dropdown-content" role="menu"></div>
+                </div>
+
+                <div class="dropdown" data-category="perfumaria">
+                    <a href="/categoria?category=perfumaria" class="nav-link dropdown-toggle" aria-haspopup="true" aria-expanded="false">
+                        <span class="dropdown-label">Perfumaria</span>
+                        <i class="fas fa-chevron-down dropdown-icon"></i>
+                    </a>
+                    <div class="dropdown-content" role="menu"></div>
+                </div>
+
+                <div class="dropdown" data-category="artigos-esportivos">
+                    <a href="/categoria?category=artigos-esportivos" class="nav-link dropdown-toggle" aria-haspopup="true" aria-expanded="false">
+                        <span class="dropdown-label">Artigos Esportivos</span>
+                        <i class="fas fa-chevron-down dropdown-icon"></i>
+                    </a>
+                    <div class="dropdown-content" role="menu"></div>
+                </div>
+
+                <div class="dropdown">
+                    <a href="/produtos?filter=featured" class="nav-link dropdown-toggle" aria-haspopup="true" aria-expanded="false">
+                        <span class="dropdown-label">Novidades</span>
+                        <i class="fas fa-chevron-down dropdown-icon"></i>
+                    </a>
+                    <div class="dropdown-content" role="menu">
+                        <a href="/produtos?filter=new" role="menuitem">Lançamentos</a>
+                        <a href="/produtos?filter=best_seller" role="menuitem">Mais Vendidos</a>
+                        <a href="/produtos?filter=featured" role="menuitem">Em Promoção</a>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="header-icons">
+                <button class="icon-btn" aria-label="Buscar produtos"><i class="fas fa-search"></i></button>
+                <button class="icon-btn" aria-label="Minha conta / Login"><i class="fas fa-user"></i></button>
+                <button class="icon-btn cart-btn" aria-label="Carrinho de compras">
+                    <i class="fas fa-shopping-bag"></i>
+                    <span class="cart-badge">0</span>
+                </button>
+            </div>
+        </div>
+        <div class="menu-overlay" id="menuOverlay"></div>
+    </header>
+
+    <!-- ============ MAIN ============ -->
+    <main id="main-content">
+        <!-- Hero Carousel -->
+        <section class="hero-carousel" id="heroCarousel" aria-label="Destaques da loja">
+            <div class="carousel-container">
+                <div class="carousel-slide active" role="tabpanel" aria-label="Slide 1 de 3">
+                    <img src="https://images.pexels.com/photos/14848071/pexels-photo-14848071.jpeg" alt="Coleção Outono 2024" loading="lazy" decoding="async">
+                    <div class="carousel-overlay"></div>
+                    <div class="carousel-content">
+                        <span class="carousel-tag">Nova Coleção</span>
+                        <h2>Outono 2024</h2>
+                        <p>Elegância atemporal para a nova estação</p>
+                        <a href="/categoria?category=vestuario" class="btn btn-outline">Ver Coleção</a>
+                    </div>
+                </div>
+                <div class="carousel-slide" role="tabpanel" aria-label="Slide 2 de 3">
+                    <img src="https://images.pexels.com/photos/9659891/pexels-photo-9659891.jpeg" alt="Perfumes importados" loading="lazy" decoding="async">
+                    <div class="carousel-overlay"></div>
+                    <div class="carousel-content">
+                        <span class="carousel-tag">Exclusivo</span>
+                        <h2>Perfumes Importados</h2>
+                        <p>Fragrâncias exclusivas com 20% de desconto</p>
+                        <a href="/categoria?category=perfumaria" class="btn btn-outline">Comprar Agora</a>
+                    </div>
+                </div>
+                <div class="carousel-slide" role="tabpanel" aria-label="Slide 3 de 3">
+                    <img src="https://images.pexels.com/photos/4753994/pexels-photo-4753994.jpeg" alt="Artigos esportivos" loading="lazy" decoding="async">
+                    <div class="carousel-overlay"></div>
+                    <div class="carousel-content">
+                        <span class="carousel-tag">Performance</span>
+                        <h2>Artigos Esportivos</h2>
+                        <p>Tecnologia e estilo para seus treinos</p>
+                        <a href="/categoria?category=artigos-esportivos" class="btn btn-outline">Explorar</a>
+                    </div>
+                </div>
+            </div>
+            <div class="carousel-controls">
+                <button class="carousel-btn prev-btn" aria-label="Slide anterior"><i class="fas fa-arrow-left"></i></button>
+                <div class="carousel-dots" role="tablist">
+                    <span class="dot active" data-index="0" role="tab" aria-label="Slide 1" aria-selected="true"></span>
+                    <span class="dot" data-index="1" role="tab" aria-label="Slide 2" aria-selected="false"></span>
+                    <span class="dot" data-index="2" role="tab" aria-label="Slide 3" aria-selected="false"></span>
+                </div>
+                <button class="carousel-btn next-btn" aria-label="Próximo slide"><i class="fas fa-arrow-right"></i></button>
+            </div>
+        </section>
+
+        <!-- Promoções -->
+        <section class="promo-section animate-on-scroll" aria-label="Promoções e cupons">
+            <div class="promo-wrapper">
+                <div class="promo-viewport">
+                    <div class="promo-track" id="promoTrack">
+                        <div class="promo-slide">
+                            <div class="promo-card" data-coupon="PRIMEIRA10" data-description="Ganhe 10% de desconto na sua primeira compra!">
+                                <div class="promo-icon"><i class="fas fa-percent"></i></div>
+                                <div class="promo-text"><h3>10% OFF</h3><p>Primeira compra</p></div>
+                                <span class="promo-hint">Clique para copiar cupom</span>
+                            </div>
+                        </div>
+                        <div class="promo-slide">
+                            <div class="promo-card" data-coupon="FRETE99" data-description="Frete grátis em compras acima de R$99,90!">
+                                <div class="promo-icon"><i class="fas fa-truck"></i></div>
+                                <div class="promo-text"><h3>Frete Grátis</h3><p>Compras acima de R$99,90</p></div>
+                                <span class="promo-hint">Clique para copiar cupom</span>
+                            </div>
+                        </div>
+                        <div class="promo-slide">
+                            <div class="promo-card" data-coupon="ESPORTE20" data-description="Ganhe 20% de desconto em artigos esportivos!">
+                                <div class="promo-icon"><i class="fas fa-tag"></i></div>
+                                <div class="promo-text"><h3>20% OFF</h3><p>Artigos esportivos</p></div>
+                                <span class="promo-hint">Clique para copiar cupom</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="promo-navigation" id="promoNavigation">
+                    <button class="promo-nav-btn" id="prevPromo" aria-label="Promoção anterior"><i class="fas fa-chevron-left"></i></button>
+                    <div class="promo-dots" id="promoDots">
+                        <span class="promo-dot active" data-index="0" role="tab" aria-label="Promoção 1"></span>
+                        <span class="promo-dot" data-index="1" role="tab" aria-label="Promoção 2"></span>
+                        <span class="promo-dot" data-index="2" role="tab" aria-label="Promoção 3"></span>
+                    </div>
+                    <button class="promo-nav-btn" id="nextPromo" aria-label="Próxima promoção"><i class="fas fa-chevron-right"></i></button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Produtos em Destaque -->
+        <section class="featured-products animate-on-scroll" aria-label="Produtos em destaque">
+            <h2>Produtos em Destaque</h2>
+        </section>
+
+        <!-- Vídeo Vimeo -->
+        <section class="promo-video-section animate-on-scroll" aria-label="Oferta para novos clientes">
+            <div class="promo-video-bg">
+                <iframe src="https://player.vimeo.com/video/76979871?background=1&autoplay=1&loop=1&byline=0&title=0&muted=1&controls=0" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" title="Vídeo de fundo" style="position:absolute;top:50%;left:50%;width:100vw;height:56.25vw;min-height:100vh;min-width:177.77vh;transform:translate(-50%,-50%);border:none;pointer-events:none;" loading="lazy"></iframe>
+            </div>
+            <div class="promo-video-overlay"></div>
+            <div class="promo-video-content">
+                <span class="promo-video-badge">Exclusivo</span>
+                <h2>Oferta Especial para Novos Clientes</h2>
+                <p>Cadastre-se agora e ganhe <strong>20% de desconto</strong> na sua primeira compra.</p>
+                <div class="promo-video-actions">
+                    <a href="#" class="btn btn-primary">Cadastrar Agora</a>
+                    <a href="#" class="btn btn-outline-white" id="btnSaibaMais">Saiba Mais</a>
+                </div>
+                <div class="promo-video-features">
+                    <div class="promo-feature"><i class="fas fa-check-circle"></i><span>20% OFF na primeira compra</span></div>
+                    <div class="promo-feature"><i class="fas fa-check-circle"></i><span>Frete grátis acima de R$99,90</span></div>
+                    <div class="promo-feature"><i class="fas fa-check-circle"></i><span>Cashback de 5% em todas as compras</span></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Localização -->
+        <section class="location-section animate-on-scroll" aria-label="Nossas localizações">
+            <div class="location-header">
+                <h2>Nossa Localização</h2>
+                <p>Conheça os pontos de retirada dos seus produtos</p>
+                <button class="btn btn-primary" id="btnVerLocalizacoes"><i class="fas fa-map-marker-alt"></i> Ver Pontos de Retirada</button>
+            </div>
+        </section>
+    </main>
+
+    <!-- ============ MODAIS ============ -->
+    <div class="modal" id="couponModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="modal-content">
+            <button class="close-modal" id="closeModal" aria-label="Fechar modal">&times;</button>
+            <div class="modal-icon"><i class="fas fa-gift"></i></div>
+            <h2 id="modalTitle">Cupom de Desconto</h2>
+            <p id="modalDescription"></p>
+            <div class="coupon-code">
+                <span id="couponCode"></span>
+                <button class="copy-btn" id="copyBtn" aria-label="Copiar cupom"><i class="fas fa-copy"></i> Copiar</button>
+            </div>
+            <p class="modal-hint">Clique no botão acima para copiar o código</p>
+        </div>
+    </div>
+
+    <div class="modal" id="infoModal" role="dialog" aria-modal="true" aria-labelledby="infoModalTitle">
+        <div class="modal-content">
+            <button class="close-modal" id="closeInfoModal" aria-label="Fechar modal">&times;</button>
+            <div class="modal-icon"><i class="fas fa-star"></i></div>
+            <h2 id="infoModalTitle">Oferta para Novos Clientes</h2>
+            <p>Cadastre-se em nossa loja e aproveite benefícios exclusivos!</p>
+            <div class="info-benefits">
+                <div class="info-benefit"><i class="fas fa-check-circle"></i><div><strong>20% de desconto</strong><p>Na sua primeira compra</p></div></div>
+                <div class="info-benefit"><i class="fas fa-check-circle"></i><div><strong>Frete Grátis</strong><p>Em compras acima de R$99,90</p></div></div>
+                <div class="info-benefit"><i class="fas fa-check-circle"></i><div><strong>Ofertas Exclusivas</strong><p>Acesso antecipado a promoções</p></div></div>
+                <div class="info-benefit"><i class="fas fa-check-circle"></i><div><strong>Cashback</strong><p>5% de volta em todas as compras</p></div></div>
+            </div>
+            <a href="#" class="btn btn-primary" style="margin-top:2rem;display:inline-block;">Cadastrar Agora</a>
+        </div>
+    </div>
+
+    <div class="modal" id="locationModal" role="dialog" aria-modal="true" aria-labelledby="locationModalTitle">
+        <div class="modal-content modal-location-content">
+            <button class="close-modal" id="closeLocationModal" aria-label="Fechar modal">&times;</button>
+            <div class="modal-icon"><i class="fas fa-map-marker-alt"></i></div>
+            <h2 id="locationModalTitle">Escolha o Ponto de Retirada</h2>
+            <p>Selecione uma das localizações abaixo para ver no mapa:</p>
+            <div class="location-buttons" role="radiogroup" aria-label="Pontos de retirada">
+                <button class="location-btn active" data-location="asa-sul" role="radio" aria-checked="true"><i class="fas fa-building"></i> Asa Sul</button>
+                <button class="location-btn" data-location="asa-norte" role="radio" aria-checked="false"><i class="fas fa-building"></i> Asa Norte</button>
+                <button class="location-btn" data-location="esplanada" role="radio" aria-checked="false"><i class="fas fa-landmark"></i> Esplanada</button>
+            </div>
+            <div class="location-map-container">
+                <iframe id="locationMap" src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3839.1!2d-47.89!3d-15.82!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x935a3b3d3a1e5e2b%3A0x8d4e0a5c5a5e5e5e!2sAsa+Sul%2C+Bras%C3%ADlia!5e0!3m2!1spt-BR!2sbr" allowfullscreen loading="lazy" title="Mapa de localização"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="footer" role="contentinfo">
+        <div class="footer-container">
+            <div class="footer-links">
+                <h3>Luxury Store</h3>
+                <ul>
+                    <li><a href="#">Sobre Nós</a></li>
+                    <li><a href="#">Política de Privacidade</a></li>
+                    <li><a href="#">Termos de Uso</a></li>
+                    <li><a href="#">Trocas e Devoluções</a></li>
+                    <li><a href="#">FAQ</a></li>
+                </ul>
+                <div class="social-links">
+                    <a href="#" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
+                    <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                    <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                    <a href="#" aria-label="YouTube"><i class="fab fa-youtube"></i></a>
+                </div>
+            </div>
+            <div class="footer-newsletter">
+                <h3>Receba Promoções Exclusivas</h3>
+                <p>Cadastre seu e-mail e ganhe <strong>20% de desconto</strong> na primeira compra!</p>
+                <form class="newsletter-form" id="newsletterForm" novalidate>
+                    <div class="input-group">
+                        <input type="email" class="newsletter-input" placeholder="Seu melhor e-mail" required aria-label="E-mail para newsletter">
+                        <button type="submit" class="newsletter-btn">Cadastrar</button>
+                    </div>
+                    <div class="form-feedback" id="newsletterFeedback" aria-live="polite"></div>
+                </form>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="footer-bottom-content">
+                <p>&copy; 2024 Luxury Store. Todos os direitos reservados.</p>
+                <button class="customer-service-btn" aria-label="Atendimento ao cliente"><i class="fas fa-headset"></i> Atendimento ao Cliente</button>
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

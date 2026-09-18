@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Admin - Luxury Store</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="admin.css">
+</head>
+<body>
+
+    <!-- ============ SIDEBAR ============ -->
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <a href="/" class="sidebar-logo">LUXURY</a>
+            <span class="sidebar-badge">Admin</span>
+        </div>
+
+        <nav class="sidebar-nav">
+            <button class="nav-item active" data-section="dashboard" data-target="section-dashboard">
+                <i class="fas fa-chart-line"></i>
+                <span>Início</span>
+            </button>
+
+            <div class="nav-group" id="navGroupRegistro">
+                <button class="nav-item nav-item-parent" data-toggle="registro" aria-expanded="false">
+                    <i class="fas fa-plus-circle"></i>
+                    <span>Registro</span>
+                    <i class="fas fa-chevron-down nav-arrow"></i>
+                </button>
+                <div class="nav-submenu" id="submenuRegistro">
+                    <button class="nav-subitem active" data-section="register-product" data-target="section-register-product">
+                        <i class="fas fa-box"></i>
+                        <span>Registrar Novo Produto</span>
+                    </button>
+                    <button class="nav-subitem" data-section="register-movement" data-target="section-register-movement">
+                        <i class="fas fa-exchange-alt"></i>
+                        <span>Registrar Movimentação</span>
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <div class="sidebar-footer">
+            <a href="/" class="sidebar-back" target="_blank" rel="noopener">
+                <i class="fas fa-external-link-alt"></i>
+                <span>Ver Loja</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- MOBILE -->
+    <button class="mobile-toggle" id="mobileToggle" aria-label="Abrir menu">
+        <i class="fas fa-bars"></i>
+    </button>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <!-- ============ CONTEÚDO PRINCIPAL ============ -->
+    <main class="main-content">
+
+        <!-- ==================== DASHBOARD ==================== -->
+        <section class="section active" id="section-dashboard">
+            <header class="section-header">
+                <div>
+                    <h1>Dashboard</h1>
+                    <p class="section-subtitle">Visão geral do estado atual da loja</p>
+                </div>
+                <button class="btn-refresh" id="refreshDashboard">
+                    <i class="fas fa-sync-alt"></i>
+                    <span>Atualizar</span>
+                </button>
+            </header>
+
+            <div class="kpi-grid">
+                <div class="kpi-card" data-kpi="totalProducts">
+                    <div class="kpi-icon kpi-icon-blue">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <div class="kpi-info">
+                        <span class="kpi-label">Total de Produtos</span>
+                        <span class="kpi-value" id="kpiTotalProducts">—</span>
+                    </div>
+                </div>
+
+                <div class="kpi-card" data-kpi="totalStock">
+                    <div class="kpi-icon kpi-icon-green">
+                        <i class="fas fa-warehouse"></i>
+                    </div>
+                    <div class="kpi-info">
+                        <span class="kpi-label">Itens em Estoque</span>
+                        <span class="kpi-value" id="kpiTotalStock">—</span>
+                    </div>
+                </div>
+
+                <div class="kpi-card" data-kpi="lowStock">
+                    <div class="kpi-icon kpi-icon-orange">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="kpi-info">
+                        <span class="kpi-label">Estoque Baixo</span>
+                        <span class="kpi-value" id="kpiLowStock">—</span>
+                    </div>
+                </div>
+
+                <div class="kpi-card" data-kpi="outOfStock">
+                    <div class="kpi-icon kpi-icon-red">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div class="kpi-info">
+                        <span class="kpi-label">Sem Estoque</span>
+                        <span class="kpi-value" id="kpiOutOfStock">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-trophy"></i> Produtos Mais Vendidos</h2>
+                    </div>
+                    <div class="card-body" id="topProductsList">
+                        <div class="loading">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <span>Carregando...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-history"></i> Movimentações Recentes</h2>
+                    </div>
+                    <div class="card-body" id="recentMovementsList">
+                        <div class="loading">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <span>Carregando...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== REGISTRAR NOVO PRODUTO ==================== -->
+        <section class="section" id="section-register-product">
+            <header class="section-header">
+                <div>
+                    <h1>Registrar Novo Produto</h1>
+                    <p class="section-subtitle">Adicione um novo produto ao catálogo</p>
+                </div>
+            </header>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-plus"></i> Novo Produto</h2>
+                </div>
+                <div class="card-body">
+                    <form id="productForm" class="form-grid">
+                        <div class="form-group form-group-full">
+                            <label for="prodName">Nome do Produto *</label>
+                            <input type="text" id="prodName" name="name" required maxlength="150" placeholder="Ex: Camisa Social Slim">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prodSlug">Slug (URL) *</label>
+                            <input type="text" id="prodSlug" name="slug" required maxlength="150" placeholder="ex: camisa-social-slim">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prodSku">SKU *</label>
+                            <input type="text" id="prodSku" name="sku" required maxlength="50" placeholder="ex: CAM-SOC-001">
+                        </div>
+
+                        <!-- ============ CATEGORIAS EM CASCATA ============ -->
+                        <div class="form-group">
+                            <label for="prodCategoryRoot">Categoria Principal *</label>
+                            <select id="prodCategoryRoot" required>
+                                <option value="">Carregando...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prodCategoryGender">Gênero *</label>
+                            <select id="prodCategoryGender" required disabled>
+                                <option value="">Selecione a categoria primeiro</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group form-group-full">
+                            <label for="prodCategoryType">Tipo de Produto *</label>
+                            <select id="prodCategoryType" name="category_id" required disabled>
+                                <option value="">Selecione o gênero primeiro</option>
+                            </select>
+                        </div>
+                        <!-- ============ FIM CATEGORIAS ============ -->
+
+                        <div class="form-group">
+                            <label for="prodBrand">Marca</label>
+                            <select id="prodBrand" name="brand_id">
+                                <option value="">Carregando...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prodPrice">Preço (R$) *</label>
+                            <input type="number" id="prodPrice" name="price" step="0.01" min="0" required placeholder="0,00">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prodCost">Preço de Custo (R$)</label>
+                            <input type="number" id="prodCost" name="cost_price" step="0.01" min="0" placeholder="0,00">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prodStock">Estoque Inicial *</label>
+                            <input type="number" id="prodStock" name="stock_quantity" min="0" value="0" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prodDiscount">Desconto (%)</label>
+                            <input type="number" id="prodDiscount" name="discount_percent" min="0" max="100" value="0" step="0.01">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prodWeight">Peso (kg)</label>
+                            <input type="number" id="prodWeight" name="weight" step="0.01" min="0" placeholder="0,00">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="prodDimensions">Dimensões (LxAxP)</label>
+                            <input type="text" id="prodDimensions" name="dimensions" maxlength="50" placeholder="ex: 30x20x5">
+                        </div>
+
+                        <div class="form-group form-group-full">
+                            <label for="prodShortDesc">Descrição Curta</label>
+                            <input type="text" id="prodShortDesc" name="short_description" maxlength="300" placeholder="Resumo exibido nas listagens">
+                        </div>
+
+                        <div class="form-group form-group-full">
+                            <label for="prodDesc">Descrição Completa *</label>
+                            <textarea id="prodDesc" name="description" rows="4" required placeholder="Descreva o produto em detalhes..."></textarea>
+                        </div>
+
+                        <div class="form-group form-group-full">
+                            <div class="checkbox-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="prodFeatured" name="is_featured">
+                                    <span>Produto em destaque</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="prodNew" name="is_new">
+                                    <span>Produto novo</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="prodBestSeller" name="is_best_seller">
+                                    <span>Mais vendido</span>
+                                </label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="prodActive" name="is_active" checked>
+                                    <span>Produto ativo</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-actions form-group-full">
+                            <button type="reset" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Limpar
+                            </button>
+                            <button type="submit" class="btn btn-primary" id="submitProduct">
+                                <i class="fas fa-check"></i> Cadastrar Produto
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-history"></i> Adições Recentes</h2>
+                    <button class="btn-icon" id="refreshRecentProducts" title="Atualizar">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-wrapper">
+                        <table class="data-table" id="recentProductsTable">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nome</th>
+                                    <th>SKU</th>
+                                    <th>Preço</th>
+                                    <th>Estoque</th>
+                                    <th>Categoria</th>
+                                    <th>Criado em</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="7" class="table-empty">Carregando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== REGISTRAR MOVIMENTAÇÃO ==================== -->
+        <section class="section" id="section-register-movement">
+            <header class="section-header">
+                <div>
+                    <h1>Registrar Movimentação</h1>
+                    <p class="section-subtitle">Registre entradas e saídas de estoque manualmente</p>
+                </div>
+            </header>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-exchange-alt"></i> Nova Movimentação</h2>
+                </div>
+                <div class="card-body">
+                    <form id="movementForm" class="form-grid">
+                        <div class="form-group form-group-full">
+                            <label for="movProduct">Produto *</label>
+                            <select id="movProduct" name="product_id" required>
+                                <option value="">Carregando produtos...</option>
+                            </select>
+                            <small class="form-hint" id="movProductStock"></small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="movType">Tipo de Movimentação *</label>
+                            <select id="movType" name="movement_type" required>
+                                <option value="in">Entrada (in)</option>
+                                <option value="out">Saída (out)</option>
+                                <option value="adjustment">Ajuste (adjustment)</option>
+                                <option value="return">Devolução (return)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="movQuantity">Quantidade *</label>
+                            <input type="number" id="movQuantity" name="quantity" min="1" required placeholder="0">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="movReason">Motivo</label>
+                            <input type="text" id="movReason" name="reason" maxlength="100" placeholder="ex: Venda, Reposição, Avaria">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="movRefType">Tipo de Referência</label>
+                            <input type="text" id="movRefType" name="reference_type" maxlength="50" placeholder="ex: order, purchase">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="movRefId">ID da Referência</label>
+                            <input type="number" id="movRefId" name="reference_id" min="0" placeholder="Opcional">
+                        </div>
+
+                        <div class="form-group form-group-full">
+                            <label for="movNotes">Observações</label>
+                            <textarea id="movNotes" name="notes" rows="3" placeholder="Anotações adicionais..."></textarea>
+                        </div>
+
+                        <div class="form-actions form-group-full">
+                            <button type="reset" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> Limpar
+                            </button>
+                            <button type="submit" class="btn btn-primary" id="submitMovement">
+                                <i class="fas fa-check"></i> Registrar Movimentação
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-history"></i> Movimentações Recentes</h2>
+                    <button class="btn-icon" id="refreshRecentMovements" title="Atualizar">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="table-wrapper">
+                        <table class="data-table" id="recentMovementsTable">
+                            <thead>
+                                <tr>
+                                    <th>Data</th>
+                                    <th>Produto</th>
+                                    <th>Tipo</th>
+                                    <th>Qtd.</th>
+                                    <th>Anterior</th>
+                                    <th>Atual</th>
+                                    <th>Motivo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="7" class="table-empty">Carregando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ============ TOASTS ============ -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- ============ MODAL DE DETALHES ============ -->
+    <div class="modal" id="detailModal" role="dialog" aria-modal="true" aria-labelledby="detailModalTitle">
+        <div class="modal-content modal-detail">
+            <button class="close-modal" id="closeDetailModal" aria-label="Fechar modal">&times;</button>
+            <div class="detail-loading" id="detailLoading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>Carregando detalhes...</span>
+            </div>
+            <div class="detail-body" id="detailBody" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+</body>
+</html>
