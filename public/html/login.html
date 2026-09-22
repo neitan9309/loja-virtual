@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entrar - Luxury Store</title>
+    <meta name="theme-color" content="#c9a96e">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👔</text></svg>">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/login.css">
+</head>
+<body class="auth-page">
+
+    <a href="#main-content" class="skip-link">Pular para o conteúdo principal</a>
+    <div aria-live="polite" aria-atomic="true" id="announcer" class="sr-only"></div>
+
+    <!-- HEADER SIMPLIFICADO -->
+    <header class="auth-header">
+        <a href="/" class="auth-logo">LUXURY</a>
+        <a href="/" class="auth-back"><i class="fas fa-arrow-left"></i> Voltar para a loja</a>
+    </header>
+
+    <!-- CONTEÚDO -->
+    <main id="main-content" class="auth-main">
+        <div class="auth-container">
+
+            <div class="auth-card">
+                <!-- TABS -->
+                <div class="auth-tabs">
+                    <button class="auth-tab active" data-tab="login">Entrar</button>
+                    <button class="auth-tab" data-tab="register">Criar Conta</button>
+                </div>
+
+                <!-- FORM DE LOGIN -->
+                <form class="auth-form active" id="loginForm" data-form="login" novalidate>
+                    <h1 class="auth-title">Bem-vindo de volta</h1>
+                    <p class="auth-subtitle">Entre com sua conta para continuar</p>
+
+                    <div class="auth-field">
+                        <label for="loginEmail">E-mail</label>
+                        <input type="email" id="loginEmail" name="email" required autocomplete="email" placeholder="seu@email.com">
+                    </div>
+
+                    <div class="auth-field">
+                        <label for="loginPassword">Senha</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="loginPassword" name="password" required autocomplete="current-password" placeholder="Sua senha">
+                            <button type="button" class="toggle-password" data-target="loginPassword" aria-label="Mostrar senha">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="auth-submit" id="loginSubmit">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Entrar
+                    </button>
+
+                    <p class="auth-switch">
+                        Não tem conta?
+                        <button type="button" class="link-btn" data-switch="register">Cadastre-se</button>
+                    </p>
+                </form>
+
+                <!-- FORM DE REGISTRO -->
+                <form class="auth-form" id="registerForm" data-form="register" novalidate>
+                    <h1 class="auth-title">Criar Conta</h1>
+                    <p class="auth-subtitle">Preencha os dados para se cadastrar</p>
+
+                    <!-- Dados pessoais -->
+                    <fieldset class="auth-fieldset">
+                        <legend>Dados Pessoais</legend>
+
+                        <div class="auth-field">
+                            <label for="regFullName">Nome completo *</label>
+                            <input type="text" id="regFullName" name="full_name" required placeholder="Seu nome completo" maxlength="150">
+                        </div>
+
+                        <div class="auth-row">
+                            <div class="auth-field">
+                                <label for="regBirthDate">Data de nascimento</label>
+                                <input type="date" id="regBirthDate" name="birth_date">
+                            </div>
+                            <div class="auth-field">
+                                <label for="regGender">Gênero</label>
+                                <select id="regGender" name="gender">
+                                    <option value="">Selecione</option>
+                                    <option value="masculino">Masculino</option>
+                                    <option value="feminino">Feminino</option>
+                                    <option value="outro">Outro</option>
+                                    <option value="prefiro_nao_dizer">Prefiro não dizer</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="auth-row">
+                            <div class="auth-field">
+                                <label for="regCpf">CPF</label>
+                                <input type="text" id="regCpf" name="cpf" placeholder="000.000.000-00" maxlength="14">
+                            </div>
+                            <div class="auth-field">
+                                <label for="regPhone">Telefone</label>
+                                <input type="tel" id="regPhone" name="phone" placeholder="(11) 99999-9999" maxlength="20">
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <!-- Endereço -->
+                    <fieldset class="auth-fieldset">
+                        <legend>Endereço</legend>
+
+                        <div class="auth-field">
+                            <label for="regCep">CEP *</label>
+                            <div class="cep-wrapper">
+                                <input type="text" id="regCep" name="cep" required placeholder="00000-000" maxlength="9" inputmode="numeric">
+                                <span class="cep-status" id="cepStatus"></span>
+                            </div>
+                        </div>
+
+                        <div class="auth-field">
+                            <label for="regStreet">Rua / Logradouro</label>
+                            <input type="text" id="regStreet" name="street" readonly placeholder="Preenchido pelo CEP">
+                        </div>
+
+                        <div class="auth-row">
+                            <div class="auth-field">
+                                <label for="regNumber">Número *</label>
+                                <input type="text" id="regNumber" name="number" required placeholder="Ex: 123" maxlength="20">
+                            </div>
+                            <div class="auth-field">
+                                <label for="regComplement">Complemento</label>
+                                <input type="text" id="regComplement" name="complement" placeholder="Apto, bloco..." maxlength="100">
+                            </div>
+                        </div>
+
+                        <div class="auth-field">
+                            <label for="regNeighborhood">Bairro</label>
+                            <input type="text" id="regNeighborhood" name="neighborhood" readonly placeholder="Preenchido pelo CEP">
+                        </div>
+
+                        <div class="auth-row">
+                            <div class="auth-field">
+                                <label for="regCity">Cidade</label>
+                                <input type="text" id="regCity" name="city" readonly placeholder="Preenchido pelo CEP">
+                            </div>
+                            <div class="auth-field">
+                                <label for="regState">Estado</label>
+                                <input type="text" id="regState" name="state" readonly placeholder="UF" maxlength="2">
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <!-- Acesso -->
+                    <fieldset class="auth-fieldset">
+                        <legend>Acesso</legend>
+
+                        <div class="auth-field">
+                            <label for="regEmail">E-mail *</label>
+                            <input type="email" id="regEmail" name="email" required autocomplete="email" placeholder="seu@email.com">
+                        </div>
+
+                        <div class="auth-row">
+                            <div class="auth-field">
+                                <label for="regPassword">Senha *</label>
+                                <div class="password-wrapper">
+                                    <input type="password" id="regPassword" name="password" required minlength="6" autocomplete="new-password" placeholder="Mínimo 6 caracteres">
+                                    <button type="button" class="toggle-password" data-target="regPassword" aria-label="Mostrar senha">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="auth-field">
+                                <label for="regConfirmPassword">Confirmar senha *</label>
+                                <input type="password" id="regConfirmPassword" name="confirm_password" required autocomplete="new-password" placeholder="Repita a senha">
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <button type="submit" class="auth-submit" id="registerSubmit">
+                        <i class="fas fa-user-plus"></i>
+                        Criar minha conta
+                    </button>
+
+                    <p class="auth-switch">
+                        Já tem conta?
+                        <button type="button" class="link-btn" data-switch="login">Faça login</button>
+                    </p>
+                </form>
+
+            </div>
+
+            <!-- LADO DIREITO: apresentação -->
+            <div class="auth-presentation">
+                <h2>Bem-vindo à Luxury</h2>
+                <p>Cadastre-se e ganhe <strong>20% de desconto</strong> na primeira compra.</p>
+                <ul class="auth-benefits">
+                    <li><i class="fas fa-check-circle"></i> Acesso a promoções exclusivas</li>
+                    <li><i class="fas fa-check-circle"></i> Rastreamento de pedidos</li>
+                    <li><i class="fas fa-check-circle"></i> Cashback em todas as compras</li>
+                    <li><i class="fas fa-check-circle"></i> Frete grátis acima de R$99,90</li>
+                </ul>
+            </div>
+
+        </div>
+    </main>
+
+    <script src="/js/script.js"></script>
+    <script src="/js/login.js"></script>
+</body>
+</html>

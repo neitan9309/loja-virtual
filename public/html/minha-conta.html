@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Minha Conta - Luxury Store</title>
+    <meta name="theme-color" content="#c9a96e">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👔</text></svg>">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/minha-conta.css">
+</head>
+<body>
+
+    <a href="#main-content" class="skip-link">Pular para o conteúdo principal</a>
+    <div aria-live="polite" aria-atomic="true" id="announcer" class="sr-only"></div>
+
+    <!-- ============ HEADER ============ -->
+    <header class="header scrolled" id="header">
+        <div class="header-container">
+            <button class="menu-toggle" id="menuToggle" aria-label="Abrir menu" aria-expanded="false">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <a href="/" class="logo" aria-label="Luxury Store - Página inicial">LUXURY</a>
+
+            <nav class="nav-menu" id="navMenu" role="navigation" aria-label="Menu principal">
+                <div class="mobile-menu-header">
+                    <span class="mobile-menu-title">Menu</span>
+                    <button class="close-menu" id="closeMenu" aria-label="Fechar menu">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div class="dropdown" data-category="vestuario">
+                    <a href="/categoria?category=vestuario" class="nav-link dropdown-toggle">
+                        <span class="dropdown-label">Vestuário</span>
+                        <i class="fas fa-chevron-down dropdown-icon"></i>
+                    </a>
+                    <div class="dropdown-content" role="menu"></div>
+                </div>
+
+                <div class="dropdown" data-category="perfumaria">
+                    <a href="/categoria?category=perfumaria" class="nav-link dropdown-toggle">
+                        <span class="dropdown-label">Perfumaria</span>
+                        <i class="fas fa-chevron-down dropdown-icon"></i>
+                    </a>
+                    <div class="dropdown-content" role="menu"></div>
+                </div>
+
+                <div class="dropdown" data-category="artigos-esportivos">
+                    <a href="/categoria?category=artigos-esportivos" class="nav-link dropdown-toggle">
+                        <span class="dropdown-label">Artigos Esportivos</span>
+                        <i class="fas fa-chevron-down dropdown-icon"></i>
+                    </a>
+                    <div class="dropdown-content" role="menu"></div>
+                </div>
+
+                <div class="dropdown">
+                    <a href="/produtos?filter=featured" class="nav-link dropdown-toggle">
+                        <span class="dropdown-label">Novidades</span>
+                        <i class="fas fa-chevron-down dropdown-icon"></i>
+                    </a>
+                    <div class="dropdown-content" role="menu">
+                        <a href="/produtos?filter=new" role="menuitem">Lançamentos</a>
+                        <a href="/produtos?filter=best_seller" role="menuitem">Mais Vendidos</a>
+                        <a href="/produtos?filter=featured" role="menuitem">Em Promoção</a>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="header-icons">
+                <button class="icon-btn" aria-label="Buscar produtos"><i class="fas fa-search"></i></button>
+                <button class="icon-btn" aria-label="Minha conta" id="accountBtn"><i class="fas fa-user"></i></button>
+                <button class="icon-btn cart-btn" aria-label="Carrinho de compras">
+                    <i class="fas fa-shopping-bag"></i>
+                    <span class="cart-badge">0</span>
+                </button>
+            </div>
+        </div>
+        <div class="menu-overlay" id="menuOverlay"></div>
+    </header>
+
+    <!-- ============ CONTEÚDO ============ -->
+    <main id="main-content" class="account-page">
+
+        <div class="account-loading" id="accountLoading">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>Carregando seus dados...</span>
+        </div>
+
+        <div class="account-content" id="accountContent" style="display: none;">
+
+            <!-- Sidebar -->
+            <aside class="account-sidebar">
+                <div class="account-user-card">
+                    <div class="account-avatar" id="accountAvatar">U</div>
+                    <div class="account-user-info">
+                        <strong id="sidebarName">—</strong>
+                        <span id="sidebarEmail">—</span>
+                    </div>
+                </div>
+
+                <nav class="account-nav">
+                    <button class="account-nav-item active" data-tab="profile">
+                        <i class="fas fa-user"></i>
+                        <span>Meus Dados</span>
+                    </button>
+                    <button class="account-nav-item" data-tab="address">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>Endereço</span>
+                    </button>
+                    <button class="account-nav-item" data-tab="security">
+                        <i class="fas fa-lock"></i>
+                        <span>Segurança</span>
+                    </button>
+                    <button class="account-nav-item account-logout" id="logoutBtn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Sair</span>
+                    </button>
+                </nav>
+            </aside>
+
+            <!-- Conteúdo -->
+            <div class="account-panels">
+
+                <!-- Painel: Meus Dados -->
+                <section class="account-panel active" data-panel="profile">
+                    <header class="panel-header">
+                        <h1>Meus Dados</h1>
+                        <p>Gerencie suas informações pessoais</p>
+                    </header>
+
+                    <form class="account-form" id="profileForm">
+                        <div class="form-field">
+                            <label for="accFullName">Nome completo</label>
+                            <input type="text" id="accFullName" name="full_name" maxlength="150">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label for="accBirthDate">Data de nascimento</label>
+                                <input type="date" id="accBirthDate" name="birth_date">
+                            </div>
+                            <div class="form-field">
+                                <label for="accGender">Gênero</label>
+                                <select id="accGender" name="gender">
+                                    <option value="">Selecione</option>
+                                    <option value="masculino">Masculino</option>
+                                    <option value="feminino">Feminino</option>
+                                    <option value="outro">Outro</option>
+                                    <option value="prefiro_nao_dizer">Prefiro não dizer</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label for="accCpf">CPF</label>
+                                <input type="text" id="accCpf" name="cpf" maxlength="14">
+                            </div>
+                            <div class="form-field">
+                                <label for="accPhone">Telefone</label>
+                                <input type="tel" id="accPhone" name="phone" maxlength="20">
+                            </div>
+                        </div>
+
+                        <div class="form-field">
+                            <label for="accEmail">E-mail</label>
+                            <input type="email" id="accEmail" name="email" disabled>
+                            <small class="field-hint">O e-mail não pode ser alterado</small>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-save" id="saveProfileBtn">
+                                <i class="fas fa-check"></i>
+                                Salvar alterações
+                            </button>
+                        </div>
+                    </form>
+                </section>
+
+                <!-- Painel: Endereço -->
+                <section class="account-panel" data-panel="address">
+                    <header class="panel-header">
+                        <h1>Endereço</h1>
+                        <p>Atualize seu endereço de entrega</p>
+                    </header>
+
+                    <form class="account-form" id="addressForm">
+                        <div class="form-field">
+                            <label for="accCep">CEP</label>
+                            <div class="cep-wrapper">
+                                <input type="text" id="accCep" name="cep" maxlength="9" inputmode="numeric">
+                                <span class="cep-status" id="accCepStatus"></span>
+                            </div>
+                        </div>
+
+                        <div class="form-field">
+                            <label for="accStreet">Rua / Logradouro</label>
+                            <input type="text" id="accStreet" name="street" readonly>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label for="accNumber">Número</label>
+                                <input type="text" id="accNumber" name="number" maxlength="20">
+                            </div>
+                            <div class="form-field">
+                                <label for="accComplement">Complemento</label>
+                                <input type="text" id="accComplement" name="complement" maxlength="100">
+                            </div>
+                        </div>
+
+                        <div class="form-field">
+                            <label for="accNeighborhood">Bairro</label>
+                            <input type="text" id="accNeighborhood" name="neighborhood" readonly>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-field">
+                                <label for="accCity">Cidade</label>
+                                <input type="text" id="accCity" name="city" readonly>
+                            </div>
+                            <div class="form-field">
+                                <label for="accState">Estado</label>
+                                <input type="text" id="accState" name="state" readonly maxlength="2">
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-save" id="saveAddressBtn">
+                                <i class="fas fa-check"></i>
+                                Salvar endereço
+                            </button>
+                        </div>
+                    </form>
+                </section>
+
+                <!-- Painel: Segurança -->
+                <section class="account-panel" data-panel="security">
+                    <header class="panel-header">
+                        <h1>Segurança</h1>
+                        <p>Altere sua senha de acesso</p>
+                    </header>
+
+                    <form class="account-form" id="passwordForm">
+                        <div class="form-field">
+                            <label for="accCurrentPassword">Senha atual</label>
+                            <div class="password-wrapper">
+                                <input type="password" id="accCurrentPassword" name="current_password" required autocomplete="current-password">
+                                <button type="button" class="toggle-password" data-target="accCurrentPassword" aria-label="Mostrar senha">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="form-field">
+                            <label for="accNewPassword">Nova senha</label>
+                            <div class="password-wrapper">
+                                <input type="password" id="accNewPassword" name="new_password" required minlength="6" autocomplete="new-password">
+                                <button type="button" class="toggle-password" data-target="accNewPassword" aria-label="Mostrar senha">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="form-field">
+                            <label for="accConfirmPassword">Confirmar nova senha</label>
+                            <input type="password" id="accConfirmPassword" name="confirm_password" required autocomplete="new-password">
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-save" id="savePasswordBtn">
+                                <i class="fas fa-lock"></i>
+                                Alterar senha
+                            </button>
+                        </div>
+                    </form>
+                </section>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ============ FOOTER ============ -->
+    <footer class="footer" role="contentinfo">
+        <div class="footer-container">
+            <div class="footer-links">
+                <h3>Luxury Store</h3>
+                <ul>
+                    <li><a href="#">Sobre Nós</a></li>
+                    <li><a href="#">Política de Privacidade</a></li>
+                    <li><a href="#">Termos de Uso</a></li>
+                    <li><a href="#">Trocas e Devoluções</a></li>
+                    <li><a href="#">FAQ</a></li>
+                </ul>
+            </div>
+            <div class="footer-newsletter">
+                <h3>Receba Promoções Exclusivas</h3>
+                <p>Cadastre seu e-mail e ganhe <strong>20% de desconto</strong> na primeira compra!</p>
+                <form class="newsletter-form" id="newsletterForm" novalidate>
+                    <div class="input-group">
+                        <input type="email" class="newsletter-input" placeholder="Seu melhor e-mail" required>
+                        <button type="submit" class="newsletter-btn">Cadastrar</button>
+                    </div>
+                    <div class="form-feedback" id="newsletterFeedback" aria-live="polite"></div>
+                </form>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="footer-bottom-content">
+                <p>&copy; 2024 Luxury Store. Todos os direitos reservados.</p>
+                <button class="customer-service-btn"><i class="fas fa-headset"></i> Atendimento ao Cliente</button>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/js/script.js"></script>
+    <script src="/js/minha-conta.js"></script>
+</body>
+</html>

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Produto - Luxury Store</title>
+    <meta name="description" content="Detalhes do produto - Luxury Store">
+    <meta name="theme-color" content="#c9a96e">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👔</text></svg>">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://images.pexels.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- ✅ Novos caminhos -->
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/produto.css">
+</head>
+<body>
+
+    <a href="#main-content" class="skip-link">Pular para o conteúdo principal</a>
+    <div aria-live="polite" aria-atomic="true" id="announcer" class="sr-only"></div>
+
+    <header class="header scrolled" id="header">
+        <div class="header-container">
+            <button class="menu-toggle" id="menuToggle" aria-label="Abrir menu" aria-expanded="false">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <a href="/" class="logo" aria-label="Luxury Store - Página inicial">LUXURY</a>
+
+            <nav class="nav-menu" id="navMenu" role="navigation" aria-label="Menu principal">
+                <div class="mobile-menu-header">
+                    <span class="mobile-menu-title">Menu</span>
+                    <button class="close-menu" id="closeMenu" aria-label="Fechar menu">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div class="dropdown" data-category="vestuario">
+                    <a href="/categoria?category=vestuario" class="nav-link dropdown-toggle" aria-haspopup="true" aria-expanded="false">
+                        <span class="dropdown-label">Vestuário</span>
+                        <i class="fas fa-chevron-down dropdown-icon"></i>
+                    </a>
+                    <div class="dropdown-content" role="menu"></div>
+                </div>
+
+                <div class="dropdown" data-category="perfumaria">
+                    <a href="/categoria?category=perfumaria" class="nav-link dropdown-toggle" aria-haspopup="true" aria-expanded="false">
+                        <span class="dropdown-label">Perfumaria</span>
+                        <i class="fas fa-chevron-down dropdown-icon"></i>
+                    </a>
+                    <div class="dropdown-content" role="menu"></div>
+                </div>
+
+                <div class="dropdown" data-category="artigos-esportivos">
+                    <a href="/categoria?category=artigos-esportivos" class="nav-link dropdown-toggle" aria-haspopup="true" aria-expanded="false">
+                        <span class="dropdown-label">Artigos Esportivos</span>
+                        <i class="fas fa-chevron-down dropdown-icon"></i>
+                    </a>
+                    <div class="dropdown-content" role="menu"></div>
+                </div>
+
+                <div class="dropdown">
+                    <a href="/produtos?filter=featured" class="nav-link dropdown-toggle" aria-haspopup="true" aria-expanded="false">
+                        <span class="dropdown-label">Novidades</span>
+                        <i class="fas fa-chevron-down dropdown-icon"></i>
+                    </a>
+                    <div class="dropdown-content" role="menu">
+                        <a href="/produtos?filter=new" role="menuitem">Lançamentos</a>
+                        <a href="/produtos?filter=best_seller" role="menuitem">Mais Vendidos</a>
+                        <a href="/produtos?filter=featured" role="menuitem">Em Promoção</a>
+                    </div>
+                </div>
+            </nav>
+
+            <div class="header-icons">
+                <button class="icon-btn" aria-label="Buscar produtos"><i class="fas fa-search"></i></button>
+<button class="icon-btn" id="accountBtn" aria-label="Minha conta / Login"><i class="fas fa-user"></i></button>                <button class="icon-btn cart-btn" aria-label="Carrinho de compras">
+                    <i class="fas fa-shopping-bag"></i>
+                    <span class="cart-badge">0</span>
+                </button>
+            </div>
+        </div>
+        <div class="menu-overlay" id="menuOverlay"></div>
+    </header>
+
+    <main id="main-content" class="product-page">
+
+        <nav class="breadcrumb" aria-label="Breadcrumb" id="breadcrumb">
+            <a href="/"><i class="fas fa-home"></i><span>Início</span></a>
+        </nav>
+
+        <div id="productLoading" class="product-loading">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>Carregando produto...</span>
+        </div>
+
+        <div id="productContent" class="product-content" style="display: none;">
+
+            <div class="product-main">
+
+                <section class="product-gallery" aria-label="Galeria de imagens">
+                    <div class="gallery-container">
+                        <div class="gallery-main">
+                            <img id="galleryMainImage" src="" alt="Imagem do produto" loading="lazy">
+                            <button class="gallery-zoom" id="galleryZoom" aria-label="Ampliar imagem">
+                                <i class="fas fa-expand"></i>
+                            </button>
+                        </div>
+                        <div class="gallery-thumbs" id="galleryThumbs" role="tablist"></div>
+                    </div>
+                </section>
+
+                <section class="product-info-block" aria-label="Informações do produto">
+
+                    <div class="product-badges" id="productBadges"></div>
+
+                    <h1 class="product-title" id="productTitle">—</h1>
+
+                    <p class="product-meta" id="productMeta"></p>
+
+                    <div class="product-rating" id="productRating">
+                        <div class="stars" id="productStars"></div>
+                        <span class="rating-count" id="productRatingCount"></span>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <div class="product-price-block">
+                        <div class="price-discount-row">
+                            <span class="discount-badge" id="productDiscount" style="display: none;"></span>
+                            <span class="old-price" id="productOldPrice" style="display: none;"></span>
+                        </div>
+                        <div class="current-price" id="productCurrentPrice">R$ —</div>
+                        <p class="installments" id="productInstallments"></p>
+                    </div>
+
+                    <div class="product-variations" id="productVariations" style="display: none;"></div>
+
+                    <div class="product-actions">
+                        <div class="quantity-selector">
+                            <button class="qty-btn" id="qtyDecrease" aria-label="Diminuir quantidade">
+                                <i class="fas fa-minus"></i>
+                            </button>
+                            <input type="number" id="productQty" value="1" min="1" max="99" aria-label="Quantidade">
+                            <button class="qty-btn" id="qtyIncrease" aria-label="Aumentar quantidade">
+                                <i class="fas fa-plus"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="btn-add-cart" id="btnAddCart">
+                            <i class="fas fa-shopping-bag"></i>
+                            Adicionar ao Carrinho
+                        </button>
+                        <button class="btn-buy-now" id="btnBuyNow">
+                            <i class="fas fa-bolt"></i>
+                            Comprar Agora
+                        </button>
+                    </div>
+
+                    <div class="shipping-info">
+                        <div class="shipping-header">
+                            <i class="fas fa-truck"></i>
+                            <span>Calcular frete e prazo</span>
+                        </div>
+                        <div class="shipping-form">
+                            <input type="text" id="shippingCep" placeholder="Digite seu CEP" maxlength="9" inputmode="numeric">
+                            <button id="btnCalcShipping">Calcular</button>
+                        </div>
+                        <div class="shipping-result" id="shippingResult" style="display: none;"></div>
+                    </div>
+
+                    <div class="seller-info">
+                        <div class="seller-item">
+                            <i class="fas fa-store"></i>
+                            <div>
+                                <strong>Vendido por Luxury Store</strong>
+                                <span>Loja oficial</span>
+                            </div>
+                        </div>
+                        <div class="seller-item">
+                            <i class="fas fa-undo"></i>
+                            <div>
+                                <strong>Devolução grátis</strong>
+                                <span>Em até 30 dias</span>
+                            </div>
+                        </div>
+                        <div class="seller-item">
+                            <i class="fas fa-shield-alt"></i>
+                            <div>
+                                <strong>Compra garantida</strong>
+                                <span>Site 100% seguro</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </section>
+            </div>
+
+            <section class="product-description-section">
+                <div class="section-tabs">
+                    <button class="tab-btn active" data-tab="description">Descrição</button>
+                    <button class="tab-btn" data-tab="specs">Especificações</button>
+                    <button class="tab-btn" data-tab="reviews">Avaliações</button>
+                </div>
+
+                <div class="tab-content active" id="tab-description">
+                    <p id="productDescription">—</p>
+                </div>
+
+                <div class="tab-content" id="tab-specs">
+                    <div id="productSpecs" class="specs-list"></div>
+                </div>
+
+                <div class="tab-content" id="tab-reviews">
+                    <div id="productReviews" class="reviews-list"></div>
+                </div>
+            </section>
+
+            <section class="related-products-section" id="relatedSection" style="display: none;">
+                <h2>Você também pode gostar</h2>
+                <div class="related-grid" id="relatedGrid"></div>
+            </section>
+
+        </div>
+
+        <div id="productNotFound" class="empty-state" style="display: none;">
+            <i class="fas fa-box-open"></i>
+            <h3>Produto não encontrado</h3>
+            <p>O produto que você procura não existe ou foi removido.</p>
+            <a href="/produtos" class="btn btn-primary" style="margin-top: 1rem;">Ver todos os produtos</a>
+        </div>
+
+    </main>
+
+    <footer class="footer" role="contentinfo">
+        <div class="footer-container">
+            <div class="footer-links">
+                <h3>Luxury Store</h3>
+                <ul>
+                    <li><a href="#">Sobre Nós</a></li>
+                    <li><a href="#">Política de Privacidade</a></li>
+                    <li><a href="#">Termos de Uso</a></li>
+                    <li><a href="#">Trocas e Devoluções</a></li>
+                    <li><a href="#">FAQ</a></li>
+                </ul>
+                <div class="social-links">
+                    <a href="#" aria-label="Facebook"><i class="fab fa-facebook"></i></a>
+                    <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
+                    <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
+                </div>
+            </div>
+            <div class="footer-newsletter">
+                <h3>Receba Promoções Exclusivas</h3>
+                <p>Cadastre seu e-mail e ganhe <strong>20% de desconto</strong> na primeira compra!</p>
+                <form class="newsletter-form" id="newsletterForm" novalidate>
+                    <div class="input-group">
+                        <input type="email" class="newsletter-input" placeholder="Seu melhor e-mail" required aria-label="E-mail para newsletter">
+                        <button type="submit" class="newsletter-btn">Cadastrar</button>
+                    </div>
+                    <div class="form-feedback" id="newsletterFeedback" aria-live="polite"></div>
+                </form>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <div class="footer-bottom-content">
+                <p>&copy; 2024 Luxury Store. Todos os direitos reservados.</p>
+                <button class="customer-service-btn" aria-label="Atendimento ao cliente"><i class="fas fa-headset"></i> Atendimento ao Cliente</button>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ✅ Novos caminhos -->
+    <script src="/js/script.js"></script>
+    <script src="/js/produto.js"></script>
+</body>
+</html>

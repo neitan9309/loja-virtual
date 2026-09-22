@@ -1,0 +1,572 @@
+/* ======================================================
+   HERO DA CATEGORIA
+   ====================================================== */
+.category-hero {
+    position: relative;
+    height: 55vh;
+    min-height: 420px;
+    max-height: 600px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gray-900);
+}
+
+.category-hero-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    transform: scale(1.05);
+    transition: transform 6s ease-out;
+}
+
+.category-hero.loaded .category-hero-bg {
+    transform: scale(1);
+}
+
+.category-hero-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.55) 0%,
+        rgba(0, 0, 0, 0.65) 60%,
+        rgba(0, 0, 0, 0.85) 100%
+    );
+    z-index: 1;
+}
+
+.category-hero-content {
+    position: relative;
+    z-index: 2;
+    text-align: center;
+    color: var(--white);
+    max-width: 800px;
+    padding: 0 2rem;
+}
+
+.breadcrumb-hero {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.breadcrumb-hero a {
+    color: rgba(255, 255, 255, 0.75);
+    text-decoration: none;
+    transition: var(--transition);
+}
+
+.breadcrumb-hero a:hover {
+    color: var(--accent);
+}
+
+.breadcrumb-hero .separator {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.7rem;
+}
+
+.breadcrumb-hero .current {
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.category-hero-content h1 {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    margin-bottom: 1rem;
+    line-height: 1.1;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+}
+
+.category-hero-content p {
+    font-size: 1.05rem;
+    line-height: 1.7;
+    color: rgba(255, 255, 255, 0.9);
+    max-width: 600px;
+    margin: 0 auto;
+    font-weight: 300;
+}
+
+/* ======================================================
+   BREADCRUMB (fora do hero)
+   ====================================================== */
+.breadcrumb {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 1.5rem 2rem 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--gray-500);
+}
+
+.breadcrumb a {
+    color: var(--gray-500);
+    text-decoration: none;
+    transition: var(--transition);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.breadcrumb a:hover {
+    color: var(--accent);
+}
+
+.breadcrumb .separator {
+    color: var(--gray-300);
+    font-size: 0.75rem;
+}
+
+.breadcrumb .current {
+    color: var(--gray-900);
+    font-weight: 600;
+}
+
+/* ======================================================
+   CONTEÚDO DA CATEGORIA
+   ====================================================== */
+.category-page {
+    background: var(--white);
+}
+
+.category-content {
+    padding: 4rem 0 5rem;
+}
+
+.content-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 0 2rem;
+}
+
+.section-intro {
+    text-align: center;
+    margin-bottom: 3.5rem;
+}
+
+.section-intro h2 {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    font-weight: 700;
+    color: var(--gray-900);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 0.75rem;
+}
+
+.section-intro p {
+    color: var(--gray-500);
+    font-size: 1rem;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.section-divider {
+    width: 60px;
+    height: 3px;
+    background: var(--accent);
+    margin: 1.5rem auto 0;
+}
+
+/* ======================================================
+   GRID DE SUBCATEGORIAS COM IMAGEM (centralizado)
+   ====================================================== */
+.subcategories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 380px));
+    justify-content: center;
+    gap: 2rem;
+    animation: fadeIn 0.4s ease;
+}
+
+.subcategory-card {
+    display: flex;
+    flex-direction: column;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    overflow: hidden;
+    text-decoration: none;
+    color: var(--gray-900);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    cursor: pointer;
+}
+
+.subcategory-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
+    border-color: var(--accent);
+}
+
+.subcategory-card-image {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+    background: var(--gray-100);
+}
+
+.subcategory-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.subcategory-card:hover .subcategory-card-image img {
+    transform: scale(1.08);
+}
+
+.subcategory-card-image::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0) 40%,
+        rgba(0, 0, 0, 0.5) 100%
+    );
+    pointer-events: none;
+}
+
+.subcategory-card-badge {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    background: rgba(201, 169, 110, 0.95);
+    color: var(--white);
+    padding: 0.4rem 0.9rem;
+    border-radius: 20px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    z-index: 2;
+    backdrop-filter: blur(10px);
+}
+
+.subcategory-card-body {
+    padding: 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    flex: 1;
+}
+
+.subcategory-card-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0;
+}
+
+.subcategory-card-description {
+    font-size: 0.9rem;
+    color: var(--gray-500);
+    line-height: 1.6;
+    margin: 0;
+    flex: 1;
+}
+
+.subcategory-card-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 1rem;
+    border-top: 1px solid var(--gray-200);
+    margin-top: 0.5rem;
+}
+
+.subcategory-card-count {
+    font-size: 0.8rem;
+    color: var(--accent);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.subcategory-card-arrow {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--gray-100);
+    color: var(--gray-700);
+    transition: all 0.3s ease;
+}
+
+.subcategory-card:hover .subcategory-card-arrow {
+    background: var(--accent);
+    color: var(--white);
+    transform: translateX(4px);
+}
+
+/* ======================================================
+   GRID DE TIPOS (centralizado)
+   ====================================================== */
+.types-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 220px));
+    justify-content: center;
+    gap: 1.25rem;
+    animation: fadeIn 0.4s ease;
+}
+
+.type-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 2rem 1.5rem;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    text-decoration: none;
+    color: var(--gray-900);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    min-height: 180px;
+}
+
+.type-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+}
+
+.type-card:hover::before {
+    transform: scaleX(1);
+}
+
+.type-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.08);
+    border-color: var(--accent);
+}
+
+.type-card-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(201, 169, 110, 0.15), rgba(201, 169, 110, 0.05));
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 1rem;
+    transition: all 0.3s ease;
+}
+
+.type-card:hover .type-card-icon {
+    background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+    color: var(--white);
+    transform: scale(1.1);
+}
+
+.type-card-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.35rem;
+}
+
+.type-card-count {
+    font-size: 0.75rem;
+    color: var(--gray-500);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* ======================================================
+   LOADING / EMPTY
+   ====================================================== */
+.loading-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 5rem 0;
+    color: var(--gray-500);
+    font-size: 1rem;
+}
+
+.loading-state i {
+    color: var(--accent);
+    font-size: 1.4rem;
+}
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 4rem 2rem;
+    gap: 1rem;
+}
+
+.empty-state i {
+    font-size: 3.5rem;
+    color: var(--gray-300);
+    margin-bottom: 0.5rem;
+}
+
+.empty-state h3 {
+    font-size: 1.3rem;
+    color: var(--gray-800);
+}
+
+.empty-state p {
+    color: var(--gray-500);
+    max-width: 400px;
+}
+
+/* ======================================================
+   ANIMAÇÕES
+   ====================================================== */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* ======================================================
+   RESPONSIVO - 768px
+   ====================================================== */
+@media (max-width: 768px) {
+    .category-hero {
+        height: 45vh;
+        min-height: 320px;
+    }
+
+    .category-hero-content h1 {
+        font-size: 1.8rem;
+        letter-spacing: 2px;
+    }
+
+    .category-hero-content p {
+        font-size: 0.95rem;
+    }
+
+    .breadcrumb {
+        padding: 1rem 1rem 0;
+        font-size: 0.85rem;
+    }
+
+    .category-content {
+        padding: 3rem 0;
+    }
+
+    .content-container {
+        padding: 0 1rem;
+    }
+
+    .subcategories-grid {
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        max-width: 500px;
+        margin: 0 auto;
+        gap: 1.25rem;
+    }
+
+    .subcategory-card-image {
+        aspect-ratio: 16 / 9;
+    }
+
+    .subcategory-card-body {
+        padding: 1.25rem;
+    }
+
+    .subcategory-card-title {
+        font-size: 1.15rem;
+    }
+
+    .types-grid {
+        grid-template-columns: repeat(auto-fit, minmax(140px, 160px));
+        gap: 1rem;
+    }
+
+    .type-card {
+        padding: 1.5rem 1rem;
+        min-height: 150px;
+    }
+
+    .type-card-icon {
+        width: 52px;
+        height: 52px;
+        font-size: 1.25rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .type-card-name {
+        font-size: 0.85rem;
+    }
+
+    .section-intro {
+        margin-bottom: 2.5rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .category-hero-content h1 {
+        font-size: 1.5rem;
+    }
+
+    .category-hero-content p {
+        font-size: 0.85rem;
+    }
+
+    .types-grid {
+        grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+        max-width: 400px;
+        margin: 0 auto;
+    }
+
+    .type-card {
+        padding: 1.25rem 0.75rem;
+        min-height: 130px;
+    }
+
+    .type-card-icon {
+        width: 44px;
+        height: 44px;
+        font-size: 1.1rem;
+    }
+}
