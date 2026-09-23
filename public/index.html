@@ -191,6 +191,29 @@
         <!-- Produtos em Destaque -->
         <section class="featured-products animate-on-scroll" aria-label="Produtos em destaque">
             <h2>Produtos em Destaque</h2>
+            <div class="featured-carousel" id="featuredCarousel">
+                <button class="featured-btn featured-prev" aria-label="Produto anterior">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+
+                <div class="featured-viewport">
+                    <div class="featured-track" id="featuredTrack">
+                        <!-- Produtos injetados via JS -->
+                        <div class="featured-loading">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <span>Carregando produtos...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button class="featured-btn featured-next" aria-label="Próximo produto">
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+
+                <div class="featured-dots" id="featuredDots" role="tablist">
+                    <!-- Dots injetados via JS -->
+                </div>
+            </div>
         </section>
 
         <!-- Vídeo Vimeo -->
@@ -313,6 +336,8 @@
     </footer>
 
     <!-- ✅ Novo caminho do JS -->
+     <script src="/js/cart.js"></script>
+<script src="/js/script.js"></script>
     <script src="/js/script.js"></script>
 </body>
 </html>

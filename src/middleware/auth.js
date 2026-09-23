@@ -1,11 +1,12 @@
 const jwt = require('jsonwebtoken');
+const { pool } = require('../config/database');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'troque_por_uma_string_segura';
 
 // ==================================================
-// MIDDLEWARE: exige token válido
+// MIDDLEWARE: exige token válido E usuário existente
 // ==================================================
-function authenticate(req, res, next) {
+async function authenticate(req, res, next) {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -14,43 +15,69 @@ function authenticate(req, res, next) {
 
     const token = authHeader.substring(7);
 
+    let decoded;
     try {
-        const decoded = jwt.verify(token, JWT_SECRET);
-        req.userId = decoded.id;
-        req.userEmail = decoded.email;
-        req.token = token;
-        next();
+        decoded = jwt.verify(token, JWT_SECRET);
     } catch (error) {
         if (error.name === 'TokenExpiredError') {
             return res.status(401).json({ error: 'Token expirado. Faça login novamente.' });
         }
         return res.status(401).json({ error: 'Token inválido' });
     }
+
+    // ✅ NOVO: verifica se o usuário existe no banco
+    try {
+        const result = await pool.query(
+            'SELECT id FROM users WHERE id = $1 AND is_active = true',
+            [decoded.id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(401).json({ 
+                error: 'Sessão inválida. Faça login novamente.',
+                code: 'USER_NOT_FOUND'
+            });
+        }
+
+        req.userId = decoded.id;
+        req.userEmail = decoded.email;
+        req.token = token;
+        next();
+    } catch (error) {
+        console.error('Erro ao verificar usuário:', error);
+        return res.status(500).json({ error: 'Erro ao validar sessão' });
+    }
 }
 
 // ==================================================
-// MIDDLEWARE: token opcional (não exige login)
+// MIDDLEWARE: token opcional
 // ==================================================
-function optionalAuth(req, res, next) {
+async function optionalAuth(req, res, next) {
     const authHeader = req.headers.authorization;
 
     if (authHeader && authHeader.startsWith('Bearer ')) {
         const token = authHeader.substring(7);
         try {
             const decoded = jwt.verify(token, JWT_SECRET);
-            req.userId = decoded.id;
-            req.userEmail = decoded.email;
-            req.token = token;
+
+            // ✅ Verifica se usuário existe
+            const result = await pool.query(
+                'SELECT id FROM users WHERE id = $1 AND is_active = true',
+                [decoded.id]
+            );
+
+            if (result.rows.length > 0) {
+                req.userId = decoded.id;
+                req.userEmail = decoded.email;
+                req.token = token;
+            }
         } catch (error) {
-            // Silenciosamente ignora token inválido
+            // Ignora silenciosamente
         }
     }
     next();
 }
 
-// ==================================================
-// GERAR TOKEN
-// ==================================================
 function generateToken(user) {
     return jwt.sign(
         { id: user.id, email: user.email },

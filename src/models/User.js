@@ -154,7 +154,31 @@ const User = {
     // ==================================================
     async deleteSession(token) {
         await pool.query('DELETE FROM user_sessions WHERE token = $1', [token]);
+    },
+
+    // ==================================================
+    // SOFT DELETE (desativa conta)
+    // ==================================================
+    async softDelete(id) {
+        const query = `
+            UPDATE users
+            SET is_active = FALSE, updated_at = CURRENT_TIMESTAMP
+            WHERE id = $1
+            RETURNING id, email
+        `;
+        const result = await pool.query(query, [id]);
+        return result.rows[0] || null;
+    },
+
+    // ==================================================
+    // DELETE PERMANENTE (para o futuro)
+    // ==================================================
+    async hardDelete(id) {
+        const query = 'DELETE FROM users WHERE id = $1 RETURNING id';
+        const result = await pool.query(query, [id]);
+        return result.rows[0] || null;
     }
+
 };
 
 module.exports = User;

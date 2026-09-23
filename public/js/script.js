@@ -664,97 +664,281 @@ newsletterForm?.addEventListener('submit', function(e) {
 });
 
 // ======================================================
-// PRODUTOS EM DESTAQUE (só na home)
+// PRODUTOS EM DESTAQUE (CARROSSEL)
 // ======================================================
 async function loadFeaturedProducts() {
-    const container = document.querySelector('.featured-products');
-    if (!container) return;
+    const track = document.getElementById('featuredTrack');
+    const dotsContainer = document.getElementById('featuredDots');
+    if (!track) return;
 
-    container.querySelectorAll('.products-grid, .error-message, .loading-message').forEach(el => el.remove());
-    Array.from(container.childNodes).forEach(node => {
-        if (node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== '') node.remove();
-    });
-
-    const loading = document.createElement('div');
-    loading.className = 'loading-message';
-    loading.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Carregando produtos...';
-    container.appendChild(loading);
+    // Estado limpo
+    track.innerHTML = '<div class="featured-loading"><i class="fas fa-spinner fa-spin"></i><span>Carregando produtos...</span></div>';
+    if (dotsContainer) dotsContainer.innerHTML = '';
 
     try {
-        const response = await fetch('/api/products?featured=true&limit=8');
+        const response = await fetch('/api/products?featured=true&limit=20');
         if (!response.ok) throw new Error('Erro ao buscar produtos');
 
         const data = await response.json();
         const products = data.products || [];
 
-        loading.remove();
-
         if (products.length === 0) {
-            const empty = document.createElement('div');
-            empty.className = 'error-message';
-            empty.innerHTML = `
-                <i class="fas fa-box-open"></i>
-                <div><h3>Nenhum produto em destaque</h3><p>Em breve novidades por aqui.</p></div>
+            track.innerHTML = `
+                <div class="featured-error">
+                    <i class="fas fa-box-open"></i>
+                    <h3>Nenhum produto em destaque</h3>
+                    <p>Em breve novidades por aqui.</p>
+                </div>
             `;
-            container.appendChild(empty);
             return;
         }
 
-        const grid = document.createElement('div');
-        grid.className = 'products-grid';
+        // Renderiza os cards
+        track.innerHTML = products.map(product => buildFeaturedCard(product)).join('');
 
-        grid.innerHTML = products.map(product => {
-            const hasImage = product.images && product.images.length > 0 && product.images[0].url;
-            const imageHtml = hasImage
-                ? `<img class="product-image" src="${product.images[0].url}" alt="${Utils.escapeHtml(product.name)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'product-image-placeholder\\'><i class=\\'fas fa-image\\'></i></div>'">`
-                : `<div class="product-image-placeholder"><i class="fas fa-image"></i></div>`;
-
-            const discountBadge = product.discount_percent > 0
-                ? `<span class="product-badge discount">-${parseFloat(product.discount_percent).toFixed(0)}%</span>`
-                : (product.is_new ? `<span class="product-badge">Novo</span>` : '');
-
-            const originalPrice = parseFloat(product.price);
-            const currentPrice = product.discount_percent > 0
-                ? originalPrice * (1 - product.discount_percent / 100)
-                : originalPrice;
-
-            const oldPriceHtml = product.discount_percent > 0
-                ? `<span class="product-old-price">R$ ${Utils.formatPrice(originalPrice)}</span>`
-                : '';
-
-            return `
-                <article class="product-card">
-                    <div class="product-image-wrapper">
-                        ${discountBadge}
-                        ${imageHtml}
-                    </div>
-                    <div class="product-info">
-                        <h3 class="product-name">${Utils.escapeHtml(product.name)}</h3>
-                        ${product.short_description ? `<p class="product-short-desc">${Utils.escapeHtml(product.short_description)}</p>` : ''}
-                        <div class="product-price-wrapper">
-                            <span class="product-price">R$ ${Utils.formatPrice(currentPrice)}</span>
-                            ${oldPriceHtml}
-                        </div>
-                        <a href="/produto/${product.slug}" class="product-btn">Ver Produto</a>
-                    </div>
-                </article>
-            `;
-        }).join('');
-
-        container.appendChild(grid);
+        // Inicializa o carrossel
+        FeaturedCarousel.init({
+            track,
+            dotsContainer,
+            prevBtn: document.querySelector('.featured-prev'),
+            nextBtn: document.querySelector('.featured-next')
+        });
     } catch (error) {
         console.error('Erro ao carregar produtos em destaque:', error);
-        loading.remove();
-
-        const errorMsg = document.createElement('div');
-        errorMsg.className = 'error-message';
-        errorMsg.innerHTML = `
-            <i class="fas fa-exclamation-triangle"></i>
-            <div><h3>Ops! Produtos indisponíveis</h3><p>Não foi possível carregar os produtos. Tente novamente.</p></div>
+        track.innerHTML = `
+            <div class="featured-error">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>Ops! Produtos indisponíveis</h3>
+                <p>Não foi possível carregar os produtos. Tente novamente.</p>
+            </div>
         `;
-        container.appendChild(errorMsg);
     }
 }
+
+// ======================================================
+// CARD DO CARROSSEL DE DESTAQUES
+// ======================================================
+function buildFeaturedCard(product) {
+    const hasImage = product.images && product.images.length > 0 && product.images[0].url;
+    const imageHtml = hasImage
+        ? `<img class="product-image" src="${product.images[0].url}" alt="${Utils.escapeHtml(product.name)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'product-image-placeholder\\'><i class=\\'fas fa-image\\'></i></div>'">`
+        : `<div class="product-image-placeholder"><i class="fas fa-image"></i></div>`;
+
+    const discountBadge = product.discount_percent > 0
+        ? `<span class="product-badge discount">-${parseFloat(product.discount_percent).toFixed(0)}%</span>`
+        : (product.is_new ? `<span class="product-badge">Novo</span>` : '');
+
+    const originalPrice = parseFloat(product.price);
+    const currentPrice = product.discount_percent > 0
+        ? originalPrice * (1 - product.discount_percent / 100)
+        : originalPrice;
+
+    const oldPriceHtml = product.discount_percent > 0
+        ? `<span class="product-old-price">R$ ${Utils.formatPrice(originalPrice)}</span>`
+        : '';
+
+    return `
+        <article class="product-card">
+            <div class="product-image-wrapper">
+                ${discountBadge}
+                ${imageHtml}
+            </div>
+            <div class="product-info">
+                <h3 class="product-name">${Utils.escapeHtml(product.name)}</h3>
+                ${product.short_description ? `<p class="product-short-desc">${Utils.escapeHtml(product.short_description)}</p>` : ''}
+                <div class="product-price-wrapper">
+                    <span class="product-price">R$ ${Utils.formatPrice(currentPrice)}</span>
+                    ${oldPriceHtml}
+                </div>
+                <a href="/produto/${product.slug}" class="product-btn">Ver Produto</a>
+            </div>
+        </article>
+    `;
+}
+
+// ======================================================
+// CARROSSEL DE DESTAQUES - MÓDULO
+// ======================================================
+const FeaturedCarousel = {
+    track: null,
+    dotsContainer: null,
+    prevBtn: null,
+    nextBtn: null,
+    slides: 0,
+    currentIndex: 0,
+    itemsPerView: 5,
+    maxIndex: 0,
+
+    init({ track, dotsContainer, prevBtn, nextBtn }) {
+        this.track = track;
+        this.dotsContainer = dotsContainer;
+        this.prevBtn = prevBtn;
+        this.nextBtn = nextBtn;
+        this.slides = track.querySelectorAll('.product-card').length;
+        this.currentIndex = 0;
+
+        if (this.slides === 0) return;
+
+        this.calculateItemsPerView();
+        this.calculateMaxIndex();
+        this.renderDots();
+        this.attachEvents();
+        this.update();
+
+        // Recalcula em resize
+        const debouncedResize = Utils.debounce(() => {
+            this.calculateItemsPerView();
+            this.calculateMaxIndex();
+            this.currentIndex = Math.min(this.currentIndex, this.maxIndex);
+            this.renderDots();
+            this.update();
+        }, 200);
+
+        window.addEventListener('resize', debouncedResize);
+    },
+
+    calculateItemsPerView() {
+        const width = window.innerWidth;
+        if (width <= 480) this.itemsPerView = 1;
+        else if (width <= 768) this.itemsPerView = 2;
+        else if (width <= 1024) this.itemsPerView = 3;
+        else if (width <= 1200) this.itemsPerView = 4;
+        else this.itemsPerView = 5;
+    },
+
+    calculateMaxIndex() {
+        this.maxIndex = Math.max(0, this.slides - this.itemsPerView);
+    },
+
+    // Quantidade de "páginas" (dots)
+    get totalPages() {
+        // Se o número de slides for menor que o itemsPerView, só 1 página
+        if (this.slides <= this.itemsPerView) return 1;
+        // Cada dot representa uma posição possível (avanço de 1 card por vez)
+        return this.maxIndex + 1;
+    },
+
+    renderDots() {
+        if (!this.dotsContainer) return;
+        this.dotsContainer.innerHTML = '';
+
+        // Não mostra dots se não há paginação
+        if (this.totalPages <= 1) return;
+
+        for (let i = 0; i < this.totalPages; i++) {
+            const dot = document.createElement('button');
+            dot.className = 'featured-dot';
+            dot.setAttribute('aria-label', `Ir para produto ${i + 1}`);
+            dot.dataset.index = i;
+            dot.addEventListener('click', () => this.goTo(i));
+            this.dotsContainer.appendChild(dot);
+        }
+    },
+
+    attachEvents() {
+        // Setas
+        this.prevBtn?.addEventListener('click', () => this.prev());
+        this.nextBtn?.addEventListener('click', () => this.next());
+
+        // Teclado
+        this.track.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowLeft') this.prev();
+            if (e.key === 'ArrowRight') this.next();
+        });
+
+        // Swipe touch
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        this.track.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, { passive: true });
+
+        this.track.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            const diff = touchStartX - touchEndX;
+            if (Math.abs(diff) > 40) {
+                if (diff > 0) this.next();
+                else this.prev();
+            }
+        });
+
+        // Drag com mouse
+        let isDragging = false;
+        let startX = 0;
+        let currentTranslate = 0;
+
+        this.track.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startX = e.pageX;
+            this.track.style.transition = 'none';
+        });
+
+        this.track.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            currentTranslate = e.pageX - startX;
+        });
+
+        const endDrag = () => {
+            if (!isDragging) return;
+            isDragging = false;
+            this.track.style.transition = '';
+            if (Math.abs(currentTranslate) > 50) {
+                if (currentTranslate < 0) this.next();
+                else this.prev();
+            }
+            currentTranslate = 0;
+        };
+
+        this.track.addEventListener('mouseup', endDrag);
+        this.track.addEventListener('mouseleave', endDrag);
+    },
+
+    goTo(index) {
+        this.currentIndex = Math.max(0, Math.min(index, this.maxIndex));
+        this.update();
+    },
+
+    next() {
+        if (this.currentIndex < this.maxIndex) {
+            this.currentIndex++;
+            this.update();
+        }
+    },
+
+    prev() {
+        if (this.currentIndex > 0) {
+            this.currentIndex--;
+            this.update();
+        }
+    },
+
+    update() {
+        // Calcula o deslocamento
+        const cards = this.track.querySelectorAll('.product-card');
+        if (cards.length === 0) return;
+
+        const card = cards[0];
+        const cardWidth = card.offsetWidth;
+        const gap = parseFloat(getComputedStyle(this.track).gap) || 0;
+        const offset = -(cardWidth + gap) * this.currentIndex;
+
+        this.track.style.transform = `translateX(${offset}px)`;
+
+        // Atualiza dots
+        if (this.dotsContainer) {
+            this.dotsContainer.querySelectorAll('.featured-dot').forEach((dot, i) => {
+                dot.classList.toggle('active', i === this.currentIndex);
+            });
+        }
+
+        // Habilita/desabilita setas
+        if (this.prevBtn) this.prevBtn.disabled = this.currentIndex === 0;
+        if (this.nextBtn) this.nextBtn.disabled = this.currentIndex >= this.maxIndex;
+
+        Utils.announce(`Produto ${this.currentIndex + 1} de ${this.track.querySelectorAll('.product-card').length}`);
+    }
+};
 
 // ======================================================
 // MENU PÚBLICO - CATEGORIAS DINÂMICAS (MEGA MENU)
@@ -881,26 +1065,6 @@ customerServiceBtn?.addEventListener('click', () => {
     `;
     document.body.appendChild(modal);
     Utils.announce('Atendimento ao cliente aberto');
-});
-
-// ======================================================
-// CARRINHO
-// ======================================================
-const cartBtn = document.querySelector('.cart-btn');
-cartBtn?.addEventListener('click', () => {
-    Utils.announce('Carrinho aberto');
-    const modal = document.createElement('div');
-    modal.className = 'modal active';
-    modal.innerHTML = `
-        <div class="modal-content" style="max-width: 500px;">
-            <button class="close-modal" onclick="this.closest('.modal').remove()">&times;</button>
-            <div class="modal-icon"><i class="fas fa-shopping-bag"></i></div>
-            <h2>Seu Carrinho</h2>
-            <p style="color: var(--gray-500); margin: 1.5rem 0;">Seu carrinho está vazio.</p>
-            <button class="btn btn-primary" onclick="this.closest('.modal').remove()" style="width: 100%;">Continuar Comprando</button>
-        </div>
-    `;
-    document.body.appendChild(modal);
 });
 
 // ======================================================

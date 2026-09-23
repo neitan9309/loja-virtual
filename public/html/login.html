@@ -16,13 +16,52 @@
     <a href="#main-content" class="skip-link">Pular para o conteúdo principal</a>
     <div aria-live="polite" aria-atomic="true" id="announcer" class="sr-only"></div>
 
-    <!-- HEADER SIMPLIFICADO -->
+    <!-- HEADER -->
     <header class="auth-header">
         <a href="/" class="auth-logo">LUXURY</a>
-        <a href="/" class="auth-back"><i class="fas fa-arrow-left"></i> Voltar para a loja</a>
+        <a href="/" class="auth-back"><i class="fas fa-arrow-left"></i> <span>Voltar para a loja</span></a>
     </header>
 
-    <!-- CONTEÚDO -->
+    <!-- BANNER DE VANTAGENS (TOPO) -->
+    <section class="auth-banner">
+        <div class="auth-banner-content">
+            <h2>Bem-vindo à Luxury Store</h2>
+            <p>Cadastre-se e aproveite benefícios exclusivos</p>
+
+            <ul class="auth-benefits">
+                <li>
+                    <div class="benefit-icon"><i class="fas fa-percent"></i></div>
+                    <div class="benefit-text">
+                        <strong>20% OFF</strong>
+                        <span>Na primeira compra</span>
+                    </div>
+                </li>
+                <li>
+                    <div class="benefit-icon"><i class="fas fa-truck"></i></div>
+                    <div class="benefit-text">
+                        <strong>Frete Grátis</strong>
+                        <span>Acima de R$99,90</span>
+                    </div>
+                </li>
+                <li>
+                    <div class="benefit-icon"><i class="fas fa-gift"></i></div>
+                    <div class="benefit-text">
+                        <strong>Cashback 5%</strong>
+                        <span>Em todas as compras</span>
+                    </div>
+                </li>
+                <li>
+                    <div class="benefit-icon"><i class="fas fa-star"></i></div>
+                    <div class="benefit-text">
+                        <strong>Ofertas VIP</strong>
+                        <span>Acesso antecipado</span>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- CONTEÚDO PRINCIPAL -->
     <main id="main-content" class="auth-main">
         <div class="auth-container">
 
@@ -33,7 +72,7 @@
                     <button class="auth-tab" data-tab="register">Criar Conta</button>
                 </div>
 
-                <!-- FORM DE LOGIN -->
+                <!-- LOGIN -->
                 <form class="auth-form active" id="loginForm" data-form="login" novalidate>
                     <h1 class="auth-title">Bem-vindo de volta</h1>
                     <p class="auth-subtitle">Entre com sua conta para continuar</p>
@@ -64,12 +103,11 @@
                     </p>
                 </form>
 
-                <!-- FORM DE REGISTRO -->
+                <!-- REGISTRO -->
                 <form class="auth-form" id="registerForm" data-form="register" novalidate>
                     <h1 class="auth-title">Criar Conta</h1>
                     <p class="auth-subtitle">Preencha os dados para se cadastrar</p>
 
-                    <!-- Dados pessoais -->
                     <fieldset class="auth-fieldset">
                         <legend>Dados Pessoais</legend>
 
@@ -107,7 +145,6 @@
                         </div>
                     </fieldset>
 
-                    <!-- Endereço -->
                     <fieldset class="auth-fieldset">
                         <legend>Endereço</legend>
 
@@ -152,7 +189,6 @@
                         </div>
                     </fieldset>
 
-                    <!-- Acesso -->
                     <fieldset class="auth-fieldset">
                         <legend>Acesso</legend>
 
@@ -190,19 +226,6 @@
                 </form>
 
             </div>
-
-            <!-- LADO DIREITO: apresentação -->
-            <div class="auth-presentation">
-                <h2>Bem-vindo à Luxury</h2>
-                <p>Cadastre-se e ganhe <strong>20% de desconto</strong> na primeira compra.</p>
-                <ul class="auth-benefits">
-                    <li><i class="fas fa-check-circle"></i> Acesso a promoções exclusivas</li>
-                    <li><i class="fas fa-check-circle"></i> Rastreamento de pedidos</li>
-                    <li><i class="fas fa-check-circle"></i> Cashback em todas as compras</li>
-                    <li><i class="fas fa-check-circle"></i> Frete grátis acima de R$99,90</li>
-                </ul>
-            </div>
-
         </div>
     </main>
 

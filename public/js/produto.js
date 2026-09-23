@@ -474,11 +474,16 @@
             });
         },
 
-        addToCart(quantity) {
-            // Placeholder - futuramente integrar com carrinho real
+                async addToCart(quantity) {
             const p = this.product;
-            this.showToast(`"${p.name}" (${quantity}x) adicionado ao carrinho!`, 'success');
-            PageUtils.announce(`${quantity} unidade(s) adicionada(s) ao carrinho`);
+
+            try {
+                await window.LuxuryCart.addToCart(p.id, quantity);
+                this.showToast(`"${p.name}" (${quantity}x) adicionado ao carrinho!`, 'success');
+                PageUtils.announce(`${quantity} unidade(s) adicionada(s) ao carrinho`);
+            } catch (error) {
+                this.showToast(error.data?.error || 'Erro ao adicionar ao carrinho', 'error');
+            }
         },
 
         buyNow(quantity) {

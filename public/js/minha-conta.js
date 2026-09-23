@@ -98,8 +98,7 @@
     const AccountPage = {
         user: null,
 
-        async init() {
-            // Verifica login
+                async init() {
             if (!Utils.getToken()) {
                 window.location.href = '/login';
                 return;
@@ -111,6 +110,7 @@
             this.initMasks();
             this.initCepLookup();
             this.initPasswordToggles();
+            this.initDeleteAccount();   // ✅ NOVO
             this.initLogout();
         },
 
@@ -318,6 +318,95 @@
                     input.type = isPassword ? 'text' : 'password';
                     btn.innerHTML = `<i class="fas fa-eye${isPassword ? '-slash' : ''}"></i>`;
                 });
+            });
+        },
+
+                // ==================================================
+        // EXCLUIR CONTA
+        // ==================================================
+        initDeleteAccount() {
+            const deleteBtn = document.getElementById('deleteAccountBtn');
+            if (!deleteBtn) return;
+
+            deleteBtn.addEventListener('click', () => {
+                this.openDeleteModal();
+            });
+        },
+
+        openDeleteModal() {
+            const modal = document.createElement('div');
+            modal.className = 'danger-modal active';
+            modal.id = 'deleteAccountModal';
+            modal.innerHTML = `
+                <div class="danger-modal-content">
+                    <h2><i class="fas fa-exclamation-triangle"></i> Excluir conta</h2>
+                    <p>Tem certeza que deseja excluir sua conta? Esta ação <strong>não pode ser desfeita</strong>. Todos os seus dados de perfil serão desativados.</p>
+
+                    <div class="form-field">
+                        <label for="deletePassword">Confirme sua senha</label>
+                        <input type="password" id="deletePassword" placeholder="Sua senha atual">
+                    </div>
+
+                    <div class="form-field">
+                        <label for="deleteConfirmation">Digite <strong>EXCLUIR</strong> para confirmar</label>
+                        <input type="text" id="deleteConfirmation" placeholder="EXCLUIR">
+                    </div>
+
+                    <div class="danger-modal-actions">
+                        <button type="button" class="btn-cancel" id="cancelDelete">Cancelar</button>
+                        <button type="button" class="btn-confirm-delete" id="confirmDelete" disabled>
+                            <i class="fas fa-trash-alt"></i> Excluir definitivamente
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            document.body.style.overflow = 'hidden';
+
+            const passwordInput = modal.querySelector('#deletePassword');
+            const confirmInput = modal.querySelector('#deleteConfirmation');
+            const confirmBtn = modal.querySelector('#confirmDelete');
+            const cancelBtn = modal.querySelector('#cancelDelete');
+
+            // Habilita botão só se confirmação estiver correta
+            confirmInput.addEventListener('input', () => {
+                confirmBtn.disabled = confirmInput.value !== 'EXCLUIR';
+            });
+
+            const close = () => {
+                modal.remove();
+                document.body.style.overflow = '';
+            };
+
+            cancelBtn.addEventListener('click', close);
+            modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+
+            confirmBtn.addEventListener('click', async () => {
+                const password = passwordInput.value;
+                const confirmation = confirmInput.value;
+
+                if (!password) {
+                    Utils.feedback('Digite sua senha', 'error');
+                    return;
+                }
+
+                confirmBtn.disabled = true;
+                confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Excluindo...';
+
+                try {
+                    await Utils.request('/users/me', {
+                        method: 'DELETE',
+                        body: JSON.stringify({ password, confirmation })
+                    });
+
+                    Utils.clearSession();
+                    Utils.feedback('Conta excluída. Redirecionando...', 'success');
+                    setTimeout(() => { window.location.href = '/'; }, 1500);
+                } catch (error) {
+                    Utils.feedback(error.data?.error || 'Erro ao excluir conta', 'error');
+                    confirmBtn.disabled = false;
+                    confirmBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Excluir definitivamente';
+                }
             });
         },
 

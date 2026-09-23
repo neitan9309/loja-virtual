@@ -1113,11 +1113,12 @@ body {
 }
 
 /* ======================================================
-   PRODUTOS EM DESTAQUE (HOME)
+   PRODUTOS EM DESTAQUE (HOME - CARROSSEL)
    ====================================================== */
 .featured-products {
     padding: 5rem 0;
-    text-align: center;
+    background: var(--white);
+    overflow: hidden;
 }
 
 .featured-products h2 {
@@ -1126,19 +1127,165 @@ body {
     margin-bottom: 3rem;
     text-transform: uppercase;
     letter-spacing: 2px;
+    text-align: center;
     padding: 0 2rem;
 }
 
-.products-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(240px, 280px));
-    justify-content: center;
-    gap: 1.5rem;
+/* ======================================================
+   CARROSSEL DE DESTAQUES
+   ====================================================== */
+.featured-carousel {
+    position: relative;
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 2rem;
+    padding: 0 4rem;
 }
 
+.featured-viewport {
+    overflow: hidden;
+    width: 100%;
+}
+
+.featured-track {
+    display: flex;
+    gap: 1.5rem;
+    transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    will-change: transform;
+}
+
+/* Cada card ocupa 1/5 da largura disponível (desktop) */
+.featured-track .product-card {
+    flex: 0 0 calc((100% - 4 * 1.5rem) / 5);
+    min-width: 0;
+}
+
+/* Loading state */
+.featured-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 4rem;
+    width: 100%;
+    color: var(--gray-500);
+    font-size: 1rem;
+}
+
+.featured-loading i {
+    color: var(--accent);
+    font-size: 1.4rem;
+}
+
+/* Error state */
+.featured-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 3rem 2rem;
+    width: 100%;
+    gap: 0.75rem;
+    background: var(--gray-100);
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    color: var(--gray-600);
+}
+
+.featured-error i {
+    font-size: 2.5rem;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+}
+
+.featured-error h3 {
+    font-size: 1.1rem;
+    color: var(--gray-800);
+}
+
+/* ======================================================
+   SETAS DO CARROSSEL DE DESTAQUES
+   ====================================================== */
+.featured-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    color: var(--gray-700);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.featured-btn:hover {
+    background: var(--accent);
+    color: var(--white);
+    border-color: var(--accent);
+    transform: translateY(-50%) scale(1.08);
+}
+
+.featured-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    background: var(--white);
+    color: var(--gray-400);
+    border-color: var(--gray-200);
+    transform: translateY(-50%);
+}
+
+.featured-prev {
+    left: 0;
+}
+
+.featured-next {
+    right: 0;
+}
+
+/* ======================================================
+   DOTS DE NAVEGAÇÃO DO CARROSSEL DE DESTAQUES
+   ====================================================== */
+.featured-dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 2.5rem;
+    flex-wrap: wrap;
+}
+
+.featured-dot {
+    width: 8px;
+    height: 8px;
+    border: 1px solid var(--gray-400);
+    background: transparent;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+    padding: 0;
+}
+
+.featured-dot:hover {
+    border-color: var(--accent);
+}
+
+.featured-dot.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    width: 24px;
+    border-radius: 4px;
+}
+
+/* ======================================================
+   PRODUCT CARD (usado no carrossel e em outras telas)
+   ====================================================== */
 .product-card {
     background: var(--white);
     border: 1px solid var(--gray-200);
@@ -1246,6 +1393,7 @@ body {
     gap: 0.5rem;
     margin-top: auto;
     padding-top: 0.5rem;
+    flex-wrap: wrap;
 }
 
 .product-price {
@@ -1282,47 +1430,6 @@ body {
 
 .product-btn:hover {
     background: var(--accent-hover);
-}
-
-.loading-message {
-    text-align: center;
-    padding: 3rem;
-    color: var(--gray-500);
-    font-size: 1rem;
-}
-
-.loading-message i {
-    margin-right: 0.5rem;
-    color: var(--accent);
-}
-
-.error-message {
-    display: flex;
-    align-items: center;
-    gap: 1.5rem;
-    background: var(--gray-100);
-    padding: 2rem;
-    max-width: 600px;
-    margin: 0 auto;
-    border: 1px solid var(--gray-200);
-    text-align: left;
-    border-radius: 8px;
-}
-
-.error-message i {
-    font-size: 2.5rem;
-    color: var(--accent);
-    flex-shrink: 0;
-}
-
-.error-message h3 {
-    margin-bottom: 0.5rem;
-    font-size: 1.1rem;
-}
-
-.error-message p {
-    color: var(--gray-600);
-    margin: 0;
 }
 
 /* ======================================================
@@ -1612,7 +1719,6 @@ body {
     display: block;
 }
 
-/* Título de coluna do mega menu clicável */
 .mega-title a {
     color: inherit;
     text-decoration: none;
@@ -1624,7 +1730,7 @@ body {
 }
 
 /* ======================================================
-   UNIFICAR ESTILO DO DROPDOWN "NOVIDADES"
+   DROPDOWN "NOVIDADES" (unificado com mega menu)
    ====================================================== */
 .dropdown:not([data-category]) .dropdown-content {
     min-width: 220px;
@@ -1664,7 +1770,106 @@ body {
 }
 
 /* ======================================================
-   RESPONSIVO - 768px
+   RESPONSIVO - CARROSSEL DE DESTAQUES
+   ====================================================== */
+
+/* Tablet grande - 4 itens */
+@media (max-width: 1200px) {
+    .featured-track .product-card {
+        flex: 0 0 calc((100% - 3 * 1.5rem) / 4);
+    }
+}
+
+/* Tablet - 3 itens */
+@media (max-width: 1024px) {
+    .featured-carousel {
+        padding: 0 3rem;
+    }
+
+    .featured-track .product-card {
+        flex: 0 0 calc((100% - 2 * 1.5rem) / 3);
+    }
+
+    .featured-btn {
+        width: 42px;
+        height: 42px;
+    }
+}
+
+/* Mobile - 2 itens */
+@media (max-width: 768px) {
+    .featured-products {
+        padding: 3rem 0;
+    }
+
+    .featured-products h2 {
+        margin-bottom: 2rem;
+        padding: 0 1rem;
+    }
+
+    .featured-carousel {
+        padding: 0 1rem;
+    }
+
+    .featured-track {
+        gap: 1rem;
+    }
+
+    .featured-track .product-card {
+        flex: 0 0 calc((100% - 1 * 1rem) / 2);
+    }
+
+    .featured-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 0.85rem;
+    }
+
+    .featured-prev {
+        left: -8px;
+    }
+
+    .featured-next {
+        right: -8px;
+    }
+
+    .featured-dots {
+        margin-top: 1.75rem;
+    }
+}
+
+/* Mobile pequeno - 1 item */
+@media (max-width: 480px) {
+    .featured-carousel {
+        padding: 0;
+    }
+
+    .featured-track {
+        gap: 2rem;
+        padding: 0 1rem;
+    }
+
+    .featured-track .product-card {
+        flex: 0 0 calc((100% - 2rem) / 1);
+    }
+
+    .featured-btn {
+        width: 36px;
+        height: 36px;
+        top: 35%;
+    }
+
+    .featured-prev {
+        left: 4px;
+    }
+
+    .featured-next {
+        right: 4px;
+    }
+}
+
+/* ======================================================
+   RESPONSIVO - 768px (HEADER E GERAL)
    ====================================================== */
 @media (max-width: 768px) {
     .header {
@@ -1937,28 +2142,6 @@ body {
         height: 250px;
     }
 
-    .featured-products {
-        padding: 3rem 0;
-    }
-
-    .products-grid {
-        grid-template-columns: repeat(auto-fit, minmax(160px, 220px));
-        gap: 1rem;
-        padding: 0 1rem;
-    }
-
-    .product-info {
-        padding: 1rem;
-    }
-
-    .product-name {
-        font-size: 0.9rem;
-    }
-
-    .product-price {
-        font-size: 1.1rem;
-    }
-
     .error-message {
         flex-direction: column;
         text-align: center;
@@ -2095,10 +2278,6 @@ body {
     .newsletter-modal-extra p {
         font-size: 0.9rem;
     }
-
-    .products-grid {
-        grid-template-columns: 1fr;
-    }
 }
 
 /* ======================================================
@@ -2110,7 +2289,8 @@ body {
     .carousel-slide,
     .promo-card,
     .modal-content,
-    .modal-icon i {
+    .modal-icon i,
+    .featured-track {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
@@ -2123,8 +2303,7 @@ body {
 @media (min-width: 1400px) {
     .header-container,
     .promo-wrapper,
-    .footer-container,
-    .products-grid {
+    .footer-container {
         max-width: 1320px;
         margin: 0 auto;
     }

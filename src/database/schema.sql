@@ -1,19 +1,22 @@
 -- ======================================================
--- LUXURY STORE - ESTRUTURA DO BANCO DE DADOS (POSTGRESQL)
+-- LUXURY STORE - SCHEMA COMPLETO DO BANCO DE DADOS
 -- ======================================================
--- Este arquivo cria apenas a ESTRUTURA (tabelas, índices, triggers).
--- Para popular dados iniciais, execute: seeds.sql
+-- Este arquivo cria TODA a estrutura do banco:
+--   - Categorias, Marcas, Produtos
+--   - Estoque, Movimentações, Preços
+--   - Promoções
+--   - Usuários e Sessões
+--   - Carrinho de Compras
 --
 -- Uso:
 --   psql -U postgres -d luxury_store -f src/database/schema.sql
---   psql -U postgres -d luxury_store -f src/database/seeds.sql
 -- ======================================================
+
+SET client_encoding = 'UTF8';
 
 -- ======================================================
 -- CATEGORIAS (3 NÍVEIS: raiz > gênero > tipo)
 -- ======================================================
-SET client_encoding = 'UTF8';
-
 CREATE TABLE categories (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100) NOT NULL,
@@ -28,7 +31,7 @@ CREATE TABLE categories (
 );
 
 -- ======================================================
--- SUBCATEGORIAS (legado, mantido para compatibilidade)
+-- SUBCATEGORIAS (legado)
 -- ======================================================
 CREATE TABLE subcategories (
     id SERIAL PRIMARY KEY,
@@ -264,9 +267,6 @@ CREATE TABLE product_bundles (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- ======================================================
--- ITENS DO KIT
--- ======================================================
 CREATE TABLE bundle_products (
     id SERIAL PRIMARY KEY,
     bundle_id INTEGER NOT NULL REFERENCES product_bundles(id) ON DELETE CASCADE,
@@ -287,7 +287,7 @@ CREATE TABLE product_specifications (
 );
 
 -- ======================================================
--- PERGUNTAS SOBRE PRODUTOS
+-- PERGUNTAS E RESPOSTAS
 -- ======================================================
 CREATE TABLE product_questions (
     id SERIAL PRIMARY KEY,
@@ -300,9 +300,6 @@ CREATE TABLE product_questions (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- ======================================================
--- RESPOSTAS
--- ======================================================
 CREATE TABLE product_answers (
     id SERIAL PRIMARY KEY,
     question_id INTEGER NOT NULL REFERENCES product_questions(id) ON DELETE CASCADE,
@@ -311,6 +308,69 @@ CREATE TABLE product_answers (
     is_approved BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ======================================================
+-- USUÁRIOS
+-- ======================================================
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    full_name VARCHAR(150) NOT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    password_hash VARCHAR(255) NOT NULL,
+    birth_date DATE,
+    gender VARCHAR(20) CHECK (gender IN ('masculino', 'feminino', 'outro', 'prefiro_nao_dizer')),
+    phone VARCHAR(20),
+    cpf VARCHAR(14) UNIQUE,
+
+    -- Endereço
+    cep VARCHAR(9),
+    street VARCHAR(150),
+    number VARCHAR(20),
+    complement VARCHAR(100),
+    neighborhood VARCHAR(100),
+    city VARCHAR(100),
+    state VARCHAR(2),
+
+    -- Controle
+    is_active BOOLEAN DEFAULT TRUE,
+    email_verified BOOLEAN DEFAULT FALSE,
+    last_login_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ======================================================
+-- SESSÕES DE USUÁRIO
+-- ======================================================
+CREATE TABLE user_sessions (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    token TEXT NOT NULL,
+    user_agent VARCHAR(255),
+    ip_address VARCHAR(45),
+    expires_at TIMESTAMP NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ======================================================
+-- CARRINHO DE COMPRAS
+-- ======================================================
+CREATE TABLE carts (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE cart_items (
+    id SERIAL PRIMARY KEY,
+    cart_id INTEGER NOT NULL REFERENCES carts(id) ON DELETE CASCADE,
+    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (cart_id, product_id)
 );
 
 -- ======================================================
@@ -357,8 +417,17 @@ CREATE INDEX idx_product_questions_product_id ON product_questions(product_id);
 CREATE INDEX idx_product_questions_user_id ON product_questions(user_id);
 CREATE INDEX idx_product_answers_question_id ON product_answers(question_id);
 
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_cpf ON users(cpf);
+CREATE INDEX idx_user_sessions_user_id ON user_sessions(user_id);
+CREATE INDEX idx_user_sessions_token ON user_sessions(token);
+
+CREATE INDEX idx_carts_user_id ON carts(user_id);
+CREATE INDEX idx_cart_items_cart_id ON cart_items(cart_id);
+CREATE INDEX idx_cart_items_product_id ON cart_items(product_id);
+
 -- ======================================================
--- TRIGGER: atualiza automaticamente updated_at
+-- TRIGGER updated_at
 -- ======================================================
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -375,8 +444,11 @@ CREATE TRIGGER update_subcategories_updated_at BEFORE UPDATE ON subcategories FO
 CREATE TRIGGER update_product_variations_updated_at BEFORE UPDATE ON product_variations FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 CREATE TRIGGER update_promotions_updated_at BEFORE UPDATE ON promotions FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 CREATE TRIGGER update_product_bundles_updated_at BEFORE UPDATE ON product_bundles FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+CREATE TRIGGER update_carts_updated_at BEFORE UPDATE ON carts FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+CREATE TRIGGER update_cart_items_updated_at BEFORE UPDATE ON cart_items FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 
 -- ======================================================
 -- FIM DO SCHEMA
--- Dados iniciais → execute: psql -d luxury_store -f src/database/seeds.sql
+-- Próximo passo: rodar o seeds.sql para popular dados
 -- ======================================================

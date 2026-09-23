@@ -19,5 +19,6 @@ const updateValidation = [
 
 router.put('/me', updateValidation, userController.updateMe);
 router.put('/me/password', userController.changePassword);
+router.delete('/me', userController.deleteMe);
 
 module.exports = router;

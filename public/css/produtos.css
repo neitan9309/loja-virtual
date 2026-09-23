@@ -129,7 +129,8 @@
    ====================================================== */
 .categories-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(240px, 300px));
+    justify-content: center;
     gap: 1.5rem;
     animation: fadeIn 0.4s ease;
 }
@@ -354,7 +355,8 @@
     }
 
     .categories-grid {
-        grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(160px, 200px));
+        justify-content: center;
         gap: 1rem;
     }
 
@@ -396,7 +398,9 @@
 
 @media (max-width: 480px) {
     .categories-grid {
-        grid-template-columns: 1fr 1fr;
+        grid-template-columns: repeat(2, 1fr);
+        max-width: 400px;
+        margin: 0 auto;
     }
 
     .category-card {

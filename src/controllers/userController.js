@@ -61,6 +61,46 @@ const userController = {
             console.error('Erro ao alterar senha:', error);
             res.status(500).json({ error: 'Erro ao alterar senha' });
         }
+    },
+
+        // ==================================================
+    // EXCLUIR PRÓPRIA CONTA (soft delete)
+    // ==================================================
+    async deleteMe(req, res) {
+        try {
+            const { password, confirmation } = req.body;
+
+            if (!password) {
+                return res.status(400).json({ error: 'Senha é obrigatória para excluir a conta' });
+            }
+
+            if (confirmation !== 'EXCLUIR') {
+                return res.status(400).json({ error: 'Digite EXCLUIR para confirmar' });
+            }
+
+            // Verifica senha
+            const user = await User.findById(req.userId);
+            if (!user) {
+                return res.status(404).json({ error: 'Usuário não encontrado' });
+            }
+
+            const fullUser = await User.findByEmail(user.email);
+            const validPassword = await User.verifyPassword(password, fullUser.password_hash);
+
+            if (!validPassword) {
+                return res.status(401).json({ error: 'Senha incorreta' });
+            }
+
+            // Soft delete
+            await User.softDelete(req.userId);
+
+            res.json({
+                message: 'Conta excluída com sucesso. Sentiremos sua falta!'
+            });
+        } catch (error) {
+            console.error('Erro ao excluir conta:', error);
+            res.status(500).json({ error: 'Erro ao excluir conta' });
+        }
     }
 };
 
