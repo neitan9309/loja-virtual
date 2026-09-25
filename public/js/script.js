@@ -1,60 +1,4 @@
 // ======================================================
-// FIX DE SEGURANÇA: Corrige links do menu se estiverem com "#"
-// Deve rodar ANTES de qualquer outra coisa
-// ======================================================
-(function() {
-    'use strict';
-
-    const MENU_LINKS = {
-        'vestuario': '/categoria?category=vestuario',
-        'perfumaria': '/categoria?category=perfumaria',
-        'artigos-esportivos': '/categoria?category=artigos-esportivos'
-    };
-
-    function fixMenuLinks() {
-        // Corrige links das categorias principais
-        document.querySelectorAll('.dropdown[data-category] .nav-link.dropdown-toggle').forEach(link => {
-            const dropdown = link.closest('.dropdown');
-            const category = dropdown?.dataset.category;
-            const correctHref = MENU_LINKS[category];
-            const currentHref = link.getAttribute('href');
-
-            if (correctHref && (currentHref === '#' || currentHref === '' || !currentHref)) {
-                link.setAttribute('href', correctHref);
-                console.log(`🔧 Corrigido: ${category} → ${correctHref}`);
-            }
-        });
-
-        // Corrige "Novidades" (não tem data-category)
-        document.querySelectorAll('.dropdown:not([data-category]) .nav-link.dropdown-toggle').forEach(link => {
-            const label = link.querySelector('.dropdown-label')?.textContent?.trim();
-            const currentHref = link.getAttribute('href');
-
-            if (label === 'Novidades' && (currentHref === '#' || currentHref === '' || !currentHref)) {
-                link.setAttribute('href', '/produtos?filter=featured');
-                console.log('🔧 Corrigido: Novidades → /produtos?filter=featured');
-            }
-        });
-
-        // Remove hash da URL atual (se houver)
-        if (window.location.hash) {
-            const cleanUrl = window.location.href.replace(/#.*$/, '');
-            window.history.replaceState({}, '', cleanUrl);
-        }
-    }
-
-    // Executa ao carregar
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', fixMenuLinks);
-    } else {
-        fixMenuLinks();
-    }
-
-    // Reexecuta após o MegaMenu popular (por segurança)
-    setTimeout(fixMenuLinks, 1500);
-})();
-
-// ======================================================
 // CONFIGURAÇÕES
 // ======================================================
 const CONFIG = {
@@ -198,7 +142,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ======================================================
-// DROPDOWNS - apenas comportamento mobile
+// DROPDOWNS - comportamento do menu mobile
 // ======================================================
 document.querySelectorAll('.dropdown').forEach(dropdown => {
     const toggle = dropdown.querySelector('.dropdown-toggle');
@@ -211,13 +155,9 @@ document.querySelectorAll('.dropdown').forEach(dropdown => {
         const href = toggle.getAttribute('href') || '';
         const isHash = href === '#' || href === '';
 
-        // Desktop: navegador cuida (não previne)
         if (!isMobile) return;
-
-        // Mobile + href real: navega normalmente (não previne)
         if (!isHash) return;
 
-        // Mobile + href '#': abre/fecha submenu
         e.preventDefault();
         e.stopPropagation();
 
@@ -240,10 +180,8 @@ document.querySelectorAll('.dropdown').forEach(dropdown => {
         }
     });
 
-    // Fecha menu mobile ao clicar em links
     dropdown.querySelectorAll('.dropdown-content a, .mega-list a').forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.stopPropagation();
+        link.addEventListener('click', () => {
             if (window.innerWidth <= CONFIG.promo.mobileBreakpoint) {
                 closeMenu();
             }
@@ -671,7 +609,6 @@ async function loadFeaturedProducts() {
     const dotsContainer = document.getElementById('featuredDots');
     if (!track) return;
 
-    // Estado limpo
     track.innerHTML = '<div class="featured-loading"><i class="fas fa-spinner fa-spin"></i><span>Carregando produtos...</span></div>';
     if (dotsContainer) dotsContainer.innerHTML = '';
 
@@ -693,10 +630,8 @@ async function loadFeaturedProducts() {
             return;
         }
 
-        // Renderiza os cards
         track.innerHTML = products.map(product => buildFeaturedCard(product)).join('');
 
-        // Inicializa o carrossel
         FeaturedCarousel.init({
             track,
             dotsContainer,
@@ -715,9 +650,6 @@ async function loadFeaturedProducts() {
     }
 }
 
-// ======================================================
-// CARD DO CARROSSEL DE DESTAQUES
-// ======================================================
 function buildFeaturedCard(product) {
     const hasImage = product.images && product.images.length > 0 && product.images[0].url;
     const imageHtml = hasImage
@@ -760,14 +692,8 @@ function buildFeaturedCard(product) {
 // CARROSSEL DE DESTAQUES - MÓDULO
 // ======================================================
 const FeaturedCarousel = {
-    track: null,
-    dotsContainer: null,
-    prevBtn: null,
-    nextBtn: null,
-    slides: 0,
-    currentIndex: 0,
-    itemsPerView: 5,
-    maxIndex: 0,
+    track: null, dotsContainer: null, prevBtn: null, nextBtn: null,
+    slides: 0, currentIndex: 0, itemsPerView: 5, maxIndex: 0,
 
     init({ track, dotsContainer, prevBtn, nextBtn }) {
         this.track = track;
@@ -785,7 +711,6 @@ const FeaturedCarousel = {
         this.attachEvents();
         this.update();
 
-        // Recalcula em resize
         const debouncedResize = Utils.debounce(() => {
             this.calculateItemsPerView();
             this.calculateMaxIndex();
@@ -810,19 +735,14 @@ const FeaturedCarousel = {
         this.maxIndex = Math.max(0, this.slides - this.itemsPerView);
     },
 
-    // Quantidade de "páginas" (dots)
     get totalPages() {
-        // Se o número de slides for menor que o itemsPerView, só 1 página
         if (this.slides <= this.itemsPerView) return 1;
-        // Cada dot representa uma posição possível (avanço de 1 card por vez)
         return this.maxIndex + 1;
     },
 
     renderDots() {
         if (!this.dotsContainer) return;
         this.dotsContainer.innerHTML = '';
-
-        // Não mostra dots se não há paginação
         if (this.totalPages <= 1) return;
 
         for (let i = 0; i < this.totalPages; i++) {
@@ -836,17 +756,9 @@ const FeaturedCarousel = {
     },
 
     attachEvents() {
-        // Setas
         this.prevBtn?.addEventListener('click', () => this.prev());
         this.nextBtn?.addEventListener('click', () => this.next());
 
-        // Teclado
-        this.track.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowLeft') this.prev();
-            if (e.key === 'ArrowRight') this.next();
-        });
-
-        // Swipe touch
         let touchStartX = 0;
         let touchEndX = 0;
 
@@ -862,36 +774,6 @@ const FeaturedCarousel = {
                 else this.prev();
             }
         });
-
-        // Drag com mouse
-        let isDragging = false;
-        let startX = 0;
-        let currentTranslate = 0;
-
-        this.track.addEventListener('mousedown', (e) => {
-            isDragging = true;
-            startX = e.pageX;
-            this.track.style.transition = 'none';
-        });
-
-        this.track.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            currentTranslate = e.pageX - startX;
-        });
-
-        const endDrag = () => {
-            if (!isDragging) return;
-            isDragging = false;
-            this.track.style.transition = '';
-            if (Math.abs(currentTranslate) > 50) {
-                if (currentTranslate < 0) this.next();
-                else this.prev();
-            }
-            currentTranslate = 0;
-        };
-
-        this.track.addEventListener('mouseup', endDrag);
-        this.track.addEventListener('mouseleave', endDrag);
     },
 
     goTo(index) {
@@ -914,7 +796,6 @@ const FeaturedCarousel = {
     },
 
     update() {
-        // Calcula o deslocamento
         const cards = this.track.querySelectorAll('.product-card');
         if (cards.length === 0) return;
 
@@ -925,23 +806,84 @@ const FeaturedCarousel = {
 
         this.track.style.transform = `translateX(${offset}px)`;
 
-        // Atualiza dots
         if (this.dotsContainer) {
             this.dotsContainer.querySelectorAll('.featured-dot').forEach((dot, i) => {
                 dot.classList.toggle('active', i === this.currentIndex);
             });
         }
 
-        // Habilita/desabilita setas
         if (this.prevBtn) this.prevBtn.disabled = this.currentIndex === 0;
         if (this.nextBtn) this.nextBtn.disabled = this.currentIndex >= this.maxIndex;
-
-        Utils.announce(`Produto ${this.currentIndex + 1} de ${this.track.querySelectorAll('.product-card').length}`);
     }
 };
 
 // ======================================================
-// MENU PÚBLICO - CATEGORIAS DINÂMICAS (MEGA MENU)
+// CATEGORIAS NA HOME
+// ======================================================
+const HomeCategories = {
+    ICONS: {
+        'vestuario': 'fa-tshirt',
+        'perfumaria': 'fa-spray-can',
+        'artigos-esportivos': 'fa-running'
+    },
+
+    async init() {
+        const grid = document.getElementById('homeCategoriesGrid');
+        if (!grid) return;
+
+        try {
+            const response = await fetch('/api/categories/tree-full');
+            if (!response.ok) throw new Error('Erro ao buscar categorias');
+
+            const categories = await response.json();
+
+            if (!categories || categories.length === 0) {
+                grid.innerHTML = `
+                    <div class="home-categories-error">
+                        <i class="fas fa-box-open"></i>
+                        <p>Nenhuma categoria disponível</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = categories.map(cat => this.buildCard(cat)).join('');
+        } catch (error) {
+            console.error('Erro ao carregar categorias da home:', error);
+            grid.innerHTML = `
+                <div class="home-categories-error">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <p>Erro ao carregar categorias</p>
+                </div>
+            `;
+        }
+    },
+
+    buildCard(category) {
+        const icon = this.ICONS[category.slug] || 'fa-tag';
+        const childrenCount = category.children?.length || 0;
+        const countLabel = childrenCount === 1
+            ? '1 subcategoria'
+            : `${childrenCount} subcategorias`;
+
+        return `
+            <a href="/categoria?category=${category.slug}" class="category-card" aria-label="Ver ${Utils.escapeHtml(category.name)}">
+                <div class="category-card-icon">
+                    <i class="fas ${icon}"></i>
+                </div>
+                <div class="category-card-name">${Utils.escapeHtml(category.name)}</div>
+                ${category.description ? `<div class="category-card-description">${Utils.escapeHtml(category.description)}</div>` : ''}
+                <div class="category-card-count">${countLabel}</div>
+                <div class="category-card-arrow">
+                    <i class="fas fa-arrow-right"></i> Escolher
+                </div>
+            </a>
+        `;
+    }
+};
+
+// ======================================================
+// MEGA MENU (Categorias dinâmicas)
 // ======================================================
 const MegaMenu = {
     async init() {
@@ -955,7 +897,6 @@ const MegaMenu = {
                 try {
                     const slugRoot = category.slug;
                     const dropdown = document.querySelector(`.dropdown[data-category="${slugRoot}"]`);
-
                     if (!dropdown) return;
 
                     const content = dropdown.querySelector('.dropdown-content');
@@ -1021,27 +962,284 @@ const MegaMenu = {
 };
 
 // ======================================================
-// ÍCONE DE USUÁRIO (login / minha conta)
+// MODAL DE BUSCA
 // ======================================================
-(function() {
-    'use strict';
+const SearchModal = {
+    modal: null,
+    input: null,
+    resultsEl: null,
+    debounceTimer: null,
+    lastQuery: '',
+    limit: 8,
 
-    const accountBtn = document.getElementById('accountBtn') ||
-                       document.querySelector('.icon-btn[aria-label*="Login"]') ||
-                       document.querySelector('.icon-btn[aria-label*="Minha conta"]');
+    init() {
+        const searchBtn = document.getElementById('searchBtn');
+        if (!searchBtn) return;
 
-    if (!accountBtn) return;
+        this.buildModal();
 
-    accountBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        const token = localStorage.getItem('luxury_token');
-        if (token) {
-            window.location.href = '/minha-conta';
-        } else {
-            window.location.href = '/login';
+        searchBtn.addEventListener('click', () => this.open());
+
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                this.open();
+            } else if (e.key === '/' && !this.isInputFocused()) {
+                e.preventDefault();
+                this.open();
+            } else if (e.key === 'Escape' && this.modal.classList.contains('active')) {
+                this.close();
+            }
+        });
+    },
+
+    isInputFocused() {
+        const tag = document.activeElement?.tagName?.toLowerCase();
+        return tag === 'input' || tag === 'textarea' || tag === 'select';
+    },
+
+    buildModal() {
+        this.modal = document.createElement('div');
+        this.modal.className = 'search-modal';
+        this.modal.id = 'searchModal';
+        this.modal.setAttribute('role', 'dialog');
+        this.modal.setAttribute('aria-modal', 'true');
+        this.modal.setAttribute('aria-label', 'Buscar produtos');
+
+        this.modal.innerHTML = `
+            <div class="search-modal-backdrop"></div>
+            <div class="search-modal-content">
+                <button class="search-modal-close" id="closeSearchModal" aria-label="Fechar busca">
+                    <i class="fas fa-times"></i>
+                </button>
+
+                <div class="search-modal-header">
+                    <div class="search-modal-input-wrapper">
+                        <i class="fas fa-search"></i>
+                        <input 
+                            type="text" 
+                            id="searchModalInput" 
+                            class="search-modal-input" 
+                            placeholder="Buscar por nome ou descrição do produto..."
+                            autocomplete="off"
+                            aria-label="Campo de busca"
+                        >
+                        <button class="search-modal-clear" id="searchModalClear" aria-label="Limpar busca" style="display:none;">
+                            <i class="fas fa-times-circle"></i>
+                        </button>
+                    </div>
+                    <p class="search-modal-hint">
+                        <i class="fas fa-lightbulb"></i> Dica: use <kbd>Ctrl</kbd> + <kbd>K</kbd> para abrir a busca de qualquer lugar
+                    </p>
+                </div>
+
+                <div class="search-modal-results" id="searchModalResults">
+                    <div class="search-modal-empty">
+                        <i class="fas fa-search"></i>
+                        <h3>O que você está procurando?</h3>
+                        <p>Digite o nome do produto para começar</p>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(this.modal);
+
+        this.input = this.modal.querySelector('#searchModalInput');
+        this.resultsEl = this.modal.querySelector('#searchModalResults');
+        const closeBtn = this.modal.querySelector('#closeSearchModal');
+        const clearBtn = this.modal.querySelector('#searchModalClear');
+        const backdrop = this.modal.querySelector('.search-modal-backdrop');
+
+        closeBtn.addEventListener('click', () => this.close());
+        backdrop.addEventListener('click', () => this.close());
+        clearBtn.addEventListener('click', () => {
+            this.input.value = '';
+            this.input.focus();
+            clearBtn.style.display = 'none';
+            this.showEmpty();
+        });
+
+        this.input.addEventListener('input', (e) => {
+            const val = e.target.value.trim();
+            clearBtn.style.display = val ? 'flex' : 'none';
+            clearTimeout(this.debounceTimer);
+            this.debounceTimer = setTimeout(() => this.search(val), 300);
+        });
+
+        this.input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const val = this.input.value.trim();
+                if (val) {
+                    window.location.href = `/produtos?search=${encodeURIComponent(val)}`;
+                }
+            }
+        });
+    },
+
+    open() {
+        this.modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        setTimeout(() => this.input.focus(), 50);
+    },
+
+    close() {
+        this.modal.classList.remove('active');
+        document.body.style.overflow = '';
+        this.input.value = '';
+        this.modal.querySelector('#searchModalClear').style.display = 'none';
+        this.showEmpty();
+    },
+
+    showEmpty() {
+        this.resultsEl.innerHTML = `
+            <div class="search-modal-empty">
+                <i class="fas fa-search"></i>
+                <h3>O que você está procurando?</h3>
+                <p>Digite o nome do produto para começar</p>
+            </div>
+        `;
+    },
+
+    showLoading() {
+        this.resultsEl.innerHTML = `
+            <div class="search-modal-loading">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>Buscando produtos...</span>
+            </div>
+        `;
+    },
+
+    showNoResults(query) {
+        this.resultsEl.innerHTML = `
+            <div class="search-modal-empty">
+                <i class="fas fa-box-open"></i>
+                <h3>Nenhum produto encontrado</h3>
+                <p>Não encontramos resultados para "<strong>${this.escapeHtml(query)}</strong>"</p>
+                <p class="search-modal-hint-sub">Tente buscar por outra palavra</p>
+            </div>
+        `;
+    },
+
+    showError() {
+        this.resultsEl.innerHTML = `
+            <div class="search-modal-empty">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3>Erro ao buscar produtos</h3>
+                <p>Tente novamente em alguns instantes</p>
+            </div>
+        `;
+    },
+
+    async search(query) {
+        if (!query || query.length < 2) {
+            this.showEmpty();
+            return;
         }
-    });
-})();
+
+        if (query === this.lastQuery) return;
+        this.lastQuery = query;
+
+        this.showLoading();
+
+        try {
+            const response = await fetch(`/api/products?search=${encodeURIComponent(query)}&limit=${this.limit}&sort=name&order=ASC`);
+            if (!response.ok) throw new Error('Erro na busca');
+
+            const data = await response.json();
+            const products = data.products || [];
+
+            if (products.length === 0) {
+                this.showNoResults(query);
+                return;
+            }
+
+            this.renderResults(products, data.pagination);
+        } catch (error) {
+            console.error('Erro ao buscar:', error);
+            this.showError();
+        }
+    },
+
+    renderResults(products, pagination) {
+        const itemsHtml = products.map(p => {
+            const hasImage = p.images && p.images.length > 0 && p.images[0].url;
+            const imageHtml = hasImage
+                ? `<img src="${p.images[0].url}" alt="${this.escapeHtml(p.name)}" onerror="this.parentElement.innerHTML='<i class=\\'fas fa-image\\'></i>'">`
+                : `<i class="fas fa-image"></i>`;
+
+            const category = p.category_name || '';
+            const brand = p.brand_name ? ` · ${this.escapeHtml(p.brand_name)}` : '';
+
+            const originalPrice = parseFloat(p.price);
+            const discount = parseFloat(p.discount_percent || 0);
+            const currentPrice = discount > 0
+                ? originalPrice * (1 - discount / 100)
+                : originalPrice;
+
+            const discountBadge = discount > 0
+                ? `<span class="search-result-discount">-${discount.toFixed(0)}%</span>`
+                : '';
+
+            const oldPrice = discount > 0
+                ? `<span class="search-result-old-price">R$ ${this.formatPrice(originalPrice)}</span>`
+                : '';
+
+            return `
+                <a href="/produto/${p.slug}" class="search-result-card">
+                    <div class="search-result-image">
+                        ${imageHtml}
+                    </div>
+                    <div class="search-result-info">
+                        <h4 class="search-result-name">${this.escapeHtml(p.name)}</h4>
+                        <p class="search-result-category">${this.escapeHtml(category)}${brand}</p>
+                        <div class="search-result-price-row">
+                            ${discountBadge}
+                            <span class="search-result-price">R$ ${this.formatPrice(currentPrice)}</span>
+                            ${oldPrice}
+                        </div>
+                    </div>
+                    <i class="fas fa-arrow-right search-result-arrow"></i>
+                </a>
+            `;
+        }).join('');
+
+        const total = pagination?.total || products.length;
+        const hasMore = total > products.length;
+
+        const footerHtml = hasMore
+            ? `
+                <div class="search-modal-footer">
+                    <a href="/produtos?search=${encodeURIComponent(this.lastQuery)}" class="search-modal-view-all">
+                        Ver todos os ${total} resultados
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            `
+            : '';
+
+        this.resultsEl.innerHTML = `
+            <div class="search-modal-count">
+                <strong>${total}</strong> ${total === 1 ? 'resultado' : 'resultados'} para "${this.escapeHtml(this.lastQuery)}"
+            </div>
+            <div class="search-modal-list">
+                ${itemsHtml}
+            </div>
+            ${footerHtml}
+        `;
+    },
+
+    formatPrice(value) {
+        return parseFloat(value).toFixed(2).replace('.', ',');
+    },
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text || '';
+        return div.innerHTML;
+    }
+};
 
 // ======================================================
 // ATENDIMENTO AO CLIENTE
@@ -1073,5 +1271,7 @@ customerServiceBtn?.addEventListener('click', () => {
 document.addEventListener('DOMContentLoaded', () => {
     loadFeaturedProducts();
     MegaMenu.init();
+    SearchModal.init();
+    HomeCategories.init();   // ← NOVO
     console.log('✅ Luxury Store - Sistema carregado com sucesso!');
 });

@@ -79,6 +79,7 @@
         currentCategory: null,
         categoryPath: [],
         filter: null,
+        searchQuery: null,
 
         async init() {
             this.parseQueryString();
@@ -90,6 +91,7 @@
             const params = new URLSearchParams(window.location.search);
             this.currentCategory = params.get('category') || null;
             this.filter = params.get('filter') || null;
+            this.searchQuery = params.get('search') || null;
         },
 
         async loadCategoryTree() {
@@ -119,6 +121,11 @@
             if (!container) return;
 
             container.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><span>Carregando...</span></div>';
+
+            // ✅ Busca por texto tem prioridade
+            if (this.searchQuery && !this.currentCategory && !this.filter) {
+                return this.renderSearchResults();
+            }
 
             if (this.filter && !this.currentCategory) {
                 return this.renderFilteredProducts();
@@ -157,7 +164,6 @@
         },
 
         renderCategoryChildren(category) {
-            // ✅ Breadcrumb com URLs clicáveis para todas as categorias intermediárias
             const breadcrumbItems = [{ name: 'Início', url: '/' }];
             this.categoryPath.forEach((item, idx) => {
                 const isLast = idx === this.categoryPath.length - 1;
@@ -206,7 +212,6 @@
         },
 
         async renderProductsOfCategory(category) {
-            // ✅ Breadcrumb com URLs clicáveis
             const breadcrumbItems = [{ name: 'Início', url: '/' }];
             this.categoryPath.forEach((item, idx) => {
                 const isLast = idx === this.categoryPath.length - 1;
@@ -261,8 +266,8 @@
         async renderFilteredProducts() {
             const filterLabels = {
                 'new': { title: 'Lançamentos', subtitle: 'Os produtos mais recentes da coleção' },
-                'best_seller': { title: 'Mais Vendidos', subtitle: 'Os favoritos dos nossos clientes' },
-                'featured': { title: 'Em Promoção', subtitle: 'Aproveite os melhores descontos' }
+                'best_seller': { title: 'Mais Vendidos', subtitle: 'Os produtos com maior número de vendas' },
+                'featured': { title: 'Em Promoção', subtitle: 'Produtos com desconto ativo' }
             };
 
             const label = filterLabels[this.filter] || { title: 'Produtos', subtitle: 'Confira nossa coleção' };
@@ -278,9 +283,9 @@
 
             try {
                 let url = '/products?limit=100';
-                if (this.filter === 'new') url += '&new=true';
-                if (this.filter === 'best_seller') url += '&best_seller=true';
-                if (this.filter === 'featured') url += '&featured=true';
+                if (this.filter === 'new') url += '&new=true&sort=created_at&order=DESC';
+                if (this.filter === 'best_seller') url += '&best_seller=true&sort=sales_count&order=DESC';
+                if (this.filter === 'featured') url += '&on_sale=true&sort=discount_percent&order=DESC';
 
                 const data = await PageAPI.get(url);
                 const products = data.products || [];
@@ -308,6 +313,52 @@
                     <div class="empty-state">
                         <i class="fas fa-exclamation-triangle"></i>
                         <h3>Erro ao carregar produtos</h3>
+                        <p>Tente novamente em alguns instantes.</p>
+                    </div>
+                `;
+            }
+        },
+
+        async renderSearchResults() {
+            const query = this.searchQuery;
+
+            this.updateBreadcrumb([
+                { name: 'Início', url: '/' },
+                { name: `Busca: "${query}"`, url: null }
+            ]);
+            this.updatePageHeader(`Resultados para "${query}"`, 'Produtos encontrados com base na sua busca');
+
+            const container = document.getElementById('contentContainer');
+            container.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><span>Buscando...</span></div>';
+
+            try {
+                const data = await PageAPI.get(`/products?search=${encodeURIComponent(query)}&limit=100`);
+                const products = data.products || [];
+
+                container.innerHTML = '';
+
+                if (products.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fas fa-search"></i>
+                            <h3>Nenhum produto encontrado</h3>
+                            <p>Não encontramos resultados para "<strong>${PageUtils.escapeHtml(query)}</strong>".</p>
+                            <a href="/produtos" class="btn btn-primary" style="margin-top: 1rem;">Ver todos os produtos</a>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const grid = document.createElement('div');
+                grid.className = 'products-grid-page';
+                grid.innerHTML = products.map(p => this.buildProductCard(p)).join('');
+                container.appendChild(grid);
+            } catch (error) {
+                console.error('Erro ao buscar produtos:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Erro ao buscar produtos</h3>
                         <p>Tente novamente em alguns instantes.</p>
                     </div>
                 `;
@@ -381,21 +432,15 @@
             items.forEach((item, index) => {
                 const isLast = index === items.length - 1;
 
-                // Último item: sempre sem link (página atual)
                 if (isLast) {
                     parts.push(`<span class="current">${PageUtils.escapeHtml(item.name)}</span>`);
-                }
-                // Itens intermediários com URL: viram link clicável
-                else if (item.url) {
+                } else if (item.url) {
                     const icon = index === 0 ? '<i class="fas fa-home"></i>' : '';
                     parts.push(`<a href="${item.url}">${icon}<span>${PageUtils.escapeHtml(item.name)}</span></a>`);
-                }
-                // Itens intermediários sem URL: só texto
-                else {
+                } else {
                     parts.push(`<span>${PageUtils.escapeHtml(item.name)}</span>`);
                 }
 
-                // Separador (exceto no último)
                 if (!isLast) {
                     parts.push('<i class="fas fa-chevron-right separator"></i>');
                 }

@@ -1,13 +1,21 @@
-const Product = require('./Product');
-const Category = require('./Category');
+// ======================================================
+// src/models/index.js
+// Agregador de models
+// ======================================================
 const Brand = require('./Brand');
-const Promotion = require('./Promotion');
+const Cart = require('./Cart');
+const Category = require('./Category');
 const Inventory = require('./Inventory');
+const Product = require('./Product');
+const Promotion = require('./Promotion');
+const User = require('./User');
 
 module.exports = {
-    Product,
-    Category,
     Brand,
+    Cart,
+    Category,
+    Inventory,
+    Product,
     Promotion,
-    Inventory
+    User,
 };

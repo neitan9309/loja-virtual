@@ -1,13 +1,27 @@
-const productController = require('./productController');
-const categoryController = require('./categoryController');
+// ======================================================
+// src/controllers/index.js
+// Agregador de controllers
+// ======================================================
+const authController = require('./authController');
 const brandController = require('./brandController');
-const promotionController = require('./promotionController');
+const cartController = require('./cartController');
+const categoryController = require('./categoryController');
+const cepController = require('./cepController');
 const inventoryController = require('./inventoryController');
+const productController = require('./productController');
+const promotionController = require('./promotionController');
+const uploadController = require('./uploadController');
+const userController = require('./userController');
 
 module.exports = {
-    productController,
-    categoryController,
+    authController,
     brandController,
+    cartController,
+    categoryController,
+    cepController,
+    inventoryController,
+    productController,
     promotionController,
-    inventoryController
+    uploadController,
+    userController,
 };

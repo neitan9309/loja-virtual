@@ -9,7 +9,8 @@ const inventoryRoutes = require('./inventory');
 const authRoutes = require('./auth');
 const userRoutes = require('./users');
 const cepRoutes = require('./cep');
-const cartRoutes = require('./cart');   // ✅ NOVO
+const cartRoutes = require('./cart');
+const uploadRoutes = require('./upload');
 
 router.use('/products', productRoutes);
 router.use('/categories', categoryRoutes);
@@ -19,6 +20,7 @@ router.use('/inventory', inventoryRoutes);
 router.use('/auth', authRoutes);
 router.use('/users', userRoutes);
 router.use('/cep', cepRoutes);
-router.use('/cart', cartRoutes);        // ✅ NOVO
+router.use('/cart', cartRoutes);
+router.use('/upload', uploadRoutes);
 
 module.exports = router;

@@ -14,7 +14,6 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="dns-prefetch" href="https://images.pexels.com">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- ✅ Novo caminho do CSS -->
     <link rel="stylesheet" href="/css/styles.css">
 
     <script type="application/ld+json">
@@ -91,8 +90,9 @@
             </nav>
 
             <div class="header-icons">
-                <button class="icon-btn" aria-label="Buscar produtos"><i class="fas fa-search"></i></button>
-<button class="icon-btn" id="accountBtn" aria-label="Minha conta / Login"><i class="fas fa-user"></i></button>                <button class="icon-btn cart-btn" aria-label="Carrinho de compras">
+                <button class="icon-btn" id="searchBtn" aria-label="Buscar produtos"><i class="fas fa-search"></i></button>
+                <button class="icon-btn" id="accountBtn" aria-label="Minha conta / Login"><i class="fas fa-user"></i></button>
+                <button class="icon-btn cart-btn" aria-label="Carrinho de compras">
                     <i class="fas fa-shopping-bag"></i>
                     <span class="cart-badge">0</span>
                 </button>
@@ -103,7 +103,6 @@
 
     <!-- ============ MAIN ============ -->
     <main id="main-content">
-        <!-- Hero Carousel -->
         <section class="hero-carousel" id="heroCarousel" aria-label="Destaques da loja">
             <div class="carousel-container">
                 <div class="carousel-slide active" role="tabpanel" aria-label="Slide 1 de 3">
@@ -148,7 +147,6 @@
             </div>
         </section>
 
-        <!-- Promoções -->
         <section class="promo-section animate-on-scroll" aria-label="Promoções e cupons">
             <div class="promo-wrapper">
                 <div class="promo-viewport">
@@ -188,7 +186,17 @@
             </div>
         </section>
 
-        <!-- Produtos em Destaque -->
+        <!-- ============ NOVA SEÇÃO: EXPLORE NOSSAS CATEGORIAS ============ -->
+        <section class="home-categories animate-on-scroll" aria-label="Explore nossas categorias">
+            <h2>Explore Nossas Categorias</h2>
+            <div class="home-categories-grid" id="homeCategoriesGrid">
+                <div class="home-categories-loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>Carregando categorias...</span>
+                </div>
+            </div>
+        </section>
+
         <section class="featured-products animate-on-scroll" aria-label="Produtos em destaque">
             <h2>Produtos em Destaque</h2>
             <div class="featured-carousel" id="featuredCarousel">
@@ -198,7 +206,6 @@
 
                 <div class="featured-viewport">
                     <div class="featured-track" id="featuredTrack">
-                        <!-- Produtos injetados via JS -->
                         <div class="featured-loading">
                             <i class="fas fa-spinner fa-spin"></i>
                             <span>Carregando produtos...</span>
@@ -210,13 +217,10 @@
                     <i class="fas fa-arrow-right"></i>
                 </button>
 
-                <div class="featured-dots" id="featuredDots" role="tablist">
-                    <!-- Dots injetados via JS -->
-                </div>
+                <div class="featured-dots" id="featuredDots" role="tablist"></div>
             </div>
         </section>
 
-        <!-- Vídeo Vimeo -->
         <section class="promo-video-section animate-on-scroll" aria-label="Oferta para novos clientes">
             <div class="promo-video-bg">
                 <iframe src="https://player.vimeo.com/video/76979871?background=1&autoplay=1&loop=1&byline=0&title=0&muted=1&controls=0" allow="autoplay; fullscreen; picture-in-picture; encrypted-media" title="Vídeo de fundo" style="position:absolute;top:50%;left:50%;width:100vw;height:56.25vw;min-height:100vh;min-width:177.77vh;transform:translate(-50%,-50%);border:none;pointer-events:none;" loading="lazy"></iframe>
@@ -238,7 +242,6 @@
             </div>
         </section>
 
-        <!-- Localização -->
         <section class="location-section animate-on-scroll" aria-label="Nossas localizações">
             <div class="location-header">
                 <h2>Nossa Localização</h2>
@@ -335,9 +338,7 @@
         </div>
     </footer>
 
-    <!-- ✅ Novo caminho do JS -->
-     <script src="/js/cart.js"></script>
-<script src="/js/script.js"></script>
+    <script src="/js/cart.js"></script>
     <script src="/js/script.js"></script>
 </body>
 </html>

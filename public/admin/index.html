@@ -7,7 +7,6 @@
     <meta name="robots" content="noindex, nofollow">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- ✅ Caminho absoluto -->
     <link rel="stylesheet" href="/admin/admin.css">
 </head>
 <body>
@@ -25,8 +24,8 @@
                 <span>Início</span>
             </button>
 
-            <div class="nav-group" id="navGroupRegistro">
-                <button class="nav-item nav-item-parent" data-toggle="registro" aria-expanded="false">
+            <div class="nav-group open" id="navGroupRegistro">
+                <button class="nav-item nav-item-parent" data-toggle="registro" aria-expanded="true">
                     <i class="fas fa-plus-circle"></i>
                     <span>Registro</span>
                     <i class="fas fa-chevron-down nav-arrow"></i>
@@ -39,6 +38,10 @@
                     <button class="nav-subitem" data-section="register-movement" data-target="section-register-movement">
                         <i class="fas fa-exchange-alt"></i>
                         <span>Registrar Movimentação</span>
+                    </button>
+                    <button class="nav-subitem" data-section="edit-product" data-target="section-edit-product">
+                        <i class="fas fa-edit"></i>
+                        <span>Alterar Produto</span>
                     </button>
                 </div>
             </div>
@@ -203,11 +206,6 @@
                         </div>
 
                         <div class="form-group">
-                            <label for="prodDiscount">Desconto (%)</label>
-                            <input type="number" id="prodDiscount" name="discount_percent" min="0" max="100" value="0" step="0.01">
-                        </div>
-
-                        <div class="form-group">
                             <label for="prodWeight">Peso (kg)</label>
                             <input type="number" id="prodWeight" name="weight" step="0.01" min="0" placeholder="0,00">
                         </div>
@@ -225,6 +223,44 @@
                         <div class="form-group form-group-full">
                             <label for="prodDesc">Descrição Completa *</label>
                             <textarea id="prodDesc" name="description" rows="4" required placeholder="Descreva o produto em detalhes..."></textarea>
+                        </div>
+
+                        <!-- IMAGEM -->
+                        <div class="form-group form-group-full">
+                            <label>Imagem do Produto</label>
+                            <div class="image-input-wrapper">
+                                <div class="image-preview" id="newProductPreview">
+                                    <i class="fas fa-image"></i>
+                                    <span>Sem imagem</span>
+                                </div>
+                                <div class="image-inputs">
+                                    <div class="form-group">
+                                        <label for="prodImageUrl">URL da Imagem</label>
+                                        <div class="input-with-btn">
+                                            <input type="text" id="prodImageUrl" name="image_url" placeholder="https://exemplo.com/imagem.jpg">
+                                            <button type="button" class="btn btn-secondary btn-sm" id="btnPreviewUrl">
+                                                <i class="fas fa-eye"></i> Pré-visualizar
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label for="prodImageFile">Ou envie um arquivo</label>
+                                        <div class="input-with-btn">
+                                            <input type="file" id="prodImageFile" accept="image/*">
+                                            <button type="button" class="btn btn-secondary btn-sm" id="btnUploadImage">
+                                                <i class="fas fa-upload"></i> Enviar
+                                            </button>
+                                        </div>
+                                        <small class="form-hint" id="uploadStatus"></small>
+                                    </div>
+
+                                    <button type="button" class="btn btn-secondary btn-sm" id="btnClearImage">
+                                        <i class="fas fa-times"></i> Limpar imagem
+                                    </button>
+                                </div>
+                            </div>
+                            <input type="hidden" id="prodImageFinal" name="uploaded_image_url">
                         </div>
 
                         <div class="form-group form-group-full">
@@ -307,10 +343,17 @@
                     <form id="movementForm" class="form-grid">
                         <div class="form-group form-group-full">
                             <label for="movProduct">Produto *</label>
-                            <select id="movProduct" name="product_id" required>
-                                <option value="">Carregando produtos...</option>
-                            </select>
-                            <small class="form-hint" id="movProductStock"></small>
+                            <div class="product-picker">
+                                <div class="product-picker-display" id="movProductDisplay" role="button" tabindex="0">
+                                    <i class="fas fa-box-open"></i>
+                                    <span id="movProductName">Nenhum produto selecionado</span>
+                                    <button type="button" class="product-picker-btn" id="movSelectProductBtn">
+                                        <i class="fas fa-search"></i> Selecionar
+                                    </button>
+                                </div>
+                                <input type="hidden" id="movProduct" name="product_id">
+                                <small class="form-hint" id="movProductStock"></small>
+                            </div>
                         </div>
 
                         <div class="form-group">
@@ -390,13 +433,120 @@
             </div>
         </section>
 
+        <!-- ==================== ALTERAR PRODUTO ==================== -->
+        <section class="section" id="section-edit-product">
+
+            <div id="editSearchView">
+                <header class="section-header">
+                    <div>
+                        <h1>Alterar Produto</h1>
+                        <p class="section-subtitle">Busque um produto para editar</p>
+                    </div>
+                </header>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div class="search-bar">
+                            <div class="search-input-wrapper">
+                                <i class="fas fa-search"></i>
+                                <input type="text" id="editSearchInput" placeholder="Buscar por nome, SKU ou ID...">
+                            </div>
+                            <button class="btn btn-primary" id="editSearchBtn">
+                                <i class="fas fa-search"></i> Buscar
+                            </button>
+                            <button class="btn btn-secondary" id="editViewAllBtn">
+                                <i class="fas fa-list"></i> Ver Todos
+                            </button>
+                        </div>
+                        <div id="editSearchResults" class="search-results">
+                            <p class="search-hint">
+                                <i class="fas fa-info-circle"></i>
+                                Digite o nome, SKU ou ID de um produto e clique em buscar, ou clique em "Ver Todos"
+                            </p>
+                        </div>
+                        <div id="editPagination" class="pagination"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="editProductView" style="display: none;">
+                <header class="section-header">
+                    <div>
+                        <button class="btn btn-secondary" id="backToSearchBtn">
+                            <i class="fas fa-arrow-left"></i> Voltar para busca
+                        </button>
+                        <h1 class="edit-title">Editando: <span id="editProductName">—</span></h1>
+                        <p class="section-subtitle">Altere apenas os campos que desejar</p>
+                    </div>
+                </header>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-image"></i> Imagens</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="image-gallery" id="editImageGallery">
+                            <div class="loading"><i class="fas fa-spinner fa-spin"></i><span>Carregando imagens...</span></div>
+                        </div>
+
+                        <div class="add-image-form">
+                            <h3>Adicionar nova imagem</h3>
+                            <div class="form-grid">
+                                <div class="form-group form-group-full">
+                                    <label for="editNewImageUrl">URL da imagem</label>
+                                    <input type="text" id="editNewImageUrl" placeholder="https://exemplo.com/imagem.jpg">
+                                </div>
+                                <div class="form-group form-group-full">
+                                    <label for="editNewImageFile">Ou envie um arquivo</label>
+                                    <div class="input-with-btn">
+                                        <input type="file" id="editNewImageFile" accept="image/*">
+                                        <button type="button" class="btn btn-secondary btn-sm" id="editUploadImageBtn">
+                                            <i class="fas fa-upload"></i> Enviar
+                                        </button>
+                                    </div>
+                                    <small class="form-hint" id="editUploadStatus"></small>
+                                </div>
+                                <div class="form-actions form-group-full">
+                                    <button type="button" class="btn btn-primary" id="editAddImageBtn">
+                                        <i class="fas fa-plus"></i> Adicionar imagem
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-edit"></i> Atributos</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="field-editor-list" id="fieldEditorList"></div>
+                    </div>
+                </div>
+
+                <div class="danger-zone">
+                    <div class="danger-header">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <div>
+                            <h3>Zona de perigo</h3>
+                            <p>Esta ação não pode ser desfeita facilmente</p>
+                        </div>
+                    </div>
+                    <button type="button" class="btn-danger" id="editDeleteProductBtn">
+                        <i class="fas fa-trash-alt"></i> Deletar produto
+                    </button>
+                </div>
+            </div>
+        </section>
+
     </main>
 
     <!-- ============ TOASTS ============ -->
     <div class="toast-container" id="toastContainer"></div>
 
     <!-- ============ MODAL DE DETALHES ============ -->
-    <div class="modal" id="detailModal" role="dialog" aria-modal="true" aria-labelledby="detailModalTitle">
+    <div class="modal" id="detailModal" role="dialog" aria-modal="true">
         <div class="modal-content modal-detail">
             <button class="close-modal" id="closeDetailModal" aria-label="Fechar modal">&times;</button>
             <div class="detail-loading" id="detailLoading">
@@ -404,6 +554,84 @@
                 <span>Carregando detalhes...</span>
             </div>
             <div class="detail-body" id="detailBody" style="display: none;"></div>
+        </div>
+    </div>
+
+    <!-- ============ MODAL DE SELEÇÃO DE PRODUTOS ============ -->
+    <div class="modal product-picker-modal" id="productPickerModal" role="dialog" aria-modal="true">
+        <div class="modal-content product-picker-content">
+            <button class="close-modal" id="closeProductPicker" aria-label="Fechar modal">&times;</button>
+
+            <div class="product-picker-header">
+                <h2><i class="fas fa-boxes"></i> <span id="pickerTitle">Todos os Produtos</span></h2>
+                <p class="picker-subtitle" id="pickerSubtitle">Use os filtros para encontrar o produto</p>
+            </div>
+
+            <div class="picker-filters-wrapper">
+                <button type="button" class="picker-filters-toggle" id="pickerToggleFilters">
+                    <span><i class="fas fa-filter"></i> Filtros</span>
+                    <span class="picker-filters-badge" id="pickerFiltersBadge" style="display: none;">0</span>
+                    <i class="fas fa-chevron-down picker-filters-arrow"></i>
+                </button>
+
+                <div class="picker-filters" id="pickerFilters" style="display: none;">
+                    <div class="picker-filter-row">
+                        <div class="picker-filter-input">
+                            <label for="pickerSearch">Buscar por nome</label>
+                            <input type="text" id="pickerSearch" placeholder="Digite o nome do produto...">
+                        </div>
+                    </div>
+
+                    <div class="picker-filter-row picker-filter-row-3">
+                        <div class="picker-filter-input">
+                            <label for="pickerMinPrice">Preço mínimo</label>
+                            <input type="number" id="pickerMinPrice" step="0.01" min="0" placeholder="R$ 0,00">
+                        </div>
+                        <div class="picker-filter-input">
+                            <label for="pickerMaxPrice">Preço máximo</label>
+                            <input type="number" id="pickerMaxPrice" step="0.01" min="0" placeholder="R$ 9.999,00">
+                        </div>
+                        <div class="picker-filter-input">
+                            <label for="pickerStock">Estoque</label>
+                            <select id="pickerStock">
+                                <option value="all">Todos</option>
+                                <option value="in">Em estoque</option>
+                                <option value="low">Estoque baixo</option>
+                                <option value="out">Sem estoque</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="picker-filter-row">
+                        <div class="picker-filter-input">
+                            <label for="pickerSort">Ordenar por</label>
+                            <select id="pickerSort">
+                                <option value="date_desc">Data (mais recentes)</option>
+                                <option value="date_asc">Data (mais antigos)</option>
+                                <option value="name_asc">Alfabética (A-Z)</option>
+                                <option value="name_desc">Alfabética (Z-A)</option>
+                                <option value="price_asc">Preço (menor primeiro)</option>
+                                <option value="price_desc">Preço (maior primeiro)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="picker-filter-actions">
+                        <button type="button" class="btn btn-secondary btn-sm" id="pickerClearFilters">
+                            <i class="fas fa-times"></i> Limpar filtros
+                        </button>
+                        <button type="button" class="btn btn-primary btn-sm" id="pickerApplyFilters">
+                            <i class="fas fa-check"></i> Aplicar filtros
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="picker-list" id="pickerList">
+                <div class="loading"><i class="fas fa-spinner fa-spin"></i><span>Carregando...</span></div>
+            </div>
+
+            <div class="picker-pagination" id="pickerPagination"></div>
         </div>
     </div>
 
