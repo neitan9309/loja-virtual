@@ -1,43 +1,19 @@
 // ======================================================
-// PÁGINA DE PRODUTO - Módulo encapsulado em IIFE
+// public/js/produto.js
+// Página de detalhe do produto
+// Depende de: core/utils.js, core/api.js, core/components.js
 // ======================================================
-(function() {
+(function () {
     'use strict';
 
-    const PAGE_CONFIG = { api: { baseUrl: '/api' } };
+    // Aliases pros módulos globais
+    const U = window.LuxuryUtils;
+    const API = window.LuxuryAPI;
+    const C = window.LuxuryComponents;
 
-    const PageUtils = {
-        formatPrice(value) {
-            if (value === null || value === undefined) return '0,00';
-            return parseFloat(value).toFixed(2).replace('.', ',');
-        },
-
-        escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text || '';
-            return div.innerHTML;
-        },
-
-        announce(message) {
-            const announcer = document.getElementById('announcer');
-            if (announcer) announcer.textContent = message;
-        }
-    };
-
-    const PageAPI = {
-        async request(path) {
-            const response = await fetch(`${PAGE_CONFIG.api.baseUrl}${path}`);
-            const data = await response.json().catch(() => ({}));
-            if (!response.ok) {
-                const error = new Error(data.error || `Erro HTTP ${response.status}`);
-                error.status = response.status;
-                throw error;
-            }
-            return data;
-        },
-        get(path) { return this.request(path); }
-    };
-
+    // ======================================================
+    // PÁGINA
+    // ======================================================
     const ProductPage = {
         product: null,
         slug: null,
@@ -56,7 +32,7 @@
 
         async loadProduct() {
             try {
-                const product = await PageAPI.get(`/products/slug/${this.slug}`);
+                const product = await API.get(`/products/slug/${this.slug}`);
                 this.product = product;
                 this.render();
             } catch (error) {
@@ -66,9 +42,13 @@
         },
 
         showNotFound() {
-            document.getElementById('productLoading').style.display = 'none';
-            document.getElementById('productContent').style.display = 'none';
-            document.getElementById('productNotFound').style.display = 'flex';
+            const loading = document.getElementById('productLoading');
+            const content = document.getElementById('productContent');
+            const notFound = document.getElementById('productNotFound');
+
+            if (loading) loading.style.display = 'none';
+            if (content) content.style.display = 'none';
+            if (notFound) notFound.style.display = 'flex';
         },
 
         render() {
@@ -103,21 +83,19 @@
 
             const parts = [`<a href="/"><i class="fas fa-home"></i><span>Início</span></a>`];
 
-            // Categoria (com hierarquia se disponível)
             if (p.category_path && Array.isArray(p.category_path) && p.category_path.length > 0) {
                 const sorted = [...p.category_path].sort((a, b) => a.level - b.level);
-                sorted.forEach(item => {
+                sorted.forEach((item) => {
                     parts.push('<i class="fas fa-chevron-right separator"></i>');
-                    parts.push(`<a href="/categoria?category=${item.slug}">${PageUtils.escapeHtml(item.name)}</a>`);
+                    parts.push(`<a href="/categoria?category=${U.escapeAttr(item.slug)}">${U.escapeHtml(item.name)}</a>`);
                 });
             } else if (p.category_name) {
                 parts.push('<i class="fas fa-chevron-right separator"></i>');
-                parts.push(`<a href="/produtos">${PageUtils.escapeHtml(p.category_name)}</a>`);
+                parts.push(`<a href="/produtos">${U.escapeHtml(p.category_name)}</a>`);
             }
 
-            // Nome do produto (atual)
             parts.push('<i class="fas fa-chevron-right separator"></i>');
-            parts.push(`<span class="current">${PageUtils.escapeHtml(p.name)}</span>`);
+            parts.push(`<span class="current">${U.escapeHtml(p.name)}</span>`);
 
             breadcrumb.innerHTML = parts.join('');
         },
@@ -134,34 +112,29 @@
                 ? p.images
                 : [{ url: 'https://placehold.co/600x600?text=Sem+Imagem', is_primary: true }];
 
-            // Imagem principal (a primária ou a primeira)
-            const primary = images.find(i => i.is_primary) || images[0];
+            const primary = images.find((i) => i.is_primary) || images[0];
             mainImg.src = primary.url;
             mainImg.alt = p.name;
 
-            // Miniaturas
             thumbs.innerHTML = images.map((img, idx) => `
                 <div class="gallery-thumb ${img.is_primary || idx === 0 ? 'active' : ''}" data-index="${idx}">
-                    <img src="${img.url}" alt="${PageUtils.escapeHtml(p.name)} - imagem ${idx + 1}" loading="lazy">
+                    <img src="${U.escapeAttr(img.url)}" alt="${U.escapeAttr(p.name)} - imagem ${idx + 1}" loading="lazy">
                 </div>
             `).join('');
 
-            // Click nas miniaturas
-            thumbs.querySelectorAll('.gallery-thumb').forEach(thumb => {
+            thumbs.querySelectorAll('.gallery-thumb').forEach((thumb) => {
                 thumb.addEventListener('click', () => {
                     const idx = parseInt(thumb.dataset.index);
                     mainImg.src = images[idx].url;
-                    thumbs.querySelectorAll('.gallery-thumb').forEach(t => t.classList.remove('active'));
+                    thumbs.querySelectorAll('.gallery-thumb').forEach((t) => t.classList.remove('active'));
                     thumb.classList.add('active');
                 });
             });
 
-            // Zoom
             document.getElementById('galleryZoom')?.addEventListener('click', () => {
                 this.openZoom(mainImg.src);
             });
 
-            // Click na imagem principal também abre zoom
             mainImg.addEventListener('click', () => {
                 this.openZoom(mainImg.src);
             });
@@ -172,7 +145,7 @@
             modal.className = 'image-zoom-modal active';
             modal.innerHTML = `
                 <button class="image-zoom-close" aria-label="Fechar">&times;</button>
-                <img src="${src}" alt="Imagem ampliada">
+                <img src="${U.escapeAttr(src)}" alt="Imagem ampliada">
             `;
             document.body.appendChild(modal);
             document.body.style.overflow = 'hidden';
@@ -185,24 +158,19 @@
             modal.querySelector('.image-zoom-close').addEventListener('click', close);
             modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
             document.addEventListener('keydown', function escHandler(e) {
-                if (e.key === 'Escape') { close(); document.removeEventListener('keydown', escHandler); }
+                if (e.key === 'Escape') {
+                    close();
+                    document.removeEventListener('keydown', escHandler);
+                }
             });
         },
 
         // ==================================================
-        // BADGES
+        // BADGES (agora usando component)
         // ==================================================
         renderBadges() {
-            const p = this.product;
             const container = document.getElementById('productBadges');
-            const badges = [];
-
-            if (p.is_new) badges.push('<span class="product-badge new"><i class="fas fa-certificate"></i> Novo</span>');
-            if (p.is_best_seller) badges.push('<span class="product-badge bestseller"><i class="fas fa-trophy"></i> Mais Vendido</span>');
-            if (p.is_featured) badges.push('<span class="product-badge featured"><i class="fas fa-star"></i> Destaque</span>');
-            if (p.discount_percent > 0) badges.push(`<span class="product-badge sale">-${parseFloat(p.discount_percent).toFixed(0)}% OFF</span>`);
-
-            container.innerHTML = badges.join('');
+            container.innerHTML = C.renderProductBadges(this.product);
         },
 
         // ==================================================
@@ -213,13 +181,13 @@
             document.getElementById('productTitle').textContent = p.name;
 
             const metaParts = [];
-            if (p.brand_name) metaParts.push(`Marca: <a href="/produtos?brand=${p.brand_slug || ''}">${PageUtils.escapeHtml(p.brand_name)}</a>`);
-            if (p.sku) metaParts.push(`SKU: ${PageUtils.escapeHtml(p.sku)}`);
+            if (p.brand_name) metaParts.push(`Marca: <a href="/produtos?brand=${U.escapeAttr(p.brand_slug || '')}">${U.escapeHtml(p.brand_name)}</a>`);
+            if (p.sku) metaParts.push(`SKU: ${U.escapeHtml(p.sku)}`);
             document.getElementById('productMeta').innerHTML = metaParts.join(' · ');
         },
 
         // ==================================================
-        // AVALIAÇÃO
+        // AVALIAÇÃO (agora usando component)
         // ==================================================
         renderRating() {
             const p = this.product;
@@ -229,14 +197,8 @@
             const rating = parseFloat(p.rating_avg || 0);
             const total = parseInt(p.rating_count || 0);
 
-            let starsHtml = '';
-            for (let i = 1; i <= 5; i++) {
-                if (i <= Math.floor(rating)) starsHtml += '<i class="fas fa-star"></i>';
-                else if (i - 0.5 <= rating) starsHtml += '<i class="fas fa-star-half-alt"></i>';
-                else starsHtml += '<i class="fas fa-star star-empty"></i>';
-            }
+            stars.innerHTML = C.renderStars(rating, { size: 0.95 });
 
-            stars.innerHTML = starsHtml;
             count.textContent = total > 0
                 ? `${rating.toFixed(1)} (${total} ${total === 1 ? 'avaliação' : 'avaliações'})`
                 : 'Nenhuma avaliação ainda';
@@ -261,25 +223,28 @@
             if (discount > 0) {
                 discountEl.textContent = `-${discount.toFixed(0)}%`;
                 discountEl.style.display = 'inline-block';
-                oldPriceEl.textContent = `R$ ${PageUtils.formatPrice(originalPrice)}`;
+                oldPriceEl.textContent = U.formatPrice(originalPrice);
                 oldPriceEl.style.display = 'inline-block';
             } else {
                 discountEl.style.display = 'none';
                 oldPriceEl.style.display = 'none';
             }
 
-            currentPriceEl.textContent = `R$ ${PageUtils.formatPrice(currentPrice)}`;
+            currentPriceEl.textContent = U.formatPrice(currentPrice);
 
-            // Parcelamento (simulado: até 12x sem juros, com parcela mínima de R$5)
+            // Parcelamento
             const maxInstallments = 12;
             const minInstallment = 5;
-            const installmentsCount = Math.min(maxInstallments, Math.max(1, Math.floor(currentPrice / minInstallment)));
+            const installmentsCount = Math.min(
+                maxInstallments,
+                Math.max(1, Math.floor(currentPrice / minInstallment))
+            );
             const installmentValue = currentPrice / installmentsCount;
 
             if (installmentsCount > 1) {
-                installmentsEl.innerHTML = `ou <strong>${installmentsCount}x de R$ ${PageUtils.formatPrice(installmentValue)}</strong> sem juros`;
+                installmentsEl.innerHTML = `ou <strong>${installmentsCount}x de ${U.formatPrice(installmentValue)}</strong> sem juros`;
             } else {
-                installmentsEl.innerHTML = `<strong>R$ ${PageUtils.formatPrice(currentPrice)}</strong> à vista`;
+                installmentsEl.innerHTML = `<strong>${U.formatPrice(currentPrice)}</strong> à vista`;
             }
         },
 
@@ -295,9 +260,8 @@
                 return;
             }
 
-            // Agrupa por tipo
             const grouped = {};
-            p.variations.forEach(v => {
+            p.variations.forEach((v) => {
                 if (!grouped[v.type]) grouped[v.type] = [];
                 grouped[v.type].push(v);
             });
@@ -306,16 +270,21 @@
                 size: 'Tamanho',
                 color: 'Cor',
                 material: 'Material',
-                style: 'Estilo'
+                style: 'Estilo',
             };
 
             container.innerHTML = Object.entries(grouped).map(([type, vars]) => `
                 <div class="variation-group">
-                    <div class="variation-label">${labels[type] || type}: <strong data-selected="${type}">${PageUtils.escapeHtml(vars[0].value)}</strong></div>
+                    <div class="variation-label">
+                        ${labels[type] || type}:
+                        <strong data-selected="${type}">${U.escapeHtml(vars[0].value)}</strong>
+                    </div>
                     <div class="variation-options">
                         ${vars.map((v, idx) => `
-                            <button class="variation-btn ${idx === 0 ? 'active' : ''}" data-type="${type}" data-value="${PageUtils.escapeHtml(v.value)}">
-                                ${PageUtils.escapeHtml(v.value)}
+                            <button class="variation-btn ${idx === 0 ? 'active' : ''}"
+                                    data-type="${U.escapeAttr(type)}"
+                                    data-value="${U.escapeAttr(v.value)}">
+                                ${U.escapeHtml(v.value)}
                             </button>
                         `).join('')}
                     </div>
@@ -324,13 +293,12 @@
 
             container.style.display = 'flex';
 
-            // Click nas variações
-            container.querySelectorAll('.variation-btn').forEach(btn => {
+            container.querySelectorAll('.variation-btn').forEach((btn) => {
                 btn.addEventListener('click', () => {
                     const type = btn.dataset.type;
                     const value = btn.dataset.value;
 
-                    container.querySelectorAll(`.variation-btn[data-type="${type}"]`).forEach(b => b.classList.remove('active'));
+                    container.querySelectorAll(`.variation-btn[data-type="${type}"]`).forEach((b) => b.classList.remove('active'));
                     btn.classList.add('active');
 
                     const selectedLabel = container.querySelector(`strong[data-selected="${type}"]`);
@@ -344,7 +312,8 @@
         // ==================================================
         renderDescription() {
             const p = this.product;
-            document.getElementById('productDescription').textContent = p.description || 'Sem descrição disponível.';
+            document.getElementById('productDescription').textContent =
+                p.description || 'Sem descrição disponível.';
         },
 
         // ==================================================
@@ -361,9 +330,8 @@
             if (p.weight) specs.push({ label: 'Peso', value: `${p.weight} kg` });
             if (p.dimensions) specs.push({ label: 'Dimensões', value: p.dimensions });
 
-            // Especificações técnicas adicionais
             if (p.specifications && p.specifications.length > 0) {
-                p.specifications.forEach(s => specs.push({ label: s.name, value: s.value }));
+                p.specifications.forEach((s) => specs.push({ label: s.name, value: s.value }));
             }
 
             if (specs.length === 0) {
@@ -371,10 +339,10 @@
                 return;
             }
 
-            container.innerHTML = specs.map(s => `
+            container.innerHTML = specs.map((s) => `
                 <div class="spec-item">
-                    <span class="spec-label">${PageUtils.escapeHtml(s.label)}</span>
-                    <span class="spec-value">${PageUtils.escapeHtml(s.value)}</span>
+                    <span class="spec-label">${U.escapeHtml(s.label)}</span>
+                    <span class="spec-value">${U.escapeHtml(s.value)}</span>
                 </div>
             `).join('');
         },
@@ -391,9 +359,11 @@
                 return;
             }
 
-            container.innerHTML = p.reviews.map(review => {
+            container.innerHTML = p.reviews.map((review) => {
                 const stars = Array(5).fill(0).map((_, i) =>
-                    i < review.rating ? '<i class="fas fa-star"></i>' : '<i class="far fa-star"></i>'
+                    i < review.rating
+                        ? '<i class="fas fa-star"></i>'
+                        : '<i class="far fa-star"></i>'
                 ).join('');
 
                 const date = review.created_at
@@ -407,10 +377,10 @@
                                 <div class="review-author">Cliente verificado</div>
                                 <div class="review-stars">${stars}</div>
                             </div>
-                            <div class="review-date">${date}</div>
+                            <div class="review-date">${U.escapeHtml(date)}</div>
                         </div>
-                        ${review.title ? `<div class="review-title">${PageUtils.escapeHtml(review.title)}</div>` : ''}
-                        ${review.comment ? `<div class="review-comment">${PageUtils.escapeHtml(review.comment)}</div>` : ''}
+                        ${review.title ? `<div class="review-title">${U.escapeHtml(review.title)}</div>` : ''}
+                        ${review.comment ? `<div class="review-comment">${U.escapeHtml(review.comment)}</div>` : ''}
                     </div>
                 `;
             }).join('');
@@ -452,61 +422,49 @@
                 this.calculateShipping();
             });
 
-            // Máscara de CEP
+            // Máscara de CEP (via Utils)
             const cepInput = document.getElementById('shippingCep');
             cepInput?.addEventListener('input', (e) => {
-                let value = e.target.value.replace(/\D/g, '').slice(0, 8);
-                if (value.length > 5) {
-                    value = value.replace(/(\d{5})(\d+)/, '$1-$2');
-                }
-                e.target.value = value;
+                e.target.value = U.maskCep(e.target.value);
             });
 
             // Tabs
-            document.querySelectorAll('.tab-btn').forEach(btn => {
+            document.querySelectorAll('.tab-btn').forEach((btn) => {
                 btn.addEventListener('click', () => {
                     const tab = btn.dataset.tab;
-                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                    document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
+                    document.querySelectorAll('.tab-content').forEach((c) => c.classList.remove('active'));
                     btn.classList.add('active');
                     document.getElementById(`tab-${tab}`)?.classList.add('active');
                 });
             });
         },
 
-                async addToCart(quantity) {
+        // ==================================================
+        // CARRINHO
+        // ==================================================
+        async addToCart(quantity) {
             const p = this.product;
+
+            if (!window.LuxuryCart) {
+                C.createToast('Erro ao conectar com o carrinho. Recarregue a página.', 'error');
+                return;
+            }
 
             try {
                 await window.LuxuryCart.addToCart(p.id, quantity);
-                this.showToast(`"${p.name}" (${quantity}x) adicionado ao carrinho!`, 'success');
-                PageUtils.announce(`${quantity} unidade(s) adicionada(s) ao carrinho`);
+                C.createToast(`"${p.name}" (${quantity}x) adicionado ao carrinho!`, 'success');
+                U.announce(`${quantity} unidade(s) adicionada(s) ao carrinho`);
             } catch (error) {
-                this.showToast(error.data?.error || 'Erro ao adicionar ao carrinho', 'error');
+                C.createToast(error.data?.error || 'Erro ao adicionar ao carrinho', 'error');
             }
         },
 
         buyNow(quantity) {
             const p = this.product;
-            this.showToast(`Redirecionando para o checkout: "${p.name}" (${quantity}x)`, 'info');
-            PageUtils.announce('Redirecionando para o checkout');
+            C.createToast(`Redirecionando para o checkout: "${p.name}" (${quantity}x)`, 'info');
+            U.announce('Redirecionando para o checkout');
             // Futuramente: redirecionar para /checkout?product=<id>&qty=<quantity>
-        },
-
-        showToast(message, type = 'info') {
-            const toast = document.createElement('div');
-            toast.className = `product-toast ${type}`;
-            toast.innerHTML = `
-                <i class="fas ${type === 'success' ? 'fa-check-circle' : 'fa-info-circle'}"></i>
-                <span>${PageUtils.escapeHtml(message)}</span>
-            `;
-            document.body.appendChild(toast);
-
-            setTimeout(() => toast.classList.add('show'), 10);
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => toast.remove(), 300);
-            }, 3500);
         },
 
         // ==================================================
@@ -523,7 +481,7 @@
                 return;
             }
 
-            // Simulação de cálculo (futuramente integrar com API dos Correios)
+            // Simulação (futuramente: integrar com API dos Correios)
             const region = parseInt(cep[0]);
             let price, days;
 
@@ -540,7 +498,7 @@
 
             const priceText = price === 0
                 ? '<strong>Frete GRÁTIS</strong>'
-                : `Frete: R$ ${PageUtils.formatPrice(price)}`;
+                : `Frete: ${U.formatPrice(price)}`;
 
             result.style.display = 'block';
             result.innerHTML = `
@@ -550,7 +508,7 @@
         },
 
         // ==================================================
-        // PRODUTOS RELACIONADOS
+        // PRODUTOS RELACIONADOS (usando component)
         // ==================================================
         async loadRelated() {
             const section = document.getElementById('relatedSection');
@@ -558,14 +516,12 @@
             const p = this.product;
 
             try {
-                // Busca produtos da mesma categoria
-                const data = await PageAPI.get(`/products?category=${p.category_id}&limit=4`);
-                let products = (data.products || []).filter(prod => prod.id !== p.id);
+                const data = await API.get(`/products?category=${p.category_id}&limit=4`);
+                let products = (data.products || []).filter((prod) => prod.id !== p.id);
 
-                // Se não houver relacionados na mesma categoria, busca os em destaque
                 if (products.length === 0) {
-                    const fallback = await PageAPI.get('/products?featured=true&limit=4');
-                    products = (fallback.products || []).filter(prod => prod.id !== p.id);
+                    const fallback = await API.get('/products?featured=true&limit=4');
+                    products = (fallback.products || []).filter((prod) => prod.id !== p.id);
                 }
 
                 if (products.length === 0) {
@@ -573,91 +529,26 @@
                     return;
                 }
 
-                grid.innerHTML = products.slice(0, 4).map(prod => {
-                    const hasImage = prod.images && prod.images.length > 0 && prod.images[0].url;
-                    const imageHtml = hasImage
-                        ? `<img class="product-image" src="${prod.images[0].url}" alt="${PageUtils.escapeHtml(prod.name)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'product-image-placeholder\\'><i class=\\'fas fa-image\\'></i></div>'">`
-                        : `<div class="product-image-placeholder"><i class="fas fa-image"></i></div>`;
-
-                    const discountBadge = prod.discount_percent > 0
-                        ? `<span class="product-badge discount">-${parseFloat(prod.discount_percent).toFixed(0)}%</span>`
-                        : (prod.is_new ? `<span class="product-badge">Novo</span>` : '');
-
-                    const originalPrice = parseFloat(prod.price);
-                    const currentPrice = prod.discount_percent > 0
-                        ? originalPrice * (1 - prod.discount_percent / 100)
-                        : originalPrice;
-
-                    const oldPriceHtml = prod.discount_percent > 0
-                        ? `<span class="product-old-price">R$ ${PageUtils.formatPrice(originalPrice)}</span>`
-                        : '';
-
-                    return `
-                        <a href="/produto/${prod.slug}" class="product-card">
-                            <div class="product-image-wrapper">
-                                ${discountBadge}
-                                ${imageHtml}
-                            </div>
-                            <div class="product-info">
-                                <h3 class="product-name">${PageUtils.escapeHtml(prod.name)}</h3>
-                                ${prod.short_description ? `<p class="product-short-desc">${PageUtils.escapeHtml(prod.short_description)}</p>` : ''}
-                                <div class="product-price-wrapper">
-                                    <span class="product-price">R$ ${PageUtils.formatPrice(currentPrice)}</span>
-                                    ${oldPriceHtml}
-                                </div>
-                            </div>
-                        </a>
-                    `;
-                }).join('');
+                // ✅ Usa o component
+                grid.innerHTML = products.slice(0, 4)
+                    .map((prod) => C.renderProductCard(prod, {
+                        showShortDesc: true,
+                        showButton: false,   // related cards só linkam o card inteiro
+                        href: `/produto/${prod.slug}`,
+                    }))
+                    .join('');
 
                 section.style.display = 'block';
             } catch (error) {
                 console.error('Erro ao carregar produtos relacionados:', error);
                 section.style.display = 'none';
             }
-        }
+        },
     };
 
-    // ==================================================
-    // TOAST (adiciona CSS dinamicamente)
-    // ==================================================
-    const style = document.createElement('style');
-    style.textContent = `
-        .product-toast {
-            position: fixed;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 1rem 1.5rem;
-            background: var(--gray-900);
-            color: var(--white);
-            border-radius: 8px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
-            z-index: 9999;
-            opacity: 0;
-            transition: all 0.3s ease;
-            font-size: 0.9rem;
-            max-width: 90vw;
-        }
-
-        .product-toast.show {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-
-        .product-toast.success {
-            background: var(--success-dark, #22c55e);
-        }
-
-        .product-toast i {
-            font-size: 1.1rem;
-        }
-    `;
-    document.head.appendChild(style);
-
+    // ======================================================
+    // INICIALIZAÇÃO
+    // ======================================================
     document.addEventListener('DOMContentLoaded', () => {
         ProductPage.init();
     });

@@ -8,6 +8,13 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👔</text></svg>">
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- ✅ Novos CSS globais -->
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/animations.css">
+    <link rel="stylesheet" href="/css/components.css">
+
+    <!-- CSS específico -->
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="/css/login.css">
 </head>
@@ -22,7 +29,7 @@
         <a href="/" class="auth-back"><i class="fas fa-arrow-left"></i> <span>Voltar para a loja</span></a>
     </header>
 
-    <!-- BANNER DE VANTAGENS (TOPO) -->
+    <!-- BANNER DE VANTAGENS -->
     <section class="auth-banner">
         <div class="auth-banner-content">
             <h2>Bem-vindo à Luxury Store</h2>
@@ -74,7 +81,7 @@
 
                 <!-- LOGIN -->
                 <form class="auth-form active" id="loginForm" data-form="login" novalidate>
-                    <h1 class="auth-title">Bem-vindo de volta</h1>
+                    <h2 class="auth-title">Bem-vindo de volta</h2>
                     <p class="auth-subtitle">Entre com sua conta para continuar</p>
 
                     <div class="auth-field">
@@ -105,7 +112,7 @@
 
                 <!-- REGISTRO -->
                 <form class="auth-form" id="registerForm" data-form="register" novalidate>
-                    <h1 class="auth-title">Criar Conta</h1>
+                    <h2 class="auth-title">Criar Conta</h2>
                     <p class="auth-subtitle">Preencha os dados para se cadastrar</p>
 
                     <fieldset class="auth-fieldset">
@@ -229,7 +236,13 @@
         </div>
     </main>
 
-    <script src="/js/script.js"></script>
-    <script src="/js/login.js"></script>
+    <!-- ✅ Core JS -->
+    <script src="/js/core/utils.js" defer></script>
+    <script src="/js/core/api.js" defer></script>
+    <script src="/js/core/components.js" defer></script>
+
+    <!-- Scripts da página -->
+    <script src="/js/script.js" defer></script>
+    <script src="/js/login.js" defer></script>
 </body>
 </html>

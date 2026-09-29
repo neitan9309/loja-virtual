@@ -1,3 +1,6 @@
+// ======================================================
+// src/controllers/inventoryController.js
+// ======================================================
 const { Inventory, Product } = require('../models');
 
 const inventoryController = {
@@ -53,19 +56,17 @@ const inventoryController = {
             const { product_id, quantity } = req.body;
 
             if (!product_id || quantity === undefined) {
-                return res.status(400).json({ 
-                    error: 'Campos obrigatórios: product_id, quantity' 
+                return res.status(400).json({
+                    error: 'Campos obrigatórios: product_id, quantity',
                 });
             }
 
             const inventory = await Inventory.create(req.body);
 
-            // Sincroniza products.stock_quantity
             await Inventory.updateQuantity(inventory.id, inventory.quantity);
 
-            // Busca o valor atualizado
             const updated = await Inventory.findByProductAndVariation(
-                inventory.product_id, 
+                inventory.product_id,
                 inventory.variation_id
             );
 
@@ -74,8 +75,8 @@ const inventoryController = {
             console.error('Erro ao criar estoque:', error);
 
             if (error.code === '23503') {
-                return res.status(400).json({ 
-                    error: 'Produto ou variação inválida' 
+                return res.status(400).json({
+                    error: 'Produto ou variação inválida',
                 });
             }
 
@@ -96,8 +97,8 @@ const inventoryController = {
             }
 
             if (quantity === undefined || quantity < 0) {
-                return res.status(400).json({ 
-                    error: 'Quantidade deve ser um número positivo' 
+                return res.status(400).json({
+                    error: 'Quantidade deve ser um número positivo',
                 });
             }
 
@@ -116,13 +117,19 @@ const inventoryController = {
 
     // ======================================================
     // REGISTRAR MOVIMENTAÇÃO
+    // Model faz todo o trabalho (transação + lock + cálculo)
     // ======================================================
     async registerMovement(req, res) {
         try {
             const { id } = req.params;
             const {
-                movement_type, quantity, reason,
-                reference_type, reference_id, user_id, notes
+                movement_type,
+                quantity,
+                reason,
+                reference_type,
+                reference_id,
+                user_id,
+                notes,
             } = req.body;
 
             if (isNaN(id)) {
@@ -132,18 +139,18 @@ const inventoryController = {
             // Validações
             const validTypes = ['in', 'out', 'adjustment', 'return'];
             if (!validTypes.includes(movement_type)) {
-                return res.status(400).json({ 
-                    error: 'movement_type deve ser: in, out, adjustment ou return' 
+                return res.status(400).json({
+                    error: 'movement_type deve ser: in, out, adjustment ou return',
                 });
             }
 
             if (!quantity || quantity <= 0) {
-                return res.status(400).json({ 
-                    error: 'Quantidade deve ser maior que zero' 
+                return res.status(400).json({
+                    error: 'Quantidade deve ser maior que zero',
                 });
             }
 
-            // Busca estoque atual pelo ID do inventory
+            // Busca o inventory pelo ID para pegar product_id e variation_id
             const client = await require('../config/database').pool.connect();
             let inventory;
             try {
@@ -160,51 +167,43 @@ const inventoryController = {
                 return res.status(404).json({ error: 'Estoque não encontrado' });
             }
 
-            const previousQuantity = inventory.quantity;
-            let newQuantity;
-
-            if (movement_type === 'in' || movement_type === 'return') {
-                newQuantity = previousQuantity + quantity;
-            } else if (movement_type === 'out') {
-                if (quantity > previousQuantity) {
-                    return res.status(400).json({ 
-                        error: 'Quantidade insuficiente em estoque',
-                        available: previousQuantity
-                    });
-                }
-                newQuantity = previousQuantity - quantity;
-            } else { // adjustment
-                newQuantity = quantity;
-            }
-
-            // Registra movimentação (já atualiza inventory e products.stock_quantity)
-            const movement = await Inventory.registerMovement({
+            // ✅ Model faz tudo: lock, cálculo, insert, update, sync
+            const result = await Inventory.registerMovement({
                 product_id: inventory.product_id,
                 variation_id: inventory.variation_id,
                 movement_type,
                 quantity,
-                previous_quantity: previousQuantity,
-                new_quantity: newQuantity,
                 reason,
                 reference_type,
                 reference_id,
                 user_id,
-                notes
+                notes,
             });
 
-            // Busca o produto atualizado para retornar o novo stock_quantity
+            // Busca o produto atualizado
             const product = await Product.findById(inventory.product_id);
 
             res.status(201).json({
-                movement,
-                current_stock: newQuantity,
-                product_stock_quantity: product.stock_quantity
+                movement: result.movement,
+                current_stock: result.new_quantity,
+                product_stock_quantity: product.stock_quantity,
             });
         } catch (error) {
             console.error('Erro ao registrar movimentação:', error);
+
+            if (error.status === 400) {
+                return res.status(400).json({
+                    error: error.message,
+                    available: error.available,
+                });
+            }
+            if (error.status === 404) {
+                return res.status(404).json({ error: error.message });
+            }
+
             res.status(500).json({ error: 'Erro ao registrar movimentação' });
         }
-    }
+    },
 };
 
 module.exports = inventoryController;

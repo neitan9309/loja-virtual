@@ -1,0 +1,75 @@
+/* ======================================================
+   public/css/variables.css
+   Design tokens unificados — Luxury Store
+   Uso: <link rel="stylesheet" href="/css/variables.css">
+   ====================================================== */
+
+:root {
+    /* ==================================================
+       CORES PRIMÁRIAS
+       ================================================== */
+    --primary: #1a1a1a;
+    --accent: #c9a96e;
+    --accent-hover: #b8944f;
+    --white: #ffffff;
+
+    /* ==================================================
+       ESCALA DE CINZAS
+       ================================================== */
+    --gray-50: #fafafa;
+    --gray-100: #f5f5f5;
+    --gray-200: #e5e5e5;
+    --gray-300: #d4d4d4;
+    --gray-400: #a3a3a3;
+    --gray-500: #737373;
+    --gray-600: #525252;
+    --gray-700: #404040;
+    --gray-800: #262626;
+    --gray-900: #171717;
+
+    /* ==================================================
+       CORES DE STATUS
+       ================================================== */
+    --success: #22c55e;
+    --success-dark: #16a34a;
+    --success-bg: #dcfce7;
+
+    --danger: #ef4444;
+    --danger-dark: #dc2626;
+    --danger-bg: #fee2e2;
+
+    --warning: #f59e0b;
+    --warning-bg: #fef3c7;
+
+    --info: #3b82f6;
+    --info-bg: #dbeafe;
+
+    /* ==================================================
+       CORES EXTRAS (usadas em badges e detalhes)
+       ================================================== */
+    --gold: #fbbf24;
+    --silver: #94a3b8;
+    --bronze: #b45309;
+
+    /* ==================================================
+       TRANSIÇÕES
+       ================================================== */
+    --transition: all 0.25s ease;
+    --transition-slow: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-fast: all 0.15s ease;
+
+    /* ==================================================
+       LAYOUT
+       ================================================== */
+    --sidebar-width: 260px;
+    --container-max: 1280px;
+    --container-max-narrow: 1200px;
+
+    /* ==================================================
+       SOMBRAS
+       ================================================== */
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.08);
+    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12);
+    --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.2);
+}

@@ -1,0 +1,132 @@
+/* ======================================================
+   public/css/animations.css
+   Animações centralizadas — Luxury Store
+   Uso: <link rel="stylesheet" href="/css/animations.css">
+   ====================================================== */
+
+/* ======================================================
+   FADE IN (só opacidade)
+   ====================================================== */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* ======================================================
+   FADE IN UP (opacidade + movimento vertical)
+   ====================================================== */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ======================================================
+   SLIDE UP (modais, cards)
+   ====================================================== */
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* ======================================================
+   SLIDE DOWN (busca, dropdowns)
+   ====================================================== */
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.98);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* ======================================================
+   SLIDE IN RIGHT (toasts, modais laterais)
+   ====================================================== */
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* ======================================================
+   SLIDE OUT RIGHT (toasts ao sair)
+   ====================================================== */
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+}
+
+/* ======================================================
+   SPIN (loading spinners)
+   ====================================================== */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ======================================================
+   SHAKE (formulários com erro)
+   ====================================================== */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+}
+
+/* ======================================================
+   BOUNCE IN (modal de sucesso)
+   ====================================================== */
+@keyframes bounceIn {
+    0% { transform: scale(0); opacity: 0; }
+    50% { transform: scale(1.2); }
+    70% { transform: scale(0.9); }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* ======================================================
+   PULSE (destaques sutis)
+   ====================================================== */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* ======================================================
+   PREFERS-REDUCED-MOTION (acessibilidade)
+   ====================================================== */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

@@ -10,6 +10,13 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link rel="preconnect" href="https://images.pexels.com">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- ✅ Novos CSS globais -->
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/animations.css">
+    <link rel="stylesheet" href="/css/components.css">
+
+    <!-- CSS específico -->
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="/css/produtos.css">
 </head>
@@ -143,8 +150,14 @@
         </div>
     </footer>
 
-    <script src="/js/cart.js"></script>
-    <script src="/js/script.js"></script>
-    <script src="/js/produtos.js"></script>
+    <!-- ✅ Core JS -->
+    <script src="/js/core/utils.js" defer></script>
+    <script src="/js/core/api.js" defer></script>
+    <script src="/js/core/components.js" defer></script>
+
+    <!-- Scripts da página -->
+    <script src="/js/cart.js" defer></script>
+    <script src="/js/script.js" defer></script>
+    <script src="/js/produtos.js" defer></script>
 </body>
 </html>

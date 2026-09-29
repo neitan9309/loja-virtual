@@ -1,43 +1,47 @@
+// ======================================================
+// src/models/Cart.js
+// ======================================================
 const { pool } = require('../config/database');
 
 const Cart = {
-    // ==================================================
-    // OBTER OU CRIAR CARRINHO DO USUÁRIO
-    // ==================================================
+    // ======================================================
+    // OBTER OU CRIAR CARRINHO (race-condition safe)
+    // Usa UPSERT + SELECT atômico
+    // ======================================================
     async getOrCreateByUserId(userId) {
-        // Tenta buscar
-        let query = 'SELECT * FROM carts WHERE user_id = $1';
-        let result = await pool.query(query, [userId]);
+        // ✅ UPSERT: cria se não existir, ignora se já existir
+        await pool.query(
+            `INSERT INTO carts (user_id)
+             VALUES ($1)
+             ON CONFLICT (user_id) DO NOTHING`,
+            [userId]
+        );
 
-        if (result.rows.length > 0) {
-            return result.rows[0];
+        // Agora sempre existe — SELECT é seguro
+        const result = await pool.query(
+            'SELECT * FROM carts WHERE user_id = $1',
+            [userId]
+        );
+
+        if (result.rows.length === 0) {
+            // Caso raro: o user_id não existe (FK violation silenciosa)
+            const err = new Error('Usuário não encontrado. Faça login novamente.');
+            err.code = 'USER_NOT_FOUND';
+            err.status = 401;
+            throw err;
         }
 
-        // Cria novo
-        try {
-            query = 'INSERT INTO carts (user_id) VALUES ($1) RETURNING *';
-            result = await pool.query(query, [userId]);
-            return result.rows[0];
-        } catch (error) {
-            // ✅ Se o user_id não existe na tabela users, retorna erro claro
-            if (error.code === '23503') {
-                const customError = new Error('Usuário não encontrado. Faça login novamente.');
-                customError.code = 'USER_NOT_FOUND';
-                customError.status = 401;
-                throw customError;
-            }
-            throw error;
-        }
+        return result.rows[0];
     },
 
-    // ==================================================
+    // ======================================================
     // LISTAR ITENS DO CARRINHO
-    // ==================================================
+    // ======================================================
     async getItems(userId) {
         const cart = await this.getOrCreateByUserId(userId);
 
         const query = `
-            SELECT 
+            SELECT
                 ci.id,
                 ci.product_id,
                 ci.quantity,
@@ -53,9 +57,9 @@ const Cart = {
                     'url', pi.image_url,
                     'alt', pi.alt_text
                 )
-                FROM product_images pi 
-                WHERE pi.product_id = p.id 
-                ORDER BY pi.is_primary DESC, pi.sort_order 
+                FROM product_images pi
+                WHERE pi.product_id = p.id
+                ORDER BY pi.is_primary DESC, pi.sort_order
                 LIMIT 1) as image
             FROM cart_items ci
             JOIN products p ON p.id = ci.product_id
@@ -65,8 +69,7 @@ const Cart = {
 
         const result = await pool.query(query, [cart.id]);
 
-        // Calcula subtotal, total, etc.
-        const items = result.rows.map(item => {
+        const items = result.rows.map((item) => {
             const originalPrice = parseFloat(item.price);
             const discount = parseFloat(item.discount_percent || 0);
             const unitPrice = discount > 0
@@ -78,7 +81,7 @@ const Cart = {
                 ...item,
                 unit_price: unitPrice,
                 original_price: originalPrice,
-                subtotal
+                subtotal,
             };
         });
 
@@ -89,17 +92,17 @@ const Cart = {
             cart_id: cart.id,
             items,
             total,
-            total_items: totalItems
+            total_items: totalItems,
         };
     },
 
-    // ==================================================
-    // ADICIONAR ITEM
-    // ==================================================
+    // ======================================================
+    // ADICIONAR ITEM (race-condition safe)
+    // ======================================================
     async addItem(userId, productId, quantity = 1) {
         const cart = await this.getOrCreateByUserId(userId);
 
-        // Verifica se produto existe e está ativo
+        // Verifica produto
         const productQuery = 'SELECT id, stock_quantity, is_active FROM products WHERE id = $1 AND deleted_at IS NULL';
         const productResult = await pool.query(productQuery, [productId]);
 
@@ -112,47 +115,36 @@ const Cart = {
             throw new Error('Produto indisponível');
         }
 
-        // Verifica se já está no carrinho
-        const existingQuery = 'SELECT * FROM cart_items WHERE cart_id = $1 AND product_id = $2';
-        const existing = await pool.query(existingQuery, [cart.id, productId]);
+        // ✅ UPSERT com incremento atômico
+        const query = `
+            INSERT INTO cart_items (cart_id, product_id, quantity)
+            VALUES ($1, $2, $3)
+            ON CONFLICT (cart_id, product_id)
+            DO UPDATE SET
+                quantity = cart_items.quantity + EXCLUDED.quantity,
+                updated_at = CURRENT_TIMESTAMP
+            RETURNING *
+        `;
 
-        let newQuantity;
+        const insertResult = await pool.query(query, [cart.id, productId, quantity]);
+        const newQuantity = insertResult.rows[0].quantity;
 
-        if (existing.rows.length > 0) {
-            newQuantity = existing.rows[0].quantity + quantity;
-        } else {
-            newQuantity = quantity;
-        }
-
-        // Verifica estoque
+        // Verifica estoque DEPOIS do incremento
         if (newQuantity > product.stock_quantity) {
+            // Reverte pra quantidade anterior
+            await pool.query(
+                'UPDATE cart_items SET quantity = $1 WHERE id = $2',
+                [newQuantity - quantity, insertResult.rows[0].id]
+            );
             throw new Error(`Estoque insuficiente. Disponível: ${product.stock_quantity}`);
-        }
-
-        // Insere ou atualiza
-        if (existing.rows.length > 0) {
-            const updateQuery = `
-                UPDATE cart_items 
-                SET quantity = $1, updated_at = CURRENT_TIMESTAMP 
-                WHERE id = $2
-                RETURNING *
-            `;
-            await pool.query(updateQuery, [newQuantity, existing.rows[0].id]);
-        } else {
-            const insertQuery = `
-                INSERT INTO cart_items (cart_id, product_id, quantity)
-                VALUES ($1, $2, $3)
-                RETURNING *
-            `;
-            await pool.query(insertQuery, [cart.id, productId, quantity]);
         }
 
         return this.getItems(userId);
     },
 
-    // ==================================================
+    // ======================================================
     // ATUALIZAR QUANTIDADE
-    // ==================================================
+    // ======================================================
     async updateItemQuantity(userId, itemId, quantity) {
         if (quantity < 1) {
             throw new Error('Quantidade deve ser maior que zero');
@@ -160,7 +152,6 @@ const Cart = {
 
         const cart = await this.getOrCreateByUserId(userId);
 
-        // Verifica se o item pertence ao carrinho do usuário
         const itemQuery = 'SELECT * FROM cart_items WHERE id = $1 AND cart_id = $2';
         const itemResult = await pool.query(itemQuery, [itemId, cart.id]);
 
@@ -170,7 +161,6 @@ const Cart = {
 
         const item = itemResult.rows[0];
 
-        // Verifica estoque
         const productQuery = 'SELECT stock_quantity FROM products WHERE id = $1';
         const productResult = await pool.query(productQuery, [item.product_id]);
 
@@ -181,20 +171,18 @@ const Cart = {
             }
         }
 
-        const updateQuery = `
-            UPDATE cart_items 
-            SET quantity = $1, updated_at = CURRENT_TIMESTAMP 
+        await pool.query(`
+            UPDATE cart_items
+            SET quantity = $1, updated_at = CURRENT_TIMESTAMP
             WHERE id = $2
-            RETURNING *
-        `;
-        await pool.query(updateQuery, [quantity, itemId]);
+        `, [quantity, itemId]);
 
         return this.getItems(userId);
     },
 
-    // ==================================================
+    // ======================================================
     // REMOVER ITEM
-    // ==================================================
+    // ======================================================
     async removeItem(userId, itemId) {
         const cart = await this.getOrCreateByUserId(userId);
 
@@ -208,24 +196,24 @@ const Cart = {
         return this.getItems(userId);
     },
 
-    // ==================================================
+    // ======================================================
     // LIMPAR CARRINHO
-    // ==================================================
+    // ======================================================
     async clear(userId) {
         const cart = await this.getOrCreateByUserId(userId);
         await pool.query('DELETE FROM cart_items WHERE cart_id = $1', [cart.id]);
         return this.getItems(userId);
     },
 
-    // ==================================================
-    // CONTAR ITENS (para o badge do header)
-    // ==================================================
+    // ======================================================
+    // CONTAR ITENS
+    // ======================================================
     async countItems(userId) {
         const cart = await this.getOrCreateByUserId(userId);
         const query = 'SELECT COALESCE(SUM(quantity), 0) as total FROM cart_items WHERE cart_id = $1';
         const result = await pool.query(query, [cart.id]);
         return parseInt(result.rows[0].total);
-    }
+    },
 };
 
 module.exports = Cart;

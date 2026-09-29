@@ -38,18 +38,11 @@ const allowedOrigins = NODE_ENV === 'production'
 
 app.use(cors({
     origin: (origin, callback) => {
-        // Permite requests sem origin (curl, Postman, mobile apps)
         if (!origin) return callback(null, true);
-
-        if (allowedOrigins.includes(origin)) {
-            return callback(null, true);
-        }
-
-        // Em dev, loga pra facilitar debug
+        if (allowedOrigins.includes(origin)) return callback(null, true);
         if (NODE_ENV === 'development') {
             console.warn(`🚫 CORS bloqueou origem: ${origin}`);
         }
-
         callback(new Error('Origem não permitida pelo CORS'));
     },
     credentials: true,
@@ -70,7 +63,6 @@ app.use((req, res, next) => {
         '/login',
         '/minha-conta',
         '/checkout',
-        '/admin',
     ];
 
     const isNoCache =
@@ -119,7 +111,7 @@ app.get('/api/health', (req, res) => {
 });
 
 // ======================================================
-// PÁGINAS HTML
+// PÁGINAS HTML (LOJA)
 // ======================================================
 app.get('/produtos', (req, res) => {
     res.sendFile(path.join(publicDir, 'html', 'produtos.html'));
@@ -145,8 +137,15 @@ app.get('/checkout', (req, res) => {
     res.sendFile(path.join(publicDir, 'html', 'checkout.html'));
 });
 
+// ======================================================
+// PÁGINAS HTML (ADMIN)
+// ======================================================
 app.get('/admin', (req, res) => {
     res.sendFile(path.join(publicDir, 'admin', 'index.html'));
+});
+
+app.get('/admin/login', (req, res) => {
+    res.sendFile(path.join(publicDir, 'admin', 'login.html'));
 });
 
 // ======================================================
@@ -190,14 +189,12 @@ async function shutdown(signal) {
 process.on('SIGINT', () => shutdown('SIGINT'));
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 
-// Captura erros não tratados (última linha de defesa)
 process.on('unhandledRejection', (reason) => {
     console.error('💥 Unhandled Rejection:', reason);
 });
 
 process.on('uncaughtException', (error) => {
     console.error('💥 Uncaught Exception:', error);
-    // Em produção, é boa prática reiniciar o processo
     if (NODE_ENV === 'production') {
         process.exit(1);
     }

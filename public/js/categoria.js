@@ -1,14 +1,21 @@
 // ======================================================
-// PÁGINA DE CATEGORIA - versão simples
+// public/js/categoria.js
+// Página de categoria (hero + subcategorias/tipos)
+// Depende de: core/utils.js, core/api.js, core/components.js
 // ======================================================
-(function() {
+(function () {
     'use strict';
 
-    const PAGE_CONFIG = { api: { baseUrl: '/api' } };
+    const U = window.LuxuryUtils;
+    const API = window.LuxuryAPI;
 
+    // ==================================================
+    // IMAGENS E ÍCONES POR CATEGORIA
+    // (poderiam vir do backend no futuro)
+    // ==================================================
     const CATEGORY_IMAGES = {
-        'vestuario': 'https://images.pexels.com/photos/996329/pexels-photo-996329.jpeg?auto=compress&cs=tinysrgb&w=1600',
-        'perfumaria': 'https://images.pexels.com/photos/9659891/pexels-photo-9659891.jpeg?auto=compress&cs=tinysrgb&w=1600',
+        vestuario: 'https://images.pexels.com/photos/996329/pexels-photo-996329.jpeg?auto=compress&cs=tinysrgb&w=1600',
+        perfumaria: 'https://images.pexels.com/photos/9659891/pexels-photo-9659891.jpeg?auto=compress&cs=tinysrgb&w=1600',
         'artigos-esportivos': 'https://images.pexels.com/photos/1552252/pexels-photo-1552252.jpeg?auto=compress&cs=tinysrgb&w=1600',
         'vestuario-masculino': 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=1200',
         'vestuario-feminino': 'https://images.pexels.com/photos/985635/pexels-photo-985635.jpeg?auto=compress&cs=tinysrgb&w=1200',
@@ -19,16 +26,25 @@
         'esportivos-masculino': 'https://images.pexels.com/photos/2294361/pexels-photo-2294361.jpeg?auto=compress&cs=tinysrgb&w=1200',
         'esportivos-feminino': 'https://images.pexels.com/photos/3757952/pexels-photo-3757952.jpeg?auto=compress&cs=tinysrgb&w=1200',
         'esportivos-infantil': 'https://images.pexels.com/photos/296301/pexels-photo-296301.jpeg?auto=compress&cs=tinysrgb&w=1200',
-        'default': 'https://images.pexels.com/photos/996329/pexels-photo-996329.jpeg?auto=compress&cs=tinysrgb&w=1600'
+        default: 'https://images.pexels.com/photos/996329/pexels-photo-996329.jpeg?auto=compress&cs=tinysrgb&w=1600',
     };
 
     const TYPE_ICONS = {
-        'camisas': 'fa-tshirt', 'camisetas': 'fa-tshirt', 'blusas': 'fa-tshirt',
-        'jaquetas': 'fa-tshirt', 'calcas': 'fa-socks', 'shorts': 'fa-socks',
-        'saias': 'fa-tshirt', 'vestidos': 'fa-tshirt', 'acessorios': 'fa-gem',
-        'tenis': 'fa-shoe-prints', 'conjuntos': 'fa-tshirt',
-        'eau-de-parfum': 'fa-spray-can', 'eau-de-toilette': 'fa-spray-can',
-        'colonias': 'fa-spray-can', 'kits': 'fa-gift'
+        camisas: 'fa-tshirt',
+        camisetas: 'fa-tshirt',
+        blusas: 'fa-tshirt',
+        jaquetas: 'fa-tshirt',
+        calcas: 'fa-socks',
+        shorts: 'fa-socks',
+        saias: 'fa-tshirt',
+        vestidos: 'fa-tshirt',
+        acessorios: 'fa-gem',
+        tenis: 'fa-shoe-prints',
+        conjuntos: 'fa-tshirt',
+        'eau-de-parfum': 'fa-spray-can',
+        'eau-de-toilette': 'fa-spray-can',
+        colonias: 'fa-spray-can',
+        kits: 'fa-gift',
     };
 
     function getTypeIcon(slug, name) {
@@ -44,31 +60,25 @@
     }
 
     function getCategoryImage(slug) {
-        return CATEGORY_IMAGES[slug] || CATEGORY_IMAGES['default'];
+        return CATEGORY_IMAGES[slug] || CATEGORY_IMAGES.default;
     }
 
-    const escapeHtml = (text) => {
-        const div = document.createElement('div');
-        div.textContent = text || '';
-        return div.innerHTML;
-    };
-
-    const apiGet = async (path) => {
-        const response = await fetch(`${PAGE_CONFIG.api.baseUrl}${path}`);
-        const data = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(data.error || `Erro HTTP ${response.status}`);
-        return data;
-    };
-
+    // ==================================================
+    // PÁGINA
+    // ==================================================
     const CategoryPage = {
         tree: [],
 
         async init() {
-            const params = new URLSearchParams(window.location.search);
-            const slug = params.get('category');
+            const params = U.getQueryParams();
+            const slug = params.category;
 
             try {
-                this.tree = await apiGet('/categories/tree-full');
+                // ✅ Cache de 5 min — a árvore raramente muda
+                this.tree = await API.get('/categories/tree-full', {
+                    useCache: true,
+                    ttl: 5 * 60 * 1000,
+                });
             } catch (error) {
                 console.error('Erro ao carregar categorias:', error);
                 this.renderNotFound();
@@ -100,6 +110,7 @@
         render(category, path) {
             this.renderHero(category, path);
 
+            // Categoria folha (nível 3) → redireciona pra listagem
             if (!category.children || category.children.length === 0) {
                 window.location.href = `/produtos?category=${category.slug}`;
                 return;
@@ -114,8 +125,10 @@
             }
         },
 
+        // ==================================================
+        // HERO
+        // ==================================================
         renderHero(category, path) {
-            // Renderiza o hero
             const hero = document.getElementById('categoryHero');
             const heroBg = document.getElementById('categoryHeroBg');
             const heroTitle = document.getElementById('heroTitle');
@@ -127,7 +140,10 @@
                 hero.classList.add('loaded');
             }
             if (heroTitle) heroTitle.textContent = category.name;
-            if (heroSubtitle) heroSubtitle.textContent = category.description || `Explore nossa seleção de ${category.name.toLowerCase()}`;
+            if (heroSubtitle) {
+                heroSubtitle.textContent =
+                    category.description || `Explore nossa seleção de ${category.name.toLowerCase()}`;
+            }
 
             document.title = `${category.name} - Luxury Store`;
 
@@ -138,15 +154,16 @@
                     const isLast = idx === path.length - 1;
                     breadcrumbParts.push('<i class="fas fa-chevron-right separator"></i>');
                     if (isLast) {
-                        breadcrumbParts.push(`<span class="current">${escapeHtml(item.name)}</span>`);
+                        breadcrumbParts.push(`<span class="current">${U.escapeHtml(item.name)}</span>`);
                     } else {
-                        breadcrumbParts.push(`<a href="/categoria?category=${item.slug}">${escapeHtml(item.name)}</a>`);
+                        breadcrumbParts.push(
+                            `<a href="/categoria?category=${U.escapeAttr(item.slug)}">${U.escapeHtml(item.name)}</a>`
+                        );
                     }
                 });
                 breadcrumbHero.innerHTML = breadcrumbParts.join('');
             }
 
-            // Breadcrumb da página (abaixo do hero)
             this.updateBreadcrumb(path);
         },
 
@@ -156,7 +173,6 @@
 
             const parts = [];
 
-            // Sempre começa com Início
             parts.push(`<a href="/"><i class="fas fa-home"></i><span>Início</span></a>`);
 
             path.forEach((item, idx) => {
@@ -165,15 +181,20 @@
                 parts.push('<i class="fas fa-chevron-right separator"></i>');
 
                 if (isLast) {
-                    parts.push(`<span class="current">${escapeHtml(item.name)}</span>`);
+                    parts.push(`<span class="current">${U.escapeHtml(item.name)}</span>`);
                 } else {
-                    parts.push(`<a href="/categoria?category=${item.slug}">${escapeHtml(item.name)}</a>`);
+                    parts.push(
+                        `<a href="/categoria?category=${U.escapeAttr(item.slug)}">${U.escapeHtml(item.name)}</a>`
+                    );
                 }
             });
 
             breadcrumb.innerHTML = parts.join('');
         },
 
+        // ==================================================
+        // SUBCATEGORIAS (cards grandes com imagem)
+        // ==================================================
         renderSubcategories(category) {
             const container = document.getElementById('contentContainer');
             container.innerHTML = `
@@ -183,11 +204,14 @@
                     <div class="section-divider"></div>
                 </div>
                 <div class="subcategories-grid">
-                    ${category.children.map(child => this.buildSubcategoryCard(child)).join('')}
+                    ${category.children.map((child) => this.buildSubcategoryCard(child)).join('')}
                 </div>
             `;
         },
 
+        // ==================================================
+        // TIPOS (cards pequenos com ícone)
+        // ==================================================
         renderTypes(category) {
             const container = document.getElementById('contentContainer');
             container.innerHTML = `
@@ -197,30 +221,38 @@
                     <div class="section-divider"></div>
                 </div>
                 <div class="types-grid">
-                    ${category.children.map(child => this.buildTypeCard(child)).join('')}
+                    ${category.children.map((child) => this.buildTypeCard(child)).join('')}
                 </div>
             `;
         },
 
+        // ==================================================
+        // CARD DE SUBCATEGORIA
+        // ==================================================
         buildSubcategoryCard(category) {
             const image = getCategoryImage(category.slug);
             const hasChildren = category.children && category.children.length > 0;
             const countLabel = hasChildren ? `${category.children.length} categorias` : 'Ver produtos';
 
             return `
-                <a href="/categoria?category=${category.slug}" class="subcategory-card">
+                <a href="/categoria?category=${U.escapeAttr(category.slug)}" class="subcategory-card">
                     <div class="subcategory-card-image">
-                        <span class="subcategory-card-badge">${escapeHtml(category.name)}</span>
-                        <img src="${image}" alt="${escapeHtml(category.name)}" loading="lazy"
-                            onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg, var(--accent), var(--accent-hover))';">
+                        <span class="subcategory-card-badge">${U.escapeHtml(category.name)}</span>
+                        <img src="${U.escapeAttr(image)}"
+                             alt="${U.escapeAttr(category.name)}"
+                             loading="lazy"
+                             onerror="this.style.display='none'; this.parentElement.style.background='linear-gradient(135deg, var(--accent), var(--accent-hover))';">
                     </div>
                     <div class="subcategory-card-body">
-                        <h3 class="subcategory-card-title">${escapeHtml(category.name)}</h3>
+                        <h3 class="subcategory-card-title">${U.escapeHtml(category.name)}</h3>
                         <p class="subcategory-card-description">
-                            ${escapeHtml(category.description || `Explore nossa coleção de ${category.name.toLowerCase()}`)}
+                            ${U.escapeHtml(
+                                category.description ||
+                                `Explore nossa coleção de ${category.name.toLowerCase()}`
+                            )}
                         </p>
                         <div class="subcategory-card-meta">
-                            <span class="subcategory-card-count">${countLabel}</span>
+                            <span class="subcategory-card-count">${U.escapeHtml(countLabel)}</span>
                             <span class="subcategory-card-arrow"><i class="fas fa-arrow-right"></i></span>
                         </div>
                     </div>
@@ -228,23 +260,30 @@
             `;
         },
 
+        // ==================================================
+        // CARD DE TIPO
+        // ==================================================
         buildTypeCard(category) {
             const icon = getTypeIcon(category.slug, category.name);
             return `
-                <a href="/produtos?category=${category.slug}" class="type-card">
-                    <div class="type-card-icon"><i class="fas ${icon}"></i></div>
-                    <div class="type-card-name">${escapeHtml(category.name)}</div>
+                <a href="/produtos?category=${U.escapeAttr(category.slug)}" class="type-card">
+                    <div class="type-card-icon"><i class="fas ${U.escapeAttr(icon)}"></i></div>
+                    <div class="type-card-name">${U.escapeHtml(category.name)}</div>
                     <div class="type-card-count">Ver produtos</div>
                 </a>
             `;
         },
 
+        // ==================================================
+        // NOT FOUND
+        // ==================================================
         renderNotFound() {
             const hero = document.getElementById('categoryHero');
             const breadcrumb = document.getElementById('breadcrumb');
             const container = document.getElementById('contentContainer');
 
             if (hero) hero.style.display = 'none';
+
             if (breadcrumb) {
                 breadcrumb.innerHTML = `
                     <a href="/"><i class="fas fa-home"></i><span>Início</span></a>
@@ -252,6 +291,7 @@
                     <span class="current">Categoria não encontrada</span>
                 `;
             }
+
             if (container) {
                 container.innerHTML = `
                     <div class="empty-state">
@@ -262,9 +302,12 @@
                     </div>
                 `;
             }
-        }
+        },
     };
 
+    // ======================================================
+    // INICIALIZAÇÃO
+    // ======================================================
     document.addEventListener('DOMContentLoaded', () => {
         CategoryPage.init();
     });

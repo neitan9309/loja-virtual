@@ -6,10 +6,22 @@
     <title>Painel Admin - Luxury Store</title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/admin/admin.css">
 </head>
 <body>
+
+    <!-- ============ GUARD DE AUTENTICAÇÃO ============ -->
+    <!-- Roda ANTES de qualquer coisa: se não tem token, redireciona pro login -->
+    <script>
+        (function () {
+            const token = localStorage.getItem('luxury_admin_token');
+            if (!token) {
+                window.location.replace('/admin/login');
+            }
+        })();
+    </script>
 
     <!-- ============ SIDEBAR ============ -->
     <aside class="sidebar" id="sidebar">
@@ -19,7 +31,7 @@
         </div>
 
         <nav class="sidebar-nav">
-            <button class="nav-item active" data-section="dashboard" data-target="section-dashboard">
+            <button class="nav-item active" data-target="section-dashboard">
                 <i class="fas fa-chart-line"></i>
                 <span>Início</span>
             </button>
@@ -31,15 +43,15 @@
                     <i class="fas fa-chevron-down nav-arrow"></i>
                 </button>
                 <div class="nav-submenu" id="submenuRegistro">
-                    <button class="nav-subitem active" data-section="register-product" data-target="section-register-product">
+                    <button class="nav-subitem active" data-target="section-register-product">
                         <i class="fas fa-box"></i>
                         <span>Registrar Novo Produto</span>
                     </button>
-                    <button class="nav-subitem" data-section="register-movement" data-target="section-register-movement">
+                    <button class="nav-subitem" data-target="section-register-movement">
                         <i class="fas fa-exchange-alt"></i>
                         <span>Registrar Movimentação</span>
                     </button>
-                    <button class="nav-subitem" data-section="edit-product" data-target="section-edit-product">
+                    <button class="nav-subitem" data-target="section-edit-product">
                         <i class="fas fa-edit"></i>
                         <span>Alterar Produto</span>
                     </button>
@@ -52,6 +64,10 @@
                 <i class="fas fa-external-link-alt"></i>
                 <span>Ver Loja</span>
             </a>
+            <button class="sidebar-back" id="adminLogoutBtn" type="button">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Sair</span>
+            </button>
         </div>
     </aside>
 

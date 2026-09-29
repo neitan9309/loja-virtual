@@ -112,7 +112,6 @@ function notFoundHandler(req, res) {
     if (req.path.startsWith('/api/')) {
         return res.status(404).json({ error: 'Rota não encontrada' });
     }
-    // Não-API deixa o Express servir o index (fallback SPA)
     res.status(404).sendFile(require('path').join(__dirname, '..', '..', 'public', 'index.html'));
 }
 

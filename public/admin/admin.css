@@ -2074,6 +2074,38 @@ body {
 }
 
 /* ======================================================
+   BOTÃO DE LOGOUT (sidebar)
+   ====================================================== */
+#adminLogoutBtn {
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 0.9rem;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    margin-top: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--gray-700);
+    border-radius: 0;
+    color: var(--gray-400);
+    transition: var(--transition);
+}
+
+#adminLogoutBtn:hover {
+    color: #ef4444;
+    padding-left: 0.25rem;
+}
+
+#adminLogoutBtn i {
+    transition: transform 0.2s ease;
+}
+
+#adminLogoutBtn:hover i {
+    transform: translateX(-2px);
+}
+
+/* ======================================================
    RESPONSIVO
    ====================================================== */
 @media (max-width: 1024px) {

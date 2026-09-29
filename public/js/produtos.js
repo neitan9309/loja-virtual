@@ -1,47 +1,21 @@
 // ======================================================
-// PÁGINA DE PRODUTOS - Módulo encapsulado em IIFE
+// public/js/produtos.js
+// Página de listagem/busca/filtros
+// Depende de: core/utils.js, core/api.js, core/components.js
 // ======================================================
-(function() {
+(function () {
     'use strict';
 
-    const PAGE_CONFIG = { api: { baseUrl: '/api' } };
+    const U = window.LuxuryUtils;
+    const API = window.LuxuryAPI;
+    const C = window.LuxuryComponents;
 
-    const PageUtils = {
-        formatPrice(value) {
-            if (value === null || value === undefined) return 'R$ 0,00';
-            return `R$ ${parseFloat(value).toFixed(2).replace('.', ',')}`;
-        },
-
-        escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text || '';
-            return div.innerHTML;
-        },
-
-        announce(message) {
-            const announcer = document.getElementById('announcer');
-            if (announcer) announcer.textContent = message;
-        }
-    };
-
-    const PageAPI = {
-        async request(path) {
-            const response = await fetch(`${PAGE_CONFIG.api.baseUrl}${path}`);
-            const data = await response.json().catch(() => ({}));
-            if (!response.ok) {
-                const error = new Error(data.error || `Erro HTTP ${response.status}`);
-                error.status = response.status;
-                throw error;
-            }
-            return data;
-        },
-
-        get(path) { return this.request(path); }
-    };
-
+    // ==================================================
+    // ÍCONES POR CATEGORIA
+    // ==================================================
     const ICONS = {
-        'vestuario': 'fa-tshirt',
-        'perfumaria': 'fa-spray-can',
+        vestuario: 'fa-tshirt',
+        perfumaria: 'fa-spray-can',
         'artigos-esportivos': 'fa-running',
         'vestuario-masculino': 'fa-male',
         'vestuario-feminino': 'fa-female',
@@ -52,12 +26,21 @@
         'esportivos-masculino': 'fa-male',
         'esportivos-feminino': 'fa-female',
         'esportivos-infantil': 'fa-child',
-        'camisas': 'fa-tshirt', 'camisetas': 'fa-tshirt', 'blusas': 'fa-tshirt',
-        'jaquetas': 'fa-tshirt', 'calcas': 'fa-socks', 'shorts': 'fa-socks',
-        'saias': 'fa-tshirt', 'vestidos': 'fa-tshirt', 'acessorios': 'fa-gem',
-        'tenis': 'fa-shoe-prints', 'conjuntos': 'fa-tshirt',
-        'eau-de-parfum': 'fa-spray-can', 'eau-de-toilette': 'fa-spray-can',
-        'colonias': 'fa-spray-can', 'kits': 'fa-gift'
+        camisas: 'fa-tshirt',
+        camisetas: 'fa-tshirt',
+        blusas: 'fa-tshirt',
+        jaquetas: 'fa-tshirt',
+        calcas: 'fa-socks',
+        shorts: 'fa-socks',
+        saias: 'fa-tshirt',
+        vestidos: 'fa-tshirt',
+        acessorios: 'fa-gem',
+        tenis: 'fa-shoe-prints',
+        conjuntos: 'fa-tshirt',
+        'eau-de-parfum': 'fa-spray-can',
+        'eau-de-toilette': 'fa-spray-can',
+        colonias: 'fa-spray-can',
+        kits: 'fa-gift',
     };
 
     function getIconForCategory(slug, name) {
@@ -74,6 +57,9 @@
         return 'fa-tag';
     }
 
+    // ==================================================
+    // PÁGINA
+    // ==================================================
     const ProductsPage = {
         tree: [],
         currentCategory: null,
@@ -88,15 +74,19 @@
         },
 
         parseQueryString() {
-            const params = new URLSearchParams(window.location.search);
-            this.currentCategory = params.get('category') || null;
-            this.filter = params.get('filter') || null;
-            this.searchQuery = params.get('search') || null;
+            const params = U.getQueryParams();
+            this.currentCategory = params.category || null;
+            this.filter = params.filter || null;
+            this.searchQuery = params.search || null;
         },
 
         async loadCategoryTree() {
             try {
-                this.tree = await PageAPI.get('/categories/tree-full');
+                // ✅ Cache compartilhado (mesmo do categoria.js)
+                this.tree = await API.get('/categories/tree-full', {
+                    useCache: true,
+                    ttl: 5 * 60 * 1000,
+                });
             } catch (error) {
                 console.error('Erro ao carregar categorias:', error);
                 this.tree = [];
@@ -120,9 +110,9 @@
             const container = document.getElementById('contentContainer');
             if (!container) return;
 
-            container.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><span>Carregando...</span></div>';
+            container.innerHTML = C.renderLoading('Carregando...');
 
-            // ✅ Busca por texto tem prioridade
+            // Busca por texto tem prioridade
             if (this.searchQuery && !this.currentCategory && !this.filter) {
                 return this.renderSearchResults();
             }
@@ -150,6 +140,9 @@
             return this.renderProductsOfCategory(node);
         },
 
+        // ==================================================
+        // CATEGORIAS RAIZ
+        // ==================================================
         renderRootCategories() {
             this.updateBreadcrumb([{ name: 'Início', url: '/' }]);
             this.updatePageHeader('Produtos', 'Explore nossa coleção exclusiva');
@@ -158,18 +151,21 @@
             const grid = document.createElement('div');
             grid.className = 'categories-grid';
 
-            grid.innerHTML = this.tree.map(cat => this.buildCategoryCard(cat)).join('');
+            grid.innerHTML = this.tree.map((cat) => this.buildCategoryCard(cat)).join('');
             container.innerHTML = '';
             container.appendChild(grid);
         },
 
+        // ==================================================
+        // FILHOS DE CATEGORIA
+        // ==================================================
         renderCategoryChildren(category) {
             const breadcrumbItems = [{ name: 'Início', url: '/' }];
             this.categoryPath.forEach((item, idx) => {
                 const isLast = idx === this.categoryPath.length - 1;
                 breadcrumbItems.push({
                     name: item.name,
-                    url: isLast ? null : `/categoria?category=${item.slug}`
+                    url: isLast ? null : `/categoria?category=${item.slug}`,
                 });
             });
 
@@ -183,41 +179,34 @@
             const grid = document.createElement('div');
             grid.className = 'categories-grid';
 
-            grid.innerHTML = category.children.map(child => this.buildCategoryCard(child)).join('');
+            grid.innerHTML = category.children
+                .map((child) => this.buildCategoryCard(child))
+                .join('');
             container.innerHTML = '';
             container.appendChild(grid);
         },
 
+        // ==================================================
+        // CARD DE CATEGORIA (usa LuxuryComponents)
+        // ==================================================
         buildCategoryCard(category) {
-            const icon = getIconForCategory(category.slug, category.name);
-            const hasChildren = category.children && category.children.length > 0;
-            const countLabel = hasChildren
-                ? `${category.children.length} subcategorias`
-                : 'Ver produtos';
-            const arrowLabel = hasChildren ? 'Escolher' : 'Ver produtos';
-
-            return `
-                <a href="/categoria?category=${category.slug}" class="category-card">
-                    <div class="category-card-icon">
-                        <i class="fas ${icon}"></i>
-                    </div>
-                    <div class="category-card-name">${PageUtils.escapeHtml(category.name)}</div>
-                    ${category.description ? `<div class="category-card-description">${PageUtils.escapeHtml(category.description)}</div>` : ''}
-                    <div class="category-card-count">${countLabel}</div>
-                    <div class="category-card-arrow">
-                        <i class="fas fa-arrow-right"></i> ${arrowLabel}
-                    </div>
-                </a>
-            `;
+            return C.renderCategoryCard(category, {
+                icon: getIconForCategory(category.slug, category.name),
+                href: `/categoria?category=${category.slug}`,
+                arrowLabel: category.children?.length > 0 ? 'Escolher' : 'Ver produtos',
+            });
         },
 
+        // ==================================================
+        // PRODUTOS DE UMA CATEGORIA FOLHA
+        // ==================================================
         async renderProductsOfCategory(category) {
             const breadcrumbItems = [{ name: 'Início', url: '/' }];
             this.categoryPath.forEach((item, idx) => {
                 const isLast = idx === this.categoryPath.length - 1;
                 breadcrumbItems.push({
                     name: item.name,
-                    url: isLast ? null : `/categoria?category=${item.slug}`
+                    url: isLast ? null : `/categoria?category=${item.slug}`,
                 });
             });
 
@@ -228,58 +217,57 @@
             );
 
             const container = document.getElementById('contentContainer');
-            container.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><span>Carregando produtos...</span></div>';
+            container.innerHTML = C.renderLoading('Carregando produtos...');
 
             try {
-                const data = await PageAPI.get(`/products?category=${category.slug}&limit=100`);
+                const data = await API.get(`/products?category=${category.slug}&limit=100`);
                 const products = data.products || [];
 
                 container.innerHTML = '';
 
                 if (products.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <i class="fas fa-box-open"></i>
-                            <h3>Nenhum produto encontrado</h3>
-                            <p>Ainda não temos produtos cadastrados nesta categoria. Volte em breve!</p>
-                        </div>
-                    `;
+                    container.innerHTML = C.renderEmptyState({
+                        icon: 'fa-box-open',
+                        title: 'Nenhum produto encontrado',
+                        message: 'Ainda não temos produtos cadastrados nesta categoria. Volte em breve!',
+                    });
                     return;
                 }
 
                 const grid = document.createElement('div');
                 grid.className = 'products-grid-page';
-                grid.innerHTML = products.map(p => this.buildProductCard(p)).join('');
+                grid.innerHTML = products.map((p) => this.buildProductCard(p)).join('');
                 container.appendChild(grid);
             } catch (error) {
                 console.error('Erro ao carregar produtos:', error);
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <h3>Erro ao carregar produtos</h3>
-                        <p>Tente novamente em alguns instantes.</p>
-                    </div>
-                `;
+                container.innerHTML = C.renderEmptyState({
+                    icon: 'fa-exclamation-triangle',
+                    title: 'Erro ao carregar produtos',
+                    message: 'Tente novamente em alguns instantes.',
+                });
             }
         },
 
+        // ==================================================
+        // PRODUTOS FILTRADOS
+        // ==================================================
         async renderFilteredProducts() {
             const filterLabels = {
-                'new': { title: 'Lançamentos', subtitle: 'Os produtos mais recentes da coleção' },
-                'best_seller': { title: 'Mais Vendidos', subtitle: 'Os produtos com maior número de vendas' },
-                'featured': { title: 'Em Promoção', subtitle: 'Produtos com desconto ativo' }
+                new: { title: 'Lançamentos', subtitle: 'Os produtos mais recentes da coleção' },
+                best_seller: { title: 'Mais Vendidos', subtitle: 'Os produtos com maior número de vendas' },
+                featured: { title: 'Em Promoção', subtitle: 'Produtos com desconto ativo' },
             };
 
             const label = filterLabels[this.filter] || { title: 'Produtos', subtitle: 'Confira nossa coleção' };
 
             this.updateBreadcrumb([
                 { name: 'Início', url: '/' },
-                { name: label.title, url: null }
+                { name: label.title, url: null },
             ]);
             this.updatePageHeader(label.title, label.subtitle);
 
             const container = document.getElementById('contentContainer');
-            container.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><span>Carregando produtos...</span></div>';
+            container.innerHTML = C.renderLoading('Carregando produtos...');
 
             try {
                 let url = '/products?limit=100';
@@ -287,52 +275,54 @@
                 if (this.filter === 'best_seller') url += '&best_seller=true&sort=sales_count&order=DESC';
                 if (this.filter === 'featured') url += '&on_sale=true&sort=discount_percent&order=DESC';
 
-                const data = await PageAPI.get(url);
+                const data = await API.get(url);
                 const products = data.products || [];
 
                 container.innerHTML = '';
 
                 if (products.length === 0) {
-                    container.innerHTML = `
-                        <div class="empty-state">
-                            <i class="fas fa-box-open"></i>
-                            <h3>Nenhum produto encontrado</h3>
-                            <p>Não há produtos nesta seleção no momento.</p>
-                        </div>
-                    `;
+                    container.innerHTML = C.renderEmptyState({
+                        icon: 'fa-box-open',
+                        title: 'Nenhum produto encontrado',
+                        message: 'Não há produtos nesta seleção no momento.',
+                    });
                     return;
                 }
 
                 const grid = document.createElement('div');
                 grid.className = 'products-grid-page';
-                grid.innerHTML = products.map(p => this.buildProductCard(p)).join('');
+                grid.innerHTML = products.map((p) => this.buildProductCard(p)).join('');
                 container.appendChild(grid);
             } catch (error) {
                 console.error('Erro ao carregar produtos:', error);
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <h3>Erro ao carregar produtos</h3>
-                        <p>Tente novamente em alguns instantes.</p>
-                    </div>
-                `;
+                container.innerHTML = C.renderEmptyState({
+                    icon: 'fa-exclamation-triangle',
+                    title: 'Erro ao carregar produtos',
+                    message: 'Tente novamente em alguns instantes.',
+                });
             }
         },
 
+        // ==================================================
+        // RESULTADOS DE BUSCA
+        // ==================================================
         async renderSearchResults() {
             const query = this.searchQuery;
 
             this.updateBreadcrumb([
                 { name: 'Início', url: '/' },
-                { name: `Busca: "${query}"`, url: null }
+                { name: `Busca: "${query}"`, url: null },
             ]);
-            this.updatePageHeader(`Resultados para "${query}"`, 'Produtos encontrados com base na sua busca');
+            this.updatePageHeader(
+                `Resultados para "${query}"`,
+                'Produtos encontrados com base na sua busca'
+            );
 
             const container = document.getElementById('contentContainer');
-            container.innerHTML = '<div class="loading-state"><i class="fas fa-spinner fa-spin"></i><span>Buscando...</span></div>';
+            container.innerHTML = C.renderLoading('Buscando...');
 
             try {
-                const data = await PageAPI.get(`/products?search=${encodeURIComponent(query)}&limit=100`);
+                const data = await API.get(`/products?search=${encodeURIComponent(query)}&limit=100`);
                 const products = data.products || [];
 
                 container.innerHTML = '';
@@ -342,7 +332,7 @@
                         <div class="empty-state">
                             <i class="fas fa-search"></i>
                             <h3>Nenhum produto encontrado</h3>
-                            <p>Não encontramos resultados para "<strong>${PageUtils.escapeHtml(query)}</strong>".</p>
+                            <p>Não encontramos resultados para "<strong>${U.escapeHtml(query)}</strong>".</p>
                             <a href="/produtos" class="btn btn-primary" style="margin-top: 1rem;">Ver todos os produtos</a>
                         </div>
                     `;
@@ -351,102 +341,56 @@
 
                 const grid = document.createElement('div');
                 grid.className = 'products-grid-page';
-                grid.innerHTML = products.map(p => this.buildProductCard(p)).join('');
+                grid.innerHTML = products.map((p) => this.buildProductCard(p)).join('');
                 container.appendChild(grid);
             } catch (error) {
                 console.error('Erro ao buscar produtos:', error);
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <i class="fas fa-exclamation-triangle"></i>
-                        <h3>Erro ao buscar produtos</h3>
-                        <p>Tente novamente em alguns instantes.</p>
-                    </div>
-                `;
+                container.innerHTML = C.renderEmptyState({
+                    icon: 'fa-exclamation-triangle',
+                    title: 'Erro ao buscar produtos',
+                    message: 'Tente novamente em alguns instantes.',
+                });
             }
         },
 
+        // ==================================================
+        // NOT FOUND
+        // ==================================================
         renderNotFound() {
             this.updateBreadcrumb([
                 { name: 'Início', url: '/' },
-                { name: 'Categoria não encontrada', url: null }
+                { name: 'Categoria não encontrada', url: null },
             ]);
             this.updatePageHeader('Categoria não encontrada', 'A categoria que você procura não existe');
 
             const container = document.getElementById('contentContainer');
-            container.innerHTML = `
-                <div class="empty-state">
-                    <i class="fas fa-search"></i>
-                    <h3>Categoria não encontrada</h3>
-                    <p>A categoria que você procura não existe ou foi removida.</p>
-                    <a href="/produtos" class="btn btn-primary" style="margin-top: 1rem;">
-                        Ver todas as categorias
-                    </a>
-                </div>
-            `;
+            container.innerHTML = C.renderEmptyState({
+                icon: 'fa-search',
+                title: 'Categoria não encontrada',
+                message: 'A categoria que você procura não existe ou foi removida.',
+                cta: { href: '/produtos', label: 'Ver todas as categorias' },
+            });
         },
 
+        // ==================================================
+        // CARD DE PRODUTO (usa LuxuryComponents)
+        // ==================================================
         buildProductCard(product) {
-            const hasImage = product.images && product.images.length > 0 && product.images[0].url;
-            const imageHtml = hasImage
-                ? `<img class="product-image" src="${product.images[0].url}" alt="${PageUtils.escapeHtml(product.name)}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'product-image-placeholder\\'><i class=\\'fas fa-image\\'></i></div>'">`
-                : `<div class="product-image-placeholder"><i class="fas fa-image"></i></div>`;
-
-            const discountBadge = product.discount_percent > 0
-                ? `<span class="product-badge discount">-${parseFloat(product.discount_percent).toFixed(0)}%</span>`
-                : (product.is_new ? `<span class="product-badge">Novo</span>` : '');
-
-            const originalPrice = parseFloat(product.price);
-            const currentPrice = product.discount_percent > 0
-                ? originalPrice * (1 - product.discount_percent / 100)
-                : originalPrice;
-
-            const oldPriceHtml = product.discount_percent > 0
-                ? `<span class="product-old-price">R$ ${PageUtils.formatPrice(originalPrice)}</span>`
-                : '';
-
-            return `
-                <article class="product-card">
-                    <div class="product-image-wrapper">
-                        ${discountBadge}
-                        ${imageHtml}
-                    </div>
-                    <div class="product-info">
-                        <h3 class="product-name">${PageUtils.escapeHtml(product.name)}</h3>
-                        ${product.short_description ? `<p class="product-short-desc">${PageUtils.escapeHtml(product.short_description)}</p>` : ''}
-                        <div class="product-price-wrapper">
-                            <span class="product-price">R$ ${PageUtils.formatPrice(currentPrice)}</span>
-                            ${oldPriceHtml}
-                        </div>
-                        <a href="/produto/${product.slug}" class="product-btn">Ver Produto</a>
-                    </div>
-                </article>
-            `;
+            return C.renderProductCard(product, {
+                showShortDesc: true,
+                showButton: true,
+                buttonText: 'Ver Produto',
+                href: `/produto/${product.slug}`,
+            });
         },
 
+        // ==================================================
+        // UI HELPERS
+        // ==================================================
         updateBreadcrumb(items) {
             const breadcrumb = document.getElementById('breadcrumb');
             if (!breadcrumb) return;
-
-            const parts = [];
-
-            items.forEach((item, index) => {
-                const isLast = index === items.length - 1;
-
-                if (isLast) {
-                    parts.push(`<span class="current">${PageUtils.escapeHtml(item.name)}</span>`);
-                } else if (item.url) {
-                    const icon = index === 0 ? '<i class="fas fa-home"></i>' : '';
-                    parts.push(`<a href="${item.url}">${icon}<span>${PageUtils.escapeHtml(item.name)}</span></a>`);
-                } else {
-                    parts.push(`<span>${PageUtils.escapeHtml(item.name)}</span>`);
-                }
-
-                if (!isLast) {
-                    parts.push('<i class="fas fa-chevron-right separator"></i>');
-                }
-            });
-
-            breadcrumb.innerHTML = parts.join('');
+            breadcrumb.innerHTML = C.renderBreadcrumb(items);
         },
 
         updatePageHeader(title, subtitle) {
@@ -455,9 +399,12 @@
             if (titleEl) titleEl.textContent = title;
             if (subtitleEl) subtitleEl.textContent = subtitle;
             document.title = `${title} - Luxury Store`;
-        }
+        },
     };
 
+    // ======================================================
+    // INICIALIZAÇÃO
+    // ======================================================
     document.addEventListener('DOMContentLoaded', () => {
         ProductsPage.init();
     });

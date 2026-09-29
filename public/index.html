@@ -14,6 +14,13 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="dns-prefetch" href="https://images.pexels.com">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- ✅ Novos CSS globais (devem vir ANTES dos CSS específicos) -->
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/animations.css">
+    <link rel="stylesheet" href="/css/components.css">
+
+    <!-- CSS específico da página -->
     <link rel="stylesheet" href="/css/styles.css">
 
     <script type="application/ld+json">
@@ -186,17 +193,6 @@
             </div>
         </section>
 
-        <!-- ============ NOVA SEÇÃO: EXPLORE NOSSAS CATEGORIAS ============ -->
-        <section class="home-categories animate-on-scroll" aria-label="Explore nossas categorias">
-            <h2>Explore Nossas Categorias</h2>
-            <div class="home-categories-grid" id="homeCategoriesGrid">
-                <div class="home-categories-loading">
-                    <i class="fas fa-spinner fa-spin"></i>
-                    <span>Carregando categorias...</span>
-                </div>
-            </div>
-        </section>
-
         <section class="featured-products animate-on-scroll" aria-label="Produtos em destaque">
             <h2>Produtos em Destaque</h2>
             <div class="featured-carousel" id="featuredCarousel">
@@ -231,13 +227,23 @@
                 <h2>Oferta Especial para Novos Clientes</h2>
                 <p>Cadastre-se agora e ganhe <strong>20% de desconto</strong> na sua primeira compra.</p>
                 <div class="promo-video-actions">
-                    <a href="#" class="btn btn-primary">Cadastrar Agora</a>
+                    <a href="/login" class="btn btn-primary">Cadastrar Agora</a>
                     <a href="#" class="btn btn-outline-white" id="btnSaibaMais">Saiba Mais</a>
                 </div>
                 <div class="promo-video-features">
                     <div class="promo-feature"><i class="fas fa-check-circle"></i><span>20% OFF na primeira compra</span></div>
                     <div class="promo-feature"><i class="fas fa-check-circle"></i><span>Frete grátis acima de R$99,90</span></div>
                     <div class="promo-feature"><i class="fas fa-check-circle"></i><span>Cashback de 5% em todas as compras</span></div>
+                </div>
+            </div>
+        </section>
+
+        <section class="home-categories animate-on-scroll" aria-label="Explore nossas categorias">
+            <h2>Explore Nossas Categorias</h2>
+            <div class="home-categories-grid" id="homeCategoriesGrid">
+                <div class="home-categories-loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>Carregando categorias...</span>
                 </div>
             </div>
         </section>
@@ -278,7 +284,7 @@
                 <div class="info-benefit"><i class="fas fa-check-circle"></i><div><strong>Ofertas Exclusivas</strong><p>Acesso antecipado a promoções</p></div></div>
                 <div class="info-benefit"><i class="fas fa-check-circle"></i><div><strong>Cashback</strong><p>5% de volta em todas as compras</p></div></div>
             </div>
-            <a href="#" class="btn btn-primary" style="margin-top:2rem;display:inline-block;">Cadastrar Agora</a>
+            <a href="/login" class="btn btn-primary" style="margin-top:2rem;display:inline-block;">Cadastrar Agora</a>
         </div>
     </div>
 
@@ -338,7 +344,13 @@
         </div>
     </footer>
 
-    <script src="/js/cart.js"></script>
-    <script src="/js/script.js"></script>
+    <!-- ✅ Core JS (deve vir ANTES dos outros scripts) -->
+    <script src="/js/core/utils.js" defer></script>
+    <script src="/js/core/api.js" defer></script>
+    <script src="/js/core/components.js" defer></script>
+
+    <!-- Scripts da página -->
+    <script src="/js/cart.js" defer></script>
+    <script src="/js/script.js" defer></script>
 </body>
 </html>

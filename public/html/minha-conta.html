@@ -8,6 +8,13 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👔</text></svg>">
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- ✅ Novos CSS globais -->
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/animations.css">
+    <link rel="stylesheet" href="/css/components.css">
+
+    <!-- CSS específico -->
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="/css/minha-conta.css">
 </head>
@@ -34,7 +41,7 @@
                 </div>
 
                 <div class="dropdown" data-category="vestuario">
-                    <a href="/categoria?category=vestuario" class="nav-link dropdown-toggle">
+                    <a href="/categoria?category=vestuario" class="nav-link dropdown-toggle" aria-haspopup="true" aria-expanded="false">
                         <span class="dropdown-label">Vestuário</span>
                         <i class="fas fa-chevron-down dropdown-icon"></i>
                     </a>
@@ -42,7 +49,7 @@
                 </div>
 
                 <div class="dropdown" data-category="perfumaria">
-                    <a href="/categoria?category=perfumaria" class="nav-link dropdown-toggle">
+                    <a href="/categoria?category=perfumaria" class="nav-link dropdown-toggle" aria-haspopup="true" aria-expanded="false">
                         <span class="dropdown-label">Perfumaria</span>
                         <i class="fas fa-chevron-down dropdown-icon"></i>
                     </a>
@@ -50,7 +57,7 @@
                 </div>
 
                 <div class="dropdown" data-category="artigos-esportivos">
-                    <a href="/categoria?category=artigos-esportivos" class="nav-link dropdown-toggle">
+                    <a href="/categoria?category=artigos-esportivos" class="nav-link dropdown-toggle" aria-haspopup="true" aria-expanded="false">
                         <span class="dropdown-label">Artigos Esportivos</span>
                         <i class="fas fa-chevron-down dropdown-icon"></i>
                     </a>
@@ -58,7 +65,7 @@
                 </div>
 
                 <div class="dropdown">
-                    <a href="/produtos?filter=featured" class="nav-link dropdown-toggle">
+                    <a href="/produtos?filter=featured" class="nav-link dropdown-toggle" aria-haspopup="true" aria-expanded="false">
                         <span class="dropdown-label">Novidades</span>
                         <i class="fas fa-chevron-down dropdown-icon"></i>
                     </a>
@@ -71,7 +78,7 @@
             </nav>
 
             <div class="header-icons">
-                <button class="icon-btn" aria-label="Buscar produtos"><i class="fas fa-search"></i></button>
+                <button class="icon-btn" id="searchBtn" aria-label="Buscar produtos"><i class="fas fa-search"></i></button>
                 <button class="icon-btn" aria-label="Minha conta" id="accountBtn"><i class="fas fa-user"></i></button>
                 <button class="icon-btn cart-btn" aria-label="Carrinho de compras">
                     <i class="fas fa-shopping-bag"></i>
@@ -279,7 +286,6 @@
                         </div>
                     </form>
 
-                    <!-- ✅ NOVO: Zona de perigo -->
                     <div class="danger-zone">
                         <div class="danger-header">
                             <i class="fas fa-exclamation-triangle"></i>
@@ -319,7 +325,7 @@
                 <p>Cadastre seu e-mail e ganhe <strong>20% de desconto</strong> na primeira compra!</p>
                 <form class="newsletter-form" id="newsletterForm" novalidate>
                     <div class="input-group">
-                        <input type="email" class="newsletter-input" placeholder="Seu melhor e-mail" required>
+                        <input type="email" class="newsletter-input" placeholder="Seu melhor e-mail" required aria-label="E-mail para newsletter">
                         <button type="submit" class="newsletter-btn">Cadastrar</button>
                     </div>
                     <div class="form-feedback" id="newsletterFeedback" aria-live="polite"></div>
@@ -329,13 +335,19 @@
         <div class="footer-bottom">
             <div class="footer-bottom-content">
                 <p>&copy; 2024 Luxury Store. Todos os direitos reservados.</p>
-                <button class="customer-service-btn"><i class="fas fa-headset"></i> Atendimento ao Cliente</button>
+                <button class="customer-service-btn" aria-label="Atendimento ao cliente"><i class="fas fa-headset"></i> Atendimento ao Cliente</button>
             </div>
         </div>
     </footer>
 
-    <script src="/js/cart.js"></script>
-    <script src="/js/script.js"></script>
-    <script src="/js/minha-conta.js"></script>
+    <!-- ✅ Core JS -->
+    <script src="/js/core/utils.js" defer></script>
+    <script src="/js/core/api.js" defer></script>
+    <script src="/js/core/components.js" defer></script>
+
+    <!-- Scripts da página -->
+    <script src="/js/cart.js" defer></script>
+    <script src="/js/script.js" defer></script>
+    <script src="/js/minha-conta.js" defer></script>
 </body>
 </html>
