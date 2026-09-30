@@ -6,7 +6,6 @@
 (function () {
     'use strict';
 
-    // Aliases
     const U = window.LuxuryUtils;
     const API = window.LuxuryAPI;
     const C = window.LuxuryComponents;
@@ -69,48 +68,50 @@
     // ======================================================
     // MENU MOBILE
     // ======================================================
-    const MobileMenu = {
-        init() {
-            this.toggle = document.getElementById('menuToggle');
-            this.closeBtn = document.getElementById('closeMenu');
-            this.menu = document.getElementById('navMenu');
-            this.overlay = document.getElementById('menuOverlay');
+const MobileMenu = {
+    init() {
+        this.toggle = document.getElementById('menuToggle');
+        this.closeBtn = document.getElementById('closeMenu');
+        this.menu = document.getElementById('navMenu');
+        this.overlay = document.getElementById('menuOverlay');
 
-            this.toggle?.addEventListener('click', () => this.open());
-            this.closeBtn?.addEventListener('click', () => this.close());
-            this.overlay?.addEventListener('click', () => this.close());
+        this.toggle?.addEventListener('click', () => this.open());
+        this.closeBtn?.addEventListener('click', () => this.close());
+        this.overlay?.addEventListener('click', () => this.close());
 
-            document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && this.menu?.classList.contains('active')) this.close();
-            });
-        },
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.menu?.classList.contains('active')) this.close();
+        });
+    },
 
-        open() {
-            if (!this.menu || !this.overlay || !this.toggle) return;
-            this.menu.classList.add('active');
-            this.overlay.classList.add('active');
-            document.body.style.overflow = 'hidden';
-            this.toggle.setAttribute('aria-expanded', 'true');
-            U.announce('Menu aberto');
-        },
+    open() {
+        if (!this.menu || !this.overlay || !this.toggle) return;
+        this.menu.classList.add('active');
+        this.overlay.classList.add('active');
+        document.body.classList.add('menu-open');        // ← ADICIONAR ESTA LINHA
+        document.body.style.overflow = 'hidden';
+        this.toggle.setAttribute('aria-expanded', 'true');
+        U.announce('Menu aberto');
+    },
 
-        close() {
-            if (!this.menu || !this.overlay || !this.toggle) return;
-            this.menu.classList.remove('active');
-            this.overlay.classList.remove('active');
-            document.body.style.overflow = '';
-            this.toggle.setAttribute('aria-expanded', 'false');
-            document.querySelectorAll('.dropdown').forEach((d) => {
-                d.classList.remove('active');
-                const icon = d.querySelector('.dropdown-icon');
-                if (icon) icon.style.transform = 'rotate(0deg)';
-            });
-            U.announce('Menu fechado');
-        },
-    };
+    close() {
+        if (!this.menu || !this.overlay || !this.toggle) return;
+        this.menu.classList.remove('active');
+        this.overlay.classList.remove('active');
+        document.body.classList.remove('menu-open');     // ← ADICIONAR ESTA LINHA
+        document.body.style.overflow = '';
+        this.toggle.setAttribute('aria-expanded', 'false');
+        document.querySelectorAll('.dropdown').forEach((d) => {
+            d.classList.remove('active');
+            const icon = d.querySelector('.dropdown-icon');
+            if (icon) icon.style.transform = 'rotate(0deg)';
+        });
+        U.announce('Menu fechado');
+    },
+};
 
     // ======================================================
-    // DROPDOWNS (mobile)
+    // DROPDOWNS (mobile abre submenu, desktop navega)
     // ======================================================
     const Dropdowns = {
         init() {
@@ -122,12 +123,11 @@
 
                 toggle.addEventListener('click', (e) => {
                     const isMobile = window.innerWidth <= CONFIG.promo.mobileBreakpoint;
-                    const href = toggle.getAttribute('href') || '';
-                    const isHash = href === '#' || href === '';
 
+                    // ✅ Desktop: deixa navegar normalmente
                     if (!isMobile) return;
-                    if (!isHash) return;
 
+                    // ✅ Mobile: SEMPRE previne, sempre abre/fecha
                     e.preventDefault();
                     e.stopPropagation();
 
@@ -719,7 +719,7 @@
     };
 
     // ======================================================
-    // PRODUTOS EM DESTAQUE (carrossel)
+    // PRODUTOS EM DESTAQUE
     // ======================================================
     const FeaturedProducts = {
         async load() {
@@ -745,7 +745,6 @@
                     return;
                 }
 
-                // ✅ Usa component
                 track.innerHTML = products
                     .map((product) => C.renderProductCard(product, {
                         showShortDesc: true,
@@ -914,7 +913,7 @@
     };
 
     // ======================================================
-    // CATEGORIAS NA HOME (usa cache compartilhado)
+    // CATEGORIAS NA HOME (grid desktop / carrossel mobile)
     // ======================================================
     const HomeCategories = {
         ICONS: {
@@ -923,18 +922,23 @@
             'artigos-esportivos': 'fa-running',
         },
 
+        categories: [],
+
         async init() {
             const grid = document.getElementById('homeCategoriesGrid');
+            const dotsContainer = document.getElementById('homeCategoriesDots');
+            const prevBtn = document.getElementById('homeCategoriesPrev');
+            const nextBtn = document.getElementById('homeCategoriesNext');
+
             if (!grid) return;
 
             try {
-                // ✅ MESMO cache do MegaMenu e do categoria.js
-                const categories = await API.get('/categories/tree-full', {
+                this.categories = await API.get('/categories/tree-full', {
                     useCache: true,
                     ttl: 5 * 60 * 1000,
                 });
 
-                if (!categories || categories.length === 0) {
+                if (!this.categories || this.categories.length === 0) {
                     grid.innerHTML = `
                         <div class="home-categories-error">
                             <i class="fas fa-box-open"></i>
@@ -944,13 +948,15 @@
                     return;
                 }
 
-                grid.innerHTML = categories
+                grid.innerHTML = this.categories
                     .map((cat) => C.renderCategoryCard(cat, {
                         icon: this.ICONS[cat.slug] || 'fa-tag',
                         href: `/categoria?category=${cat.slug}`,
                         arrowLabel: 'Escolher',
                     }))
                     .join('');
+
+                this.setupCarousel(grid, dotsContainer, prevBtn, nextBtn);
             } catch (error) {
                 console.error('Erro ao carregar categorias da home:', error);
                 grid.innerHTML = `
@@ -961,15 +967,159 @@
                 `;
             }
         },
+
+        setupCarousel(grid, dotsContainer, prevBtn, nextBtn) {
+            if (dotsContainer) dotsContainer.innerHTML = '';
+
+            let currentIndex = 0;
+            let isTransitioning = false;
+
+            const isMobile = () => window.innerWidth <= CONFIG.promo.mobileBreakpoint;
+
+            const applyLayout = () => {
+                const btns = document.querySelectorAll('.home-categories-btn');
+                const dots = document.getElementById('homeCategoriesDots');
+
+                if (isMobile()) {
+                    grid.classList.add('is-carousel');
+                    btns.forEach((b) => b.removeAttribute('hidden'));
+                    dots?.removeAttribute('hidden');
+                } else {
+                    grid.classList.remove('is-carousel');
+                    btns.forEach((b) => b.setAttribute('hidden', ''));
+                    dots?.setAttribute('hidden', '');
+                }
+                updateCarousel(false);
+            };
+
+            const updateCarousel = (animate = true) => {
+                if (!isMobile()) {
+                    grid.style.transition = 'none';
+                    grid.style.transform = '';
+                    return;
+                }
+
+                const total = this.categories.length;
+                if (total === 0) return;
+
+                currentIndex = Math.max(0, Math.min(currentIndex, total - 1));
+
+                const card = grid.querySelector('.category-card');
+                if (!card) return;
+
+                const cardWidth = card.offsetWidth;
+                const gap = parseFloat(getComputedStyle(grid).gap) || 0;
+                const offset = -(cardWidth + gap) * currentIndex;
+
+                grid.style.transition = animate
+                    ? 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                    : 'none';
+                grid.style.transform = `translateX(${offset}px)`;
+
+                if (dotsContainer) {
+                    dotsContainer.querySelectorAll('.home-categories-dot').forEach((dot, i) => {
+                        dot.classList.toggle('active', i === currentIndex);
+                    });
+                }
+
+                if (prevBtn) prevBtn.disabled = currentIndex === 0;
+                if (nextBtn) nextBtn.disabled = currentIndex >= total - 1;
+            };
+
+            const renderDots = () => {
+                if (!dotsContainer) return;
+                dotsContainer.innerHTML = '';
+
+                if (!isMobile() || this.categories.length <= 1) return;
+
+                this.categories.forEach((_, i) => {
+                    const dot = document.createElement('button');
+                    dot.className = 'home-categories-dot';
+                    dot.setAttribute('aria-label', `Ir para categoria ${i + 1}`);
+                    dot.addEventListener('click', () => {
+                        currentIndex = i;
+                        updateCarousel(true);
+                    });
+                    dotsContainer.appendChild(dot);
+                });
+                updateCarousel(false);
+            };
+
+            const goTo = (index) => {
+                if (isTransitioning) return;
+                const total = this.categories.length;
+                if (index < 0 || index >= total || index === currentIndex) return;
+
+                isTransitioning = true;
+                currentIndex = index;
+                updateCarousel(true);
+                setTimeout(() => {
+                    isTransitioning = false;
+                }, 450);
+            };
+
+            prevBtn?.addEventListener('click', () => goTo(currentIndex - 1));
+            nextBtn?.addEventListener('click', () => goTo(currentIndex + 1));
+
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let isSwiping = false;
+
+            grid.addEventListener(
+                'touchstart',
+                (e) => {
+                    if (!isMobile() || isTransitioning) return;
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                    isSwiping = false;
+                },
+                { passive: true }
+            );
+
+            grid.addEventListener(
+                'touchmove',
+                (e) => {
+                    if (!isMobile() || isTransitioning) return;
+                    const deltaX = e.touches[0].clientX - touchStartX;
+                    const deltaY = e.touches[0].clientY - touchStartY;
+                    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 5) {
+                        isSwiping = true;
+                        e.preventDefault();
+                    }
+                },
+                { passive: false }
+            );
+
+            grid.addEventListener('touchend', (e) => {
+                if (!isMobile() || isTransitioning) return;
+                if (isSwiping) {
+                    const deltaX = e.changedTouches[0].clientX - touchStartX;
+                    if (Math.abs(deltaX) > 40) {
+                        if (deltaX < 0) goTo(currentIndex + 1);
+                        else goTo(currentIndex - 1);
+                    }
+                }
+                isSwiping = false;
+            });
+
+            const debouncedResize = U.debounce(() => {
+                applyLayout();
+                renderDots();
+            }, 200);
+
+            window.addEventListener('resize', debouncedResize);
+
+            applyLayout();
+            renderDots();
+        },
     };
 
     // ======================================================
-    // MEGA MENU (usa MESMO cache)
+    // MEGA MENU
     // ======================================================
     const MegaMenu = {
         async init() {
             try {
-                // ✅ MESMO cache
                 const tree = await API.get('/categories/tree-full', {
                     useCache: true,
                     ttl: 5 * 60 * 1000,
@@ -1335,13 +1485,11 @@
         Newsletter.init();
         CustomerService.init();
 
-        // Aguarda essas duas em paralelo
         await Promise.all([
             FeaturedProducts.load(),
             MegaMenu.init(),
         ]);
 
-        // HomeCategories usa MESMO cache — roda depois
         await HomeCategories.init();
 
         SearchModal.init();

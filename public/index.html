@@ -15,12 +15,9 @@
     <link rel="dns-prefetch" href="https://images.pexels.com">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- ✅ Novos CSS globais (devem vir ANTES dos CSS específicos) -->
     <link rel="stylesheet" href="/css/variables.css">
     <link rel="stylesheet" href="/css/animations.css">
     <link rel="stylesheet" href="/css/components.css">
-
-    <!-- CSS específico da página -->
     <link rel="stylesheet" href="/css/styles.css">
 
     <script type="application/ld+json">
@@ -105,8 +102,9 @@
                 </button>
             </div>
         </div>
-        <div class="menu-overlay" id="menuOverlay"></div>
     </header>
+    <!-- ✅ Overlay MOVIDO pra FORA do header -->
+    <div class="menu-overlay" id="menuOverlay"></div>
 
     <!-- ============ MAIN ============ -->
     <main id="main-content">
@@ -193,6 +191,42 @@
             </div>
         </section>
 
+        <!-- ============ CATEGORIAS (grid desktop / carrossel mobile) ============ -->
+        <section class="home-categories animate-on-scroll" aria-label="Explore nossas categorias">
+            <h2>Explore Nossas Categorias</h2>
+
+            <div class="home-categories-wrapper">
+                <button
+                    class="home-categories-btn home-categories-prev"
+                    id="homeCategoriesPrev"
+                    aria-label="Categoria anterior"
+                    hidden
+                >
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+
+                <div class="home-categories-viewport">
+                    <div class="home-categories-grid" id="homeCategoriesGrid">
+                        <div class="home-categories-loading">
+                            <i class="fas fa-spinner fa-spin"></i>
+                            <span>Carregando categorias...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <button
+                    class="home-categories-btn home-categories-next"
+                    id="homeCategoriesNext"
+                    aria-label="Próxima categoria"
+                    hidden
+                >
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+
+            <div class="home-categories-dots" id="homeCategoriesDots" role="tablist" hidden></div>
+        </section>
+
         <section class="featured-products animate-on-scroll" aria-label="Produtos em destaque">
             <h2>Produtos em Destaque</h2>
             <div class="featured-carousel" id="featuredCarousel">
@@ -234,16 +268,6 @@
                     <div class="promo-feature"><i class="fas fa-check-circle"></i><span>20% OFF na primeira compra</span></div>
                     <div class="promo-feature"><i class="fas fa-check-circle"></i><span>Frete grátis acima de R$99,90</span></div>
                     <div class="promo-feature"><i class="fas fa-check-circle"></i><span>Cashback de 5% em todas as compras</span></div>
-                </div>
-            </div>
-        </section>
-
-        <section class="home-categories animate-on-scroll" aria-label="Explore nossas categorias">
-            <h2>Explore Nossas Categorias</h2>
-            <div class="home-categories-grid" id="homeCategoriesGrid">
-                <div class="home-categories-loading">
-                    <i class="fas fa-spinner fa-spin"></i>
-                    <span>Carregando categorias...</span>
                 </div>
             </div>
         </section>
@@ -344,12 +368,10 @@
         </div>
     </footer>
 
-    <!-- ✅ Core JS (deve vir ANTES dos outros scripts) -->
     <script src="/js/core/utils.js" defer></script>
     <script src="/js/core/api.js" defer></script>
     <script src="/js/core/components.js" defer></script>
 
-    <!-- Scripts da página -->
     <script src="/js/cart.js" defer></script>
     <script src="/js/script.js" defer></script>
 </body>
