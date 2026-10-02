@@ -2159,6 +2159,31 @@ body {
     padding: 0 2rem;
 }
 
+.home-categories-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    color: var(--gray-700);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    transition: var(--transition);
+    box-shadow: var(--shadow-md);
+}
+
+/* ✅ Esconde quando tem o atributo `hidden` */
+.home-categories-btn[hidden] {
+    display: none !important;
+}
+
 /* ======================================================
    RESPONSIVO — 1200px
    ====================================================== */
@@ -2861,4 +2886,30 @@ body {
         height: auto;
         padding: 4rem 0;
     }
+}
+
+/* ======================================================
+   FIX HOME — linhas divisórias
+   ====================================================== */
+@media (max-width: 768px) {
+    /* Remove a linha do card de promoção */
+    .promo-card {
+        border-bottom: none;
+    }
+
+    /* Botões de slide: só espaçamento, sem linha */
+    .promo-navigation {
+        padding-bottom: 1.5rem;
+        border-bottom: none;
+    }
+
+    /* ✅ Linha fica SÓ aqui: embaixo da seção de promoções */
+    .promo-section {
+        border-bottom: 1px solid var(--gray-200);
+    }
+}
+
+/* Linha divisória entre Categorias e Localização */
+.home-categories {
+    border-bottom: 1px solid var(--gray-200);
 }

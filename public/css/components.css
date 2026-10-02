@@ -504,19 +504,22 @@
     position: relative;
     max-width: 1200px;
     margin: 0 auto;
-    padding: 0 2rem;
+    padding: 0 3.5rem;
 }
 
 .home-categories-viewport {
     overflow: hidden;
     width: 100%;
+    /* ✅ Dá espaço pra animação de hover não ser cortada */
+    padding: 8px 4px 24px 4px;
+    margin: -8px -4px 0 -4px;
 }
 
 .home-categories-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 300px));
     justify-content: center;
-    gap: 1.5rem;
+    gap: 0.5rem;
     transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
     will-change: transform;
 }
@@ -613,6 +616,14 @@
     border-radius: 4px;
 }
 
+/* ======================================================
+   FIX — z-index do botão de fechar
+   ====================================================== */
+.cart-modal-close {
+    position: relative;
+    z-index: 10;
+}
+
 @media (max-width: 768px) {
     .home-categories-wrapper {
         padding: 0 1rem;
@@ -671,5 +682,33 @@
         grid-column: 2;
         text-align: left;
         margin-top: 0.25rem;
+    }
+}
+
+/* ======================================================
+   FIX — botão de fechar do carrinho no mobile
+   ====================================================== */
+@media (max-width: 500px) {
+    .cart-modal-close {
+        /* Garante que sempre fica visível e clicável */
+        z-index: 10;
+        background: var(--gray-100);
+        width: 40px;
+        height: 40px;
+        font-size: 1.8rem;
+        flex-shrink: 0;
+    }
+
+    .cart-modal-header {
+        padding: 1rem 1.25rem;
+    }
+
+    .cart-modal-header h2 {
+        font-size: 1rem;
+    }
+
+    /* Dá mais respiro no topo do conteúdo */
+    .cart-modal-content {
+        padding-top: 0;
     }
 }
