@@ -255,6 +255,13 @@
                     `;
                 }
             }
+// Fecha o menu mobile se estiver aberto
+const navMenu = document.getElementById('navMenu');
+const overlay = document.getElementById('menuOverlay');
+if (navMenu?.classList.contains('active')) {
+    navMenu.classList.remove('active');
+    overlay?.classList.remove('active');
+}
         },
 
         closeModal() {

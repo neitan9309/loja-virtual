@@ -1,5 +1,5 @@
 /* ======================================================
-   STYLES.CSS — Luxury Store
+   STYLES.CSS — Luxury Store (parte 1/2)
    ======================================================
    Depende de:
      - variables.css   (design tokens)
@@ -645,7 +645,7 @@ body {
 }
 
 /* ======================================================
-   MODAL GERAL
+   MODAIS
    ====================================================== */
 .modal {
     display: none;
@@ -765,9 +765,6 @@ body {
     font-size: 0.85rem;
 }
 
-/* ======================================================
-   MODAL INFO
-   ====================================================== */
 #infoModal .modal-content {
     max-width: 550px;
 }
@@ -821,9 +818,6 @@ body {
     margin: 0;
 }
 
-/* ======================================================
-   MODAL LOCALIZAÇÃO
-   ====================================================== */
 .modal-location-content {
     max-width: 700px !important;
     width: 95% !important;
@@ -895,9 +889,6 @@ body {
     display: block;
 }
 
-/* ======================================================
-   MODAL NEWSLETTER
-   ====================================================== */
 .newsletter-modal-content {
     text-align: center;
     max-width: 450px;
@@ -1063,7 +1054,7 @@ body {
 }
 
 /* ======================================================
-   PRODUTOS EM DESTAQUE
+   PRODUTOS EM DESTAQUE (HOME)
    ====================================================== */
 .featured-products {
     padding: 5rem 0;
@@ -1371,6 +1362,268 @@ body {
 }
 
 /* ======================================================
+   CATEGORY CARD (usado na home e/ou produtos)
+   ====================================================== */
+.category-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    text-decoration: none;
+    color: var(--gray-900);
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    min-height: 200px;
+}
+
+.category-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: var(--accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.3s ease;
+}
+
+.category-card:hover::before {
+    transform: scaleX(1);
+}
+
+.category-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
+    border-color: var(--accent);
+}
+
+.category-card-icon {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, rgba(201, 169, 110, 0.15), rgba(201, 169, 110, 0.05));
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    margin-bottom: 1.25rem;
+    transition: transform 0.3s ease;
+}
+
+.category-card:hover .category-card-icon {
+    transform: scale(1.08);
+    background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+    color: var(--white);
+}
+
+.category-card-name {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: 0.35rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.category-card-description {
+    font-size: 0.85rem;
+    color: var(--gray-500);
+    line-height: 1.4;
+}
+
+.category-card-count {
+    font-size: 0.75rem;
+    color: var(--accent);
+    font-weight: 600;
+    margin-top: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.category-card-arrow {
+    margin-top: 1rem;
+    color: var(--gray-300);
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.category-card:hover .category-card-arrow {
+    color: var(--accent);
+    transform: translateX(4px);
+}
+
+/* ======================================================
+   HOME CATEGORIES (carrossel mobile / grid desktop)
+   ====================================================== */
+.home-categories {
+    padding: 5rem 0;
+    background: var(--white);
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.home-categories h2 {
+    font-size: clamp(1.8rem, 4vw, 2.5rem);
+    font-weight: 700;
+    margin-bottom: 3rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-align: center;
+    padding: 0 2rem;
+}
+
+.home-categories-wrapper {
+    position: relative;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 3.5rem;
+}
+
+.home-categories-viewport {
+    overflow: hidden;
+    width: 100%;
+    padding: 8px 4px 24px 4px;
+    margin: -8px -4px 0 -4px;
+}
+
+.home-categories-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 300px));
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 0.5rem 0;
+    transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    will-change: transform;
+}
+
+.home-categories-grid.is-carousel {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    gap: 1rem;
+    padding: 0.5rem 0;
+    width: 100%;
+}
+
+.home-categories-grid.is-carousel .category-card {
+    flex: 0 0 100%;
+    width: 100%;
+    min-width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+
+.home-categories-btn {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    color: var(--gray-700);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    transition: var(--transition);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.home-categories-btn:hover {
+    background: var(--accent);
+    color: var(--white);
+    border-color: var(--accent);
+    transform: translateY(-50%) scale(1.08);
+}
+
+.home-categories-btn:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    background: var(--white);
+    color: var(--gray-400);
+    transform: translateY(-50%);
+}
+
+.home-categories-btn[hidden] {
+    display: none !important;
+}
+
+.home-categories-prev {
+    left: 0;
+}
+
+.home-categories-next {
+    right: 0;
+}
+
+.home-categories-dots {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.home-categories-dot {
+    width: 8px;
+    height: 8px;
+    border: 1px solid var(--gray-400);
+    background: transparent;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: var(--transition);
+    padding: 0;
+}
+
+.home-categories-dot:hover {
+    border-color: var(--accent);
+}
+
+.home-categories-dot.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    width: 24px;
+    border-radius: 4px;
+}
+
+.home-categories-loading,
+.home-categories-error {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 3rem;
+    color: var(--gray-500);
+    font-size: 0.95rem;
+}
+
+.home-categories-loading i,
+.home-categories-error i {
+    font-size: 2rem;
+    color: var(--accent);
+}
+
+.home-categories-loading i {
+    animation: spin 1s linear infinite;
+}
+
+/* ======================================================
    LOCALIZAÇÃO
    ====================================================== */
 .location-section {
@@ -1667,9 +1920,6 @@ body {
     color: var(--accent);
 }
 
-/* ======================================================
-   DROPDOWN "NOVIDADES"
-   ====================================================== */
 .dropdown:not([data-category]) .dropdown-content {
     min-width: 220px;
     padding: 1rem 0.5rem;
@@ -1704,7 +1954,7 @@ body {
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: 5000;
+    z-index: 99999;
     align-items: flex-start;
     justify-content: center;
     padding: 5rem 1rem 2rem;
@@ -1733,6 +1983,7 @@ body {
     width: 100%;
     max-width: 680px;
     max-height: calc(100vh - 8rem);
+    z-index: 1;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -2041,150 +2292,6 @@ body {
 }
 
 /* ======================================================
-   CATEGORY CARD (usado na home)
-   ====================================================== */
-.category-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 2.5rem 1.5rem;
-    background: var(--white);
-    border: 1px solid var(--gray-200);
-    border-radius: 12px;
-    text-decoration: none;
-    color: var(--gray-900);
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
-    min-height: 200px;
-}
-
-.category-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 4px;
-    background: var(--accent);
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.3s ease;
-}
-
-.category-card:hover::before {
-    transform: scaleX(1);
-}
-
-.category-card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
-    border-color: var(--accent);
-}
-
-.category-card-icon {
-    width: 72px;
-    height: 72px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, rgba(201, 169, 110, 0.15), rgba(201, 169, 110, 0.05));
-    color: var(--accent);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.8rem;
-    margin-bottom: 1.25rem;
-    transition: transform 0.3s ease;
-}
-
-.category-card:hover .category-card-icon {
-    transform: scale(1.08);
-    background: linear-gradient(135deg, var(--accent), var(--accent-hover));
-    color: var(--white);
-}
-
-.category-card-name {
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: var(--gray-900);
-    margin-bottom: 0.35rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.category-card-description {
-    font-size: 0.85rem;
-    color: var(--gray-500);
-    line-height: 1.4;
-}
-
-.category-card-count {
-    font-size: 0.75rem;
-    color: var(--accent);
-    font-weight: 600;
-    margin-top: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.category-card-arrow {
-    margin-top: 1rem;
-    color: var(--gray-300);
-    font-size: 0.9rem;
-    transition: all 0.3s ease;
-}
-
-.category-card:hover .category-card-arrow {
-    color: var(--accent);
-    transform: translateX(4px);
-}
-
-/* ======================================================
-   HOME CATEGORIES — título
-   ====================================================== */
-.home-categories {
-    padding: 5rem 0;
-    background: var(--white);
-}
-
-.home-categories h2 {
-    font-size: clamp(1.8rem, 4vw, 2.5rem);
-    font-weight: 700;
-    margin-bottom: 3rem;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    text-align: center;
-    padding: 0 2rem;
-}
-
-.home-categories-btn {
-    position: absolute;
-    top: 50%;
-    transform: translateY(-50%);
-    z-index: 10;
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    background: var(--white);
-    border: 1px solid var(--gray-200);
-    color: var(--gray-700);
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.95rem;
-    transition: var(--transition);
-    box-shadow: var(--shadow-md);
-}
-
-/* ✅ Esconde quando tem o atributo `hidden` */
-.home-categories-btn[hidden] {
-    display: none !important;
-}
-
-/* ======================================================
    RESPONSIVO — 1200px
    ====================================================== */
 @media (max-width: 1200px) {
@@ -2224,7 +2331,7 @@ body {
    ====================================================== */
 @media (max-width: 768px) {
 
-    /* ---------- HEADER MOBILE ---------- */
+    /* ---------- HEADER ---------- */
     .header {
         top: 1rem;
         left: 1rem;
@@ -2290,7 +2397,7 @@ body {
         display: block;
     }
 
-    /* ---------- MENU MOBILE ---------- */
+    /* ---------- MENU ---------- */
     .nav-menu {
         position: fixed;
         top: 0;
@@ -2358,7 +2465,7 @@ body {
         color: var(--gray-700);
     }
 
-    /* ---------- DROPDOWNS MOBILE ---------- */
+    /* ---------- DROPDOWNS ---------- */
     .dropdown {
         width: 100%;
         position: relative;
@@ -2388,7 +2495,6 @@ body {
         transform: rotate(180deg);
     }
 
-    /* Solução para abrir e fechar corretamente */
     .dropdown-content {
         display: block;
         position: static;
@@ -2407,7 +2513,6 @@ body {
         overflow-y: visible;
     }
 
-    /* Mega menu no mobile */
     .dropdown[data-category] .dropdown-content {
         min-width: auto;
         width: 100%;
@@ -2425,7 +2530,6 @@ body {
         padding: 1rem 1.5rem;
     }
 
-    /* Novidades dropdown */
     .dropdown:not([data-category]) .dropdown-content {
         min-width: auto;
         width: 100%;
@@ -2437,10 +2541,6 @@ body {
         border: none;
         box-shadow: none;
         border-radius: 0;
-    }
-
-    .dropdown:not([data-category]).active .dropdown-content {
-        padding: 0;
     }
 
     .dropdown-content a {
@@ -2498,7 +2598,7 @@ body {
         padding: 0.5rem 0.75rem;
     }
 
-    /* ---------- HERO CAROUSEL ---------- */
+    /* ---------- HERO ---------- */
     .hero-carousel {
         height: 100vh;
         min-height: 500px;
@@ -2520,6 +2620,7 @@ body {
     /* ---------- PROMOÇÕES ---------- */
     .promo-section {
         padding: 3rem 0;
+        border-bottom: none;
     }
 
     .promo-wrapper {
@@ -2539,7 +2640,8 @@ body {
 
     .promo-card {
         border-right: none;
-        border-bottom: 1px solid var(--gray-200);
+        border-bottom: none;
+        border-top: none;
         padding: 2.5rem 2rem;
     }
 
@@ -2549,7 +2651,8 @@ body {
 
     .promo-navigation {
         display: flex;
-        padding: 0 2rem;
+        padding: 0 2rem 1.5rem 2rem;
+        border-bottom: 1px solid var(--gray-200);
     }
 
     /* ---------- VÍDEO ---------- */
@@ -2650,6 +2753,55 @@ body {
         margin-top: 1.75rem;
     }
 
+    /* ---------- CATEGORIAS HOME ---------- */
+    .home-categories {
+        padding: 3rem 0;
+    }
+
+    .home-categories h2 {
+        margin-bottom: 2rem;
+        padding: 0 1rem;
+    }
+
+    .home-categories-wrapper {
+        padding: 0 1rem;
+    }
+
+    .home-categories-btn {
+        width: 38px;
+        height: 38px;
+        font-size: 0.85rem;
+    }
+
+    .home-categories-prev {
+        left: -8px;
+    }
+
+    .home-categories-next {
+        right: -8px;
+    }
+
+    /* ---------- CATEGORY CARD ---------- */
+    .category-card {
+        padding: 1.75rem 1rem;
+        min-height: 170px;
+    }
+
+    .category-card-icon {
+        width: 56px;
+        height: 56px;
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .category-card-name {
+        font-size: 1rem;
+    }
+
+    .category-card-description {
+        font-size: 0.8rem;
+    }
+
     /* ---------- LOCALIZAÇÃO ---------- */
     .location-section {
         padding: 3rem 1rem;
@@ -2694,31 +2846,10 @@ body {
     .newsletter-modal-content {
         padding: 1.5rem;
     }
-
-    /* ---------- CATEGORIA CARD ---------- */
-    .category-card {
-        padding: 1.75rem 1rem;
-        min-height: 170px;
-    }
-
-    .category-card-icon {
-        width: 56px;
-        height: 56px;
-        font-size: 1.5rem;
-        margin-bottom: 1rem;
-    }
-
-    .category-card-name {
-        font-size: 1rem;
-    }
-
-    .category-card-description {
-        font-size: 0.8rem;
-    }
 }
 
 /* ======================================================
-   RESPONSIVO — 600px (modal de busca)
+   RESPONSIVO — 600px
    ====================================================== */
 @media (max-width: 600px) {
     .search-modal {
@@ -2888,28 +3019,3 @@ body {
     }
 }
 
-/* ======================================================
-   FIX HOME — linhas divisórias
-   ====================================================== */
-@media (max-width: 768px) {
-    /* Remove a linha do card de promoção */
-    .promo-card {
-        border-bottom: none;
-    }
-
-    /* Botões de slide: só espaçamento, sem linha */
-    .promo-navigation {
-        padding-bottom: 1.5rem;
-        border-bottom: none;
-    }
-
-    /* ✅ Linha fica SÓ aqui: embaixo da seção de promoções */
-    .promo-section {
-        border-bottom: 1px solid var(--gray-200);
-    }
-}
-
-/* Linha divisória entre Categorias e Localização */
-.home-categories {
-    border-bottom: 1px solid var(--gray-200);
-}
