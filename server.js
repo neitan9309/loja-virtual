@@ -10,7 +10,7 @@ const morgan = require('morgan');
 const path = require('path');
 const fs = require('fs');
 
-const { pool } = require('./src/config/database');
+const { pool, testConnection, closePool } = require('./src/config/database');
 const apiRoutes = require('./src/routes');
 const { errorHandler, notFoundHandler } = require('./src/middleware/errorHandler');
 
@@ -161,7 +161,7 @@ app.use(errorHandler);
 // ======================================================
 // INICIAR SERVIDOR
 // ======================================================
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
     console.log('════════════════════════════════════════');
     console.log(`🚀 Servidor rodando na porta ${PORT}`);
     console.log(`📦 Ambiente: ${NODE_ENV}`);
