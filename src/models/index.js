@@ -1,21 +1,26 @@
 // ======================================================
 // src/models/index.js
-// Agregador de models
 // ======================================================
-const Brand = require('./Brand');
-const Cart = require('./Cart');
-const Category = require('./Category');
-const Inventory = require('./Inventory');
 const Product = require('./Product');
+const Category = require('./Category');
+const Brand = require('./Brand');
 const Promotion = require('./Promotion');
+const Inventory = require('./Inventory');
 const User = require('./User');
+const Cart = require('./Cart');
+const Review = require('./Review');
+const Order = require('./Order');
+const Payment = require('./Payment');
 
 module.exports = {
-    Brand,
-    Cart,
-    Category,
-    Inventory,
     Product,
+    Category,
+    Brand,
     Promotion,
+    Inventory,
     User,
+    Cart,
+    Review,
+    Order,
+    Payment,
 };

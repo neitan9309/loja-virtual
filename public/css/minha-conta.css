@@ -553,6 +553,240 @@
 }
 
 /* ======================================================
+   ACCORDION (mobile) + SIDEBAR (desktop)
+   ====================================================== */
+
+/* Por padrão, accordion está escondido (desktop) */
+.account-accordion-item {
+    display: none;
+}
+
+.account-logout-mobile {
+    display: none;
+}
+
+/* ---------- DESKTOP: mantém layout atual ---------- */
+@media (min-width: 901px) {
+    .account-sidebar {
+        display: block;
+    }
+
+    .account-panels {
+        display: block;
+    }
+
+    /* Painéis "normais" (sem accordion) no desktop */
+    .account-panels .account-panel {
+        display: none;
+        background: var(--white);
+        border: 1px solid var(--gray-200);
+        border-radius: 12px;
+        padding: 2rem;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .account-panels .account-panel.active {
+        display: block;
+    }
+
+    /* No desktop, os painéis ficam diretamente visíveis (não dentro de accordion) */
+    .account-panels > .account-accordion-item {
+        display: block;
+        border: none;
+        background: transparent;
+    }
+
+    .account-panels > .account-accordion-item > .account-accordion-header {
+        display: none;
+    }
+
+    .account-panels > .account-accordion-item > .account-accordion-body {
+        max-height: none;
+        overflow: visible;
+    }
+
+    .account-panels > .account-accordion-item > .account-accordion-body > .account-accordion-inner {
+        padding: 0;
+        border: none;
+    }
+
+    /* Mostra só o painel ativo */
+    .account-panels > .account-accordion-item {
+        display: none;
+    }
+
+    .account-panels > .account-accordion-item.active {
+        display: block;
+    }
+}
+
+/* ---------- MOBILE: vira accordion ---------- */
+@media (max-width: 900px) {
+    .account-content {
+        grid-template-columns: 1fr;
+        padding: 1.5rem 1rem;
+        gap: 1.5rem;
+    }
+
+    /* Esconde a sidebar (agora é accordion) */
+    .account-sidebar {
+        display: none;
+    }
+
+    .account-panels {
+        background: transparent;
+        border: none;
+        padding: 0;
+    }
+
+    /* Accordion */
+    .account-accordion-item {
+        display: block;
+        background: var(--white);
+        border: 1px solid var(--gray-200);
+        border-radius: 12px;
+        margin-bottom: 0.75rem;
+        overflow: hidden;
+        transition: var(--transition);
+    }
+
+    .account-accordion-item.active {
+        border-color: var(--accent);
+        box-shadow: 0 4px 16px rgba(201, 169, 110, 0.1);
+    }
+
+    .account-accordion-header {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        padding: 1.1rem 1.25rem;
+        background: var(--white);
+        border: none;
+        font-family: inherit;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--gray-700);
+        cursor: pointer;
+        transition: var(--transition);
+        text-align: left;
+    }
+
+    .account-accordion-header:hover {
+        background: var(--gray-50);
+    }
+
+    .account-accordion-item.active .account-accordion-header {
+        color: var(--accent);
+        background: var(--gray-50);
+        border-bottom: 1px solid var(--gray-200);
+    }
+
+    .account-accordion-title {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex: 1;
+    }
+
+    .account-accordion-title i {
+        width: 20px;
+        text-align: center;
+        color: var(--accent);
+        font-size: 0.95rem;
+    }
+
+    .account-accordion-icon {
+        font-size: 0.85rem;
+        color: var(--gray-400);
+        transition: transform 0.3s ease;
+        flex-shrink: 0;
+    }
+
+    .account-accordion-item.active .account-accordion-icon {
+        transform: rotate(180deg);
+        color: var(--accent);
+    }
+
+    .account-accordion-body {
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.4s ease;
+    }
+
+    .account-accordion-item.active .account-accordion-body {
+        max-height: 3000px;
+        overflow: visible;
+    }
+
+    .account-accordion-inner {
+        padding: 1.5rem 1.25rem;
+        background: var(--white);
+    }
+
+    /* Painéis (agora sem borda própria) */
+    .account-panel {
+        padding: 0;
+        border: none;
+        background: transparent;
+    }
+
+    .panel-header {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+    }
+
+    .panel-header h1 {
+        font-size: 1.25rem;
+    }
+
+    /* Botão "Sair" (mobile) */
+    .account-logout-mobile {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        width: 100%;
+        padding: 1rem 1.25rem;
+        background: var(--white);
+        border: 1px solid #fecaca;
+        border-radius: 12px;
+        font-family: inherit;
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: #dc2626;
+        cursor: pointer;
+        transition: var(--transition);
+        margin-top: 0.75rem;
+    }
+
+    .account-logout-mobile:hover {
+        background: #fef2f2;
+        border-color: #dc2626;
+    }
+
+    .account-logout-mobile i {
+        font-size: 1rem;
+    }
+
+    /* Formulários mais compactos no mobile */
+    .account-form .form-row {
+        grid-template-columns: 1fr;
+        gap: 1.25rem;
+    }
+
+    .account-form .form-actions {
+        flex-direction: column-reverse;
+    }
+
+    .account-form .btn-save {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* ======================================================
    ANIMAÇÕES
    ====================================================== */
 @keyframes fadeIn {
@@ -614,5 +848,241 @@
     .btn-save {
         width: 100%;
         justify-content: center;
+    }
+}
+
+/* ======================================================
+   MEUS PEDIDOS
+   ====================================================== */
+.orders-list-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+/* Card de pedido */
+.order-card {
+    display: grid;
+    grid-template-columns: 64px 1fr auto;
+    gap: 1rem;
+    align-items: center;
+    padding: 1rem;
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.order-card:hover {
+    background: var(--white);
+    border-color: var(--accent);
+    transform: translateX(4px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.order-card-image {
+    width: 64px;
+    height: 64px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--gray-100);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gray-400);
+    font-size: 1.4rem;
+    flex-shrink: 0;
+}
+
+.order-card-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.order-card-info {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.order-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.order-card-header strong {
+    font-size: 0.95rem;
+    color: var(--gray-900);
+    font-weight: 700;
+}
+
+.order-card-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.order-card-status.status-warning {
+    background: var(--warning-bg);
+    color: var(--warning);
+}
+
+.order-card-status.status-success {
+    background: var(--success-bg);
+    color: var(--success-dark);
+}
+
+.order-card-status.status-info {
+    background: var(--info-bg);
+    color: var(--info);
+}
+
+.order-card-status.status-danger {
+    background: var(--danger-bg);
+    color: var(--danger);
+}
+
+.order-card-status i {
+    font-size: 0.7rem;
+}
+
+.order-card-meta {
+    font-size: 0.8rem;
+    color: var(--gray-500);
+}
+
+.order-card-price {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+}
+
+.order-card-price strong {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--accent);
+    white-space: nowrap;
+}
+
+.order-card-price i {
+    color: var(--gray-300);
+    font-size: 0.8rem;
+    transition: var(--transition);
+}
+
+.order-card:hover .order-card-price i {
+    color: var(--accent);
+    transform: translateX(2px);
+}
+
+/* Empty state */
+.orders-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 3rem 1.5rem;
+    gap: 0.75rem;
+}
+
+.orders-empty i {
+    font-size: 3rem;
+    color: var(--gray-300);
+    margin-bottom: 0.5rem;
+}
+
+.orders-empty h3 {
+    font-size: 1.1rem;
+    color: var(--gray-800);
+    font-weight: 700;
+}
+
+.orders-empty p {
+    color: var(--gray-500);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+/* Paginação */
+.orders-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.orders-pagination button {
+    min-width: 38px;
+    height: 38px;
+    padding: 0 0.65rem;
+    background: var(--white);
+    border: 1px solid var(--gray-300);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.orders-pagination button:hover:not(:disabled) {
+    background: var(--gray-100);
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.orders-pagination button.active {
+    background: var(--accent);
+    color: var(--white);
+    border-color: var(--accent);
+}
+
+.orders-pagination button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Responsivo */
+@media (max-width: 600px) {
+    .order-card {
+        grid-template-columns: 52px 1fr;
+        grid-template-areas:
+            "image info"
+            "price price";
+        gap: 0.75rem;
+    }
+
+    .order-card-image {
+        grid-area: image;
+        width: 52px;
+        height: 52px;
+    }
+
+    .order-card-info {
+        grid-area: info;
+    }
+
+    .order-card-price {
+        grid-area: price;
+        justify-content: space-between;
+        padding-top: 0.5rem;
+        border-top: 1px solid var(--gray-200);
+        margin-top: 0.25rem;
     }
 }

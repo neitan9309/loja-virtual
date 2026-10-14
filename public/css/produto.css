@@ -981,6 +981,597 @@
 }
 
 /* ======================================================
+   AVALIAÇÕES — formulário e lista
+   ====================================================== */
+
+/* ---------- Stats gerais ---------- */
+.review-stats {
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.review-stats-summary {
+    display: flex;
+    justify-content: center;
+    text-align: center;
+}
+
+.review-stats-average {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.review-stats-average strong {
+    font-size: 3rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    line-height: 1;
+}
+
+.review-stats-stars .stars {
+    color: #fbbf24;
+    font-size: 1.1rem;
+}
+
+.review-stats-average span {
+    color: var(--gray-500);
+    font-size: 0.9rem;
+}
+
+/* ---------- Formulário ---------- */
+.review-form-wrapper {
+    margin-bottom: 2.5rem;
+}
+
+.review-form {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    padding: 1.75rem;
+}
+
+.review-form-existing {
+    background: #fefce8;
+    border-color: #fde68a;
+}
+
+.review-form-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid var(--gray-200);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.review-form-title i {
+    color: var(--accent);
+}
+
+.review-form-field {
+    margin-bottom: 1.25rem;
+}
+
+.review-form-field label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    margin-bottom: 0.5rem;
+}
+
+.review-form-field input[type="text"],
+.review-form-field textarea {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1px solid var(--gray-300);
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    color: var(--gray-900);
+    background: var(--white);
+    transition: var(--transition);
+    resize: vertical;
+}
+
+.review-form-field input:focus,
+.review-form-field textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(201, 169, 110, 0.15);
+}
+
+.review-form-hint {
+    display: block;
+    margin-top: 0.35rem;
+    font-size: 0.8rem;
+    color: var(--gray-500);
+}
+
+/* ---------- Estrelas interativas ---------- */
+.review-stars-input {
+    display: flex;
+    gap: 0.35rem;
+    margin-bottom: 0.35rem;
+}
+
+.review-star {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 2rem;
+    color: #fbbf24;
+    padding: 0;
+    line-height: 1;
+    transition: transform 0.15s ease;
+}
+
+.review-star:hover {
+    transform: scale(1.15);
+}
+
+.review-star i {
+    pointer-events: none;
+}
+
+/* ---------- Feedback ---------- */
+.review-form-feedback {
+    display: none;
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.review-form-feedback.show {
+    display: block;
+}
+
+.review-form-feedback.success {
+    background: var(--success-bg);
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.review-form-feedback.error {
+    background: var(--danger-bg);
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+/* ---------- Ações ---------- */
+.review-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 1rem;
+}
+
+/* ---------- Prompt de login ---------- */
+.review-login-prompt {
+    background: var(--gray-50);
+    border: 1px dashed var(--gray-300);
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    margin-bottom: 2.5rem;
+}
+
+.review-login-prompt i {
+    font-size: 2.5rem;
+    color: var(--gray-300);
+    margin-bottom: 0.75rem;
+}
+
+.review-login-prompt p {
+    color: var(--gray-600);
+    margin-bottom: 1.25rem;
+    font-size: 0.95rem;
+}
+
+/* ---------- Lista ---------- */
+.reviews-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.review-card {
+    padding: 1.25rem;
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    transition: var(--transition);
+}
+
+.review-card:hover {
+    border-color: var(--gray-300);
+}
+
+.review-card.review-mine {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+.review-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 0.75rem;
+}
+
+.review-author-block {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+}
+
+.review-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--white);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    text-transform: uppercase;
+}
+
+.review-author {
+    font-weight: 600;
+    color: var(--gray-900);
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.review-badge-mine {
+    background: #3b82f6;
+    color: var(--white);
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.review-date {
+    font-size: 0.8rem;
+    color: var(--gray-500);
+    white-space: nowrap;
+}
+
+.review-stars {
+    color: #fbbf24;
+    font-size: 0.9rem;
+    margin-top: 0.15rem;
+}
+
+.review-title {
+    font-weight: 700;
+    color: var(--gray-900);
+    font-size: 0.95rem;
+    margin-bottom: 0.35rem;
+}
+
+.review-comment {
+    font-size: 0.9rem;
+    color: var(--gray-600);
+    line-height: 1.6;
+}
+
+.review-empty {
+    padding: 2rem;
+    text-align: center;
+    color: var(--gray-500);
+    font-style: italic;
+}
+
+/* ======================================================
+   MINHA AVALIAÇÃO — modo leitura + ações
+   ====================================================== */
+.review-my-card {
+    background: #fefce8;
+    border: 1px solid #fde68a;
+    border-radius: 12px;
+    padding: 1.75rem;
+    margin-bottom: 2.5rem;
+}
+
+.review-my-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #fde68a;
+    flex-wrap: wrap;
+}
+
+.review-my-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+}
+
+.review-my-title i {
+    color: var(--success-dark, #22c55e);
+}
+
+.review-my-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.review-action-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 0.9rem;
+    background: var(--white);
+    border: 1px solid var(--gray-300);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.review-action-btn:hover {
+    background: var(--gray-100);
+    border-color: var(--gray-400);
+    color: var(--gray-900);
+}
+
+.review-action-btn i {
+    font-size: 0.8rem;
+}
+
+.review-action-delete {
+    color: #dc2626;
+    border-color: #fecaca;
+}
+
+.review-action-delete:hover {
+    background: #fef2f2;
+    border-color: #dc2626;
+    color: #991b1b;
+}
+
+.review-my-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.review-my-body .review-date {
+    font-size: 0.8rem;
+    color: var(--gray-500);
+    margin-top: 0.5rem;
+}
+
+.review-form-editing {
+    border-color: var(--accent);
+    background: #fefce8;
+}
+
+/* Form actions com botão secundário */
+.review-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+}
+
+/* ======================================================
+   ACCORDION (Descrição / Especificações / Avaliações)
+   ====================================================== */
+.product-description-section {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 4rem;
+    padding: 0;
+}
+
+.accordion-item {
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.accordion-item:last-child {
+    border-bottom: none;
+}
+
+.accordion-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem 1.5rem;
+    background: var(--white);
+    border: none;
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: var(--transition);
+    text-align: left;
+}
+
+.accordion-header:hover {
+    background: var(--gray-50);
+    color: var(--gray-900);
+}
+
+.accordion-item.active .accordion-header {
+    color: var(--accent);
+    background: var(--gray-50);
+    border-left: 3px solid var(--accent);
+    padding-left: calc(1.5rem - 3px);
+}
+
+.accordion-title {
+    flex: 1;
+}
+
+.accordion-icon {
+    font-size: 0.85rem;
+    color: var(--gray-400);
+    transition: transform 0.3s ease;
+    flex-shrink: 0;
+}
+
+.accordion-item.active .accordion-icon {
+    transform: rotate(180deg);
+    color: var(--accent);
+}
+
+.accordion-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+}
+
+.accordion-item.active .accordion-body {
+    max-height: 5000px;
+}
+
+.accordion-inner {
+    padding: 1.5rem;
+    border-top: 1px solid var(--gray-200);
+}
+
+/* Ajustes pros componentes dentro do accordion */
+.accordion-inner #productDescription {
+    font-size: 0.95rem;
+    line-height: 1.8;
+    color: var(--gray-700);
+    white-space: pre-line;
+    margin: 0;
+}
+
+.accordion-inner .review-form-wrapper {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+}
+
+.accordion-inner .review-stats {
+    margin-top: 0;
+}
+
+/* ---------- Desktop: mais largo ---------- */
+@media (min-width: 769px) {
+    .product-description-section {
+        padding: 0;
+    }
+
+    .accordion-header {
+        padding: 1.5rem 2rem;
+        font-size: 1rem;
+    }
+
+    .accordion-item.active .accordion-header {
+        padding-left: calc(2rem - 3px);
+    }
+
+    .accordion-inner {
+        padding: 2rem;
+    }
+}
+
+/* ---------- Mobile: compacto ---------- */
+@media (max-width: 600px) {
+    .accordion-header {
+        padding: 1rem 1.25rem;
+        font-size: 0.85rem;
+    }
+
+    .accordion-item.active .accordion-header {
+        padding-left: calc(1.25rem - 3px);
+    }
+
+    .accordion-inner {
+        padding: 1.25rem;
+    }
+}
+
+/* Responsivo */
+@media (max-width: 600px) {
+    .review-my-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .review-my-actions {
+        width: 100%;
+    }
+
+    .review-action-btn {
+        flex: 1;
+        justify-content: center;
+    }
+
+    .review-form-actions {
+        flex-direction: column-reverse;
+    }
+
+    .review-form-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* ---------- Responsivo ---------- */
+@media (max-width: 600px) {
+    .review-form {
+        padding: 1.25rem;
+    }
+
+    .review-star {
+        font-size: 1.75rem;
+    }
+
+    .review-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .review-stats-average strong {
+        font-size: 2.5rem;
+    }
+}
+
+/* ======================================================
    RESPONSIVO - 1024px
    ====================================================== */
 @media (max-width: 1024px) {

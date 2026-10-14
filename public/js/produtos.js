@@ -9,6 +9,7 @@
     const U = window.LuxuryUtils;
     const API = window.LuxuryAPI;
     const C = window.LuxuryComponents;
+    const Carousel = window.LuxuryResponsiveCarousel;
 
     // ==================================================
     // ÍCONES POR CATEGORIA
@@ -82,7 +83,6 @@
 
         async loadCategoryTree() {
             try {
-                // ✅ Cache compartilhado (mesmo do categoria.js)
                 this.tree = await API.get('/categories/tree-full', {
                     useCache: true,
                     ttl: 5 * 60 * 1000,
@@ -112,7 +112,6 @@
 
             container.innerHTML = C.renderLoading('Carregando...');
 
-            // Busca por texto tem prioridade
             if (this.searchQuery && !this.currentCategory && !this.filter) {
                 return this.renderSearchResults();
             }
@@ -141,23 +140,30 @@
         },
 
         // ==================================================
-        // CATEGORIAS RAIZ
+        // CATEGORIAS RAIZ (mantém carrossel — só são 3)
         // ==================================================
         renderRootCategories() {
             this.updateBreadcrumb([{ name: 'Início', url: '/' }]);
             this.updatePageHeader('Produtos', 'Explore nossa coleção exclusiva');
 
             const container = document.getElementById('contentContainer');
-            const grid = document.createElement('div');
-            grid.className = 'categories-grid';
-
+            const wrapper = this.buildCarouselWrapper('categories-grid');
+            const grid = wrapper.querySelector('.categories-grid');
             grid.innerHTML = this.tree.map((cat) => this.buildCategoryCard(cat)).join('');
             container.innerHTML = '';
-            container.appendChild(grid);
+            container.appendChild(wrapper);
+
+            Carousel.setup({
+                grid,
+                dotsContainer: wrapper.querySelector('.carousel-dots-generic'),
+                prevBtn: wrapper.querySelector('.carousel-prev-generic'),
+                nextBtn: wrapper.querySelector('.carousel-next-generic'),
+                total: this.tree.length,
+            });
         },
 
         // ==================================================
-        // FILHOS DE CATEGORIA
+        // FILHOS DE CATEGORIA (mantém carrossel — poucos itens)
         // ==================================================
         renderCategoryChildren(category) {
             const breadcrumbItems = [{ name: 'Início', url: '/' }];
@@ -176,18 +182,25 @@
             );
 
             const container = document.getElementById('contentContainer');
-            const grid = document.createElement('div');
-            grid.className = 'categories-grid';
-
+            const wrapper = this.buildCarouselWrapper('categories-grid');
+            const grid = wrapper.querySelector('.categories-grid');
             grid.innerHTML = category.children
                 .map((child) => this.buildCategoryCard(child))
                 .join('');
             container.innerHTML = '';
-            container.appendChild(grid);
+            container.appendChild(wrapper);
+
+            Carousel.setup({
+                grid,
+                dotsContainer: wrapper.querySelector('.carousel-dots-generic'),
+                prevBtn: wrapper.querySelector('.carousel-prev-generic'),
+                nextBtn: wrapper.querySelector('.carousel-next-generic'),
+                total: category.children.length,
+            });
         },
 
         // ==================================================
-        // CARD DE CATEGORIA (usa LuxuryComponents)
+        // CARD DE CATEGORIA
         // ==================================================
         buildCategoryCard(category) {
             return C.renderCategoryCard(category, {
@@ -198,7 +211,42 @@
         },
 
         // ==================================================
-        // PRODUTOS DE UMA CATEGORIA FOLHA
+        // HELPER: wrapper de carrossel (usado só em categorias)
+        // ==================================================
+        buildCarouselWrapper(gridClass = 'products-grid-page') {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'carousel-wrapper-generic';
+            wrapper.innerHTML = `
+                <button type="button" class="carousel-btn-generic carousel-prev-generic" aria-label="Anterior" hidden>
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+
+                <div class="carousel-viewport-generic">
+                    <div class="${gridClass}"></div>
+                </div>
+
+                <button type="button" class="carousel-btn-generic carousel-next-generic" aria-label="Próximo" hidden>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+
+                <div class="carousel-dots-generic" role="tablist" hidden></div>
+            `;
+            return wrapper;
+        },
+
+        // ==================================================
+        // HELPER: grid simples de produtos (NOVO — sem carrossel)
+        // ==================================================
+        mountProductsGrid(container, products) {
+            const grid = document.createElement('div');
+            grid.className = 'products-grid-page';
+            grid.innerHTML = products.map((p) => this.buildProductCard(p)).join('');
+            container.innerHTML = '';
+            container.appendChild(grid);
+        },
+
+        // ==================================================
+        // PRODUTOS DE UMA CATEGORIA FOLHA (grid simples)
         // ==================================================
         async renderProductsOfCategory(category) {
             const breadcrumbItems = [{ name: 'Início', url: '/' }];
@@ -223,8 +271,6 @@
                 const data = await API.get(`/products?category=${category.slug}&limit=100`);
                 const products = data.products || [];
 
-                container.innerHTML = '';
-
                 if (products.length === 0) {
                     container.innerHTML = C.renderEmptyState({
                         icon: 'fa-box-open',
@@ -234,10 +280,7 @@
                     return;
                 }
 
-                const grid = document.createElement('div');
-                grid.className = 'products-grid-page';
-                grid.innerHTML = products.map((p) => this.buildProductCard(p)).join('');
-                container.appendChild(grid);
+                this.mountProductsGrid(container, products);
             } catch (error) {
                 console.error('Erro ao carregar produtos:', error);
                 container.innerHTML = C.renderEmptyState({
@@ -249,7 +292,7 @@
         },
 
         // ==================================================
-        // PRODUTOS FILTRADOS
+        // PRODUTOS FILTRADOS (grid simples)
         // ==================================================
         async renderFilteredProducts() {
             const filterLabels = {
@@ -278,8 +321,6 @@
                 const data = await API.get(url);
                 const products = data.products || [];
 
-                container.innerHTML = '';
-
                 if (products.length === 0) {
                     container.innerHTML = C.renderEmptyState({
                         icon: 'fa-box-open',
@@ -289,10 +330,7 @@
                     return;
                 }
 
-                const grid = document.createElement('div');
-                grid.className = 'products-grid-page';
-                grid.innerHTML = products.map((p) => this.buildProductCard(p)).join('');
-                container.appendChild(grid);
+                this.mountProductsGrid(container, products);
             } catch (error) {
                 console.error('Erro ao carregar produtos:', error);
                 container.innerHTML = C.renderEmptyState({
@@ -304,7 +342,7 @@
         },
 
         // ==================================================
-        // RESULTADOS DE BUSCA
+        // RESULTADOS DE BUSCA (grid simples)
         // ==================================================
         async renderSearchResults() {
             const query = this.searchQuery;
@@ -325,8 +363,6 @@
                 const data = await API.get(`/products?search=${encodeURIComponent(query)}&limit=100`);
                 const products = data.products || [];
 
-                container.innerHTML = '';
-
                 if (products.length === 0) {
                     container.innerHTML = `
                         <div class="empty-state">
@@ -339,10 +375,7 @@
                     return;
                 }
 
-                const grid = document.createElement('div');
-                grid.className = 'products-grid-page';
-                grid.innerHTML = products.map((p) => this.buildProductCard(p)).join('');
-                container.appendChild(grid);
+                this.mountProductsGrid(container, products);
             } catch (error) {
                 console.error('Erro ao buscar produtos:', error);
                 container.innerHTML = C.renderEmptyState({
@@ -373,13 +406,14 @@
         },
 
         // ==================================================
-        // CARD DE PRODUTO (usa LuxuryComponents)
+        // CARD DE PRODUTO
         // ==================================================
         buildProductCard(product) {
             return C.renderProductCard(product, {
                 showShortDesc: true,
                 showButton: true,
                 buttonText: 'Ver Produto',
+                clickableCard: true,
                 href: `/produto/${product.slug}`,
             });
         },

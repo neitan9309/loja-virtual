@@ -31,6 +31,8 @@
             this.initPasswordToggles();
             this.initDeleteAccount();
             this.initLogout();
+            this.loadOrders();
+
         },
 
         // ==================================================
@@ -86,14 +88,75 @@
         // TABS
         // ==================================================
         initTabs() {
+            // ==================================================
+            // Sidebar (desktop) — troca painel ativo
+            // ==================================================
             document.querySelectorAll('.account-nav-item[data-tab]').forEach((btn) => {
                 btn.addEventListener('click', () => {
                     const tab = btn.dataset.tab;
+
+                    // Marca o botão ativo
                     document.querySelectorAll('.account-nav-item').forEach((b) => b.classList.remove('active'));
-                    document.querySelectorAll('.account-panel').forEach((p) => p.classList.remove('active'));
                     btn.classList.add('active');
-                    document.querySelector(`.account-panel[data-panel="${tab}"]`)?.classList.add('active');
+
+                    // Fecha todos os accordions
+                    document.querySelectorAll('.account-accordion-item').forEach((item) => {
+                        item.classList.remove('active');
+                    });
+
+                    // Abre o accordion correspondente
+                    const target = document.querySelector(`.account-accordion-item[data-accordion="${tab}"]`);
+                    if (target) {
+                        target.classList.add('active');
+                        const header = target.querySelector('.account-accordion-header');
+                        if (header) header.setAttribute('aria-expanded', 'true');
+                    }
+
+                    // Rola até o painel
+                    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 });
+            });
+
+            // ==================================================
+            // Accordion (mobile) — abre/fecha ao clicar no header
+            // ==================================================
+            document.querySelectorAll('.account-accordion-header').forEach((header) => {
+                header.addEventListener('click', () => {
+                    const item = header.closest('.account-accordion-item');
+                    const isActive = item.classList.contains('active');
+
+                    // Fecha todos
+                    document.querySelectorAll('.account-accordion-item').forEach((el) => {
+                        el.classList.remove('active');
+                        const h = el.querySelector('.account-accordion-header');
+                        if (h) h.setAttribute('aria-expanded', 'false');
+                    });
+
+                    // Se não estava ativo, abre
+                    if (!isActive) {
+                        item.classList.add('active');
+                        header.setAttribute('aria-expanded', 'true');
+                    }
+
+                    // Marca o botão correspondente na sidebar (se existir)
+                    const tab = item.dataset.accordion;
+                    document.querySelectorAll('.account-nav-item').forEach((b) => {
+                        b.classList.toggle('active', b.dataset.tab === tab);
+                    });
+                });
+            });
+
+            // ==================================================
+            // Botão "Sair" (mobile)
+            // ==================================================
+            document.getElementById('logoutBtnMobile')?.addEventListener('click', async () => {
+                try {
+                    await API.post('/auth/logout', {});
+                } catch {
+                    // ignora
+                }
+                API.clearSession();
+                window.location.href = '/';
             });
         },
 
@@ -359,6 +422,141 @@ try {
                     confirmBtn.disabled = false;
                     confirmBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Excluir definitivamente';
                 }
+            });
+        },
+
+                // ==================================================
+        // MEUS PEDIDOS — listar
+        // ==================================================
+        async loadOrders(page = 1) {
+            const container = document.getElementById('ordersListContainer');
+            const pagination = document.getElementById('ordersPagination');
+            if (!container) return;
+
+            container.innerHTML = `
+                <div class="loading-state">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>Carregando pedidos...</span>
+                </div>
+            `;
+            if (pagination) pagination.innerHTML = '';
+
+            try {
+                const data = await API.get(`/orders?page=${page}&limit=5`);
+                const orders = data.orders || [];
+
+                if (orders.length === 0) {
+                    container.innerHTML = `
+                        <div class="orders-empty">
+                            <i class="fas fa-shopping-bag"></i>
+                            <h3>Nenhum pedido ainda</h3>
+                            <p>Você ainda não fez nenhuma compra.</p>
+                            <a href="/produtos" class="btn btn-primary">
+                                <i class="fas fa-shopping-basket"></i>
+                                Começar a comprar
+                            </a>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = orders.map((order) => this.buildOrderCard(order)).join('');
+
+                // Bind clicks
+                container.querySelectorAll('.order-card').forEach((card) => {
+                    card.addEventListener('click', () => {
+                        const id = card.dataset.orderId;
+                        window.location.href = `/pedido/${id}`;
+                    });
+                });
+
+                if (pagination) {
+                    this.renderOrdersPagination(pagination, data.pagination);
+                }
+            } catch (error) {
+                console.error('Erro ao carregar pedidos:', error);
+                container.innerHTML = `
+                    <div class="orders-empty">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Erro ao carregar pedidos</h3>
+                        <p>Tente novamente em alguns instantes.</p>
+                    </div>
+                `;
+            }
+        },
+
+        // ==================================================
+        // MEUS PEDIDOS — card
+        // ==================================================
+        buildOrderCard(order) {
+            const statusMap = {
+                pending: { label: 'Aguardando pagamento', class: 'warning', icon: 'fa-hourglass-half' },
+                paid: { label: 'Pagamento aprovado', class: 'success', icon: 'fa-check-circle' },
+                shipped: { label: 'Em transporte', class: 'info', icon: 'fa-truck' },
+                delivered: { label: 'Entregue', class: 'success', icon: 'fa-box-open' },
+                cancelled: { label: 'Cancelado', class: 'danger', icon: 'fa-times-circle' },
+            };
+            const status = statusMap[order.status] || statusMap.pending;
+
+            const firstItem = order.first_item || {};
+            const img = firstItem.url
+                ? `<img src="${U.escapeAttr(firstItem.url)}" alt="${U.escapeAttr(firstItem.name || '')}">`
+                : `<i class="fas fa-image"></i>`;
+
+            const date = U.formatDate(order.created_at);
+            const itemsLabel = order.items_count === 1
+                ? '1 item'
+                : `${order.items_count} itens`;
+
+            return `
+                <div class="order-card" data-order-id="${order.id}">
+                    <div class="order-card-image">${img}</div>
+                    <div class="order-card-info">
+                        <div class="order-card-header">
+                            <strong>Pedido #${order.id}</strong>
+                            <span class="order-card-status status-${status.class}">
+                                <i class="fas ${status.icon}"></i>
+                                ${status.label}
+                            </span>
+                        </div>
+                        <div class="order-card-meta">
+                            ${itemsLabel} · ${date}
+                        </div>
+                    </div>
+                    <div class="order-card-price">
+                        <strong>${U.formatPrice(order.total)}</strong>
+                        <i class="fas fa-chevron-right"></i>
+                    </div>
+                </div>
+            `;
+        },
+
+        // ==================================================
+        // MEUS PEDIDOS — paginação
+        // ==================================================
+        renderOrdersPagination(container, pagination) {
+            const { page, pages } = pagination;
+            if (pages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+
+            const buttons = [];
+            buttons.push(`<button ${page === 1 ? 'disabled' : ''} data-page="${page - 1}">«</button>`);
+            for (let i = 1; i <= pages; i++) {
+                buttons.push(`<button class="${i === page ? 'active' : ''}" data-page="${i}">${i}</button>`);
+            }
+            buttons.push(`<button ${page === pages ? 'disabled' : ''} data-page="${page + 1}">»</button>`);
+
+            container.innerHTML = buttons.join('');
+
+            container.querySelectorAll('button[data-page]').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const p = parseInt(btn.dataset.page);
+                    if (p >= 1 && p <= pages && p !== page) {
+                        this.loadOrders(p);
+                    }
+                });
             });
         },
 

@@ -750,6 +750,7 @@ const MobileMenu = {
                         showShortDesc: true,
                         showButton: true,
                         buttonText: 'Ver Produto',
+                        clickableCard: true,    // ✅ card inteiro clicável
                         href: `/produto/${product.slug}`,
                     }))
                     .join('');
@@ -969,148 +970,13 @@ const MobileMenu = {
         },
 
         setupCarousel(grid, dotsContainer, prevBtn, nextBtn) {
-            if (dotsContainer) dotsContainer.innerHTML = '';
-
-            let currentIndex = 0;
-            let isTransitioning = false;
-
-            const isMobile = () => window.innerWidth <= CONFIG.promo.mobileBreakpoint;
-
-            const applyLayout = () => {
-                const btns = document.querySelectorAll('.home-categories-btn');
-                const dots = document.getElementById('homeCategoriesDots');
-
-                if (isMobile()) {
-                    grid.classList.add('is-carousel');
-                    btns.forEach((b) => b.removeAttribute('hidden'));
-                    dots?.removeAttribute('hidden');
-                } else {
-                    grid.classList.remove('is-carousel');
-                    btns.forEach((b) => b.setAttribute('hidden', ''));
-                    dots?.setAttribute('hidden', '');
-                }
-                updateCarousel(false);
-            };
-
-            const updateCarousel = (animate = true) => {
-                if (!isMobile()) {
-                    grid.style.transition = 'none';
-                    grid.style.transform = '';
-                    return;
-                }
-
-                const total = this.categories.length;
-                if (total === 0) return;
-
-                currentIndex = Math.max(0, Math.min(currentIndex, total - 1));
-
-                const card = grid.querySelector('.category-card');
-                if (!card) return;
-
-                const cardWidth = card.offsetWidth;
-                const gap = parseFloat(getComputedStyle(grid).gap) || 0;
-                const offset = -(cardWidth + gap) * currentIndex;
-
-                grid.style.transition = animate
-                    ? 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
-                    : 'none';
-                grid.style.transform = `translateX(${offset}px)`;
-
-                if (dotsContainer) {
-                    dotsContainer.querySelectorAll('.home-categories-dot').forEach((dot, i) => {
-                        dot.classList.toggle('active', i === currentIndex);
-                    });
-                }
-
-                if (prevBtn) prevBtn.disabled = currentIndex === 0;
-                if (nextBtn) nextBtn.disabled = currentIndex >= total - 1;
-            };
-
-            const renderDots = () => {
-                if (!dotsContainer) return;
-                dotsContainer.innerHTML = '';
-
-                if (!isMobile() || this.categories.length <= 1) return;
-
-                this.categories.forEach((_, i) => {
-                    const dot = document.createElement('button');
-                    dot.className = 'home-categories-dot';
-                    dot.setAttribute('aria-label', `Ir para categoria ${i + 1}`);
-                    dot.addEventListener('click', () => {
-                        currentIndex = i;
-                        updateCarousel(true);
-                    });
-                    dotsContainer.appendChild(dot);
-                });
-                updateCarousel(false);
-            };
-
-            const goTo = (index) => {
-                if (isTransitioning) return;
-                const total = this.categories.length;
-                if (index < 0 || index >= total || index === currentIndex) return;
-
-                isTransitioning = true;
-                currentIndex = index;
-                updateCarousel(true);
-                setTimeout(() => {
-                    isTransitioning = false;
-                }, 450);
-            };
-
-            prevBtn?.addEventListener('click', () => goTo(currentIndex - 1));
-            nextBtn?.addEventListener('click', () => goTo(currentIndex + 1));
-
-            let touchStartX = 0;
-            let touchStartY = 0;
-            let isSwiping = false;
-
-            grid.addEventListener(
-                'touchstart',
-                (e) => {
-                    if (!isMobile() || isTransitioning) return;
-                    touchStartX = e.touches[0].clientX;
-                    touchStartY = e.touches[0].clientY;
-                    isSwiping = false;
-                },
-                { passive: true }
-            );
-
-            grid.addEventListener(
-                'touchmove',
-                (e) => {
-                    if (!isMobile() || isTransitioning) return;
-                    const deltaX = e.touches[0].clientX - touchStartX;
-                    const deltaY = e.touches[0].clientY - touchStartY;
-                    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 5) {
-                        isSwiping = true;
-                        e.preventDefault();
-                    }
-                },
-                { passive: false }
-            );
-
-            grid.addEventListener('touchend', (e) => {
-                if (!isMobile() || isTransitioning) return;
-                if (isSwiping) {
-                    const deltaX = e.changedTouches[0].clientX - touchStartX;
-                    if (Math.abs(deltaX) > 40) {
-                        if (deltaX < 0) goTo(currentIndex + 1);
-                        else goTo(currentIndex - 1);
-                    }
-                }
-                isSwiping = false;
+            window.LuxuryResponsiveCarousel.setup({
+                grid,
+                dotsContainer,
+                prevBtn,
+                nextBtn,
+                total: this.categories.length,
             });
-
-            const debouncedResize = U.debounce(() => {
-                applyLayout();
-                renderDots();
-            }, 200);
-
-            window.addEventListener('resize', debouncedResize);
-
-            applyLayout();
-            renderDots();
         },
     };
 

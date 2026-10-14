@@ -398,9 +398,7 @@ if (navMenu?.classList.contains('active')) {
             // Botão finalizar
             const checkoutBtn = modal.querySelector('#cartCheckoutBtn');
             checkoutBtn.addEventListener('click', () => {
-                if (C && C.createToast) {
-                    C.createToast('Checkout será implementado em breve!', 'info');
-                }
+                window.location.href = '/checkout';
             });
         },
     };

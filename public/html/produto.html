@@ -207,23 +207,53 @@
             </div>
 
             <section class="product-description-section">
-                <div class="section-tabs">
-                    <button class="tab-btn active" data-tab="description">Descrição</button>
-                    <button class="tab-btn" data-tab="specs">Especificações</button>
-                    <button class="tab-btn" data-tab="reviews">Avaliações</button>
+
+                <!-- SEÇÃO 1: DESCRIÇÃO -->
+                <div class="accordion-item active" data-accordion="description">
+                    <button class="accordion-header" aria-expanded="true" aria-controls="accordion-description">
+                        <span class="accordion-title">Descrição</span>
+                        <i class="fas fa-chevron-down accordion-icon"></i>
+                    </button>
+                    <div class="accordion-body" id="accordion-description">
+                        <div class="accordion-inner">
+                            <p id="productDescription">—</p>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="tab-content active" id="tab-description">
-                    <p id="productDescription">—</p>
+                <!-- SEÇÃO 2: ESPECIFICAÇÕES -->
+                <div class="accordion-item" data-accordion="specs">
+                    <button class="accordion-header" aria-expanded="false" aria-controls="accordion-specs">
+                        <span class="accordion-title">Especificações</span>
+                        <i class="fas fa-chevron-down accordion-icon"></i>
+                    </button>
+                    <div class="accordion-body" id="accordion-specs">
+                        <div class="accordion-inner">
+                            <div id="productSpecs" class="specs-list"></div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="tab-content" id="tab-specs">
-                    <div id="productSpecs" class="specs-list"></div>
+                <!-- SEÇÃO 3: AVALIAÇÕES -->
+                <div class="accordion-item" data-accordion="reviews">
+                    <button class="accordion-header" aria-expanded="false" aria-controls="accordion-reviews">
+                        <span class="accordion-title">Avaliações</span>
+                        <i class="fas fa-chevron-down accordion-icon"></i>
+                    </button>
+                    <div class="accordion-body" id="accordion-reviews">
+                        <div class="accordion-inner">
+                            <div id="reviewForm" class="review-form-wrapper"></div>
+                            <div id="reviewStats" class="review-stats"></div>
+                            <div id="productReviews" class="reviews-list">
+                                <div class="loading-state">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    <span>Carregando avaliações...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="tab-content" id="tab-reviews">
-                    <div id="productReviews" class="reviews-list"></div>
-                </div>
             </section>
 
             <section class="related-products-section" id="relatedSection" style="display: none;">

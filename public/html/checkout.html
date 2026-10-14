@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout - Luxury Store</title>
+    <meta name="theme-color" content="#c9a96e">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔒</text></svg>">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/animations.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/checkout.css">
+</head>
+<body class="checkout-page">
+
+    <a href="#main-content" class="skip-link">Pular para o conteúdo principal</a>
+    <div aria-live="polite" aria-atomic="true" id="announcer" class="sr-only"></div>
+
+    <!-- HEADER MÍNIMO -->
+    <header class="checkout-header">
+        <a href="/" class="checkout-logo">LUXURY</a>
+        <div class="checkout-header-right">
+            <span class="checkout-secure">
+                <i class="fas fa-lock"></i>
+                Compra Segura
+            </span>
+            <a href="/" class="checkout-back">
+                <i class="fas fa-arrow-left"></i>
+                <span>Voltar para a loja</span>
+            </a>
+        </div>
+    </header>
+
+    <!-- PROGRESSO -->
+    <div class="checkout-steps">
+        <div class="checkout-step active" data-step="1">
+            <span class="checkout-step-num">1</span>
+            <span>Carrinho</span>
+        </div>
+        <div class="checkout-step active" data-step="2">
+            <span class="checkout-step-num">2</span>
+            <span>Dados</span>
+        </div>
+        <div class="checkout-step" data-step="3">
+            <span class="checkout-step-num">3</span>
+            <span>Pagamento</span>
+        </div>
+    </div>
+
+    <!-- MAIN -->
+    <main id="main-content" class="checkout-main">
+        <div id="checkoutLoading" class="checkout-loading">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>Carregando seu carrinho...</span>
+        </div>
+
+        <div id="checkoutContent" class="checkout-content" style="display: none;">
+
+            <!-- COLUNA ESQUERDA: FORMULÁRIO -->
+            <div class="checkout-form-col">
+
+                <!-- ENDEREÇO -->
+                <section class="checkout-section">
+                    <h2 class="checkout-section-title">
+                        <i class="fas fa-map-marker-alt"></i>
+                        Endereço de entrega
+                    </h2>
+
+                    <form class="checkout-form" id="addressForm">
+                        <div class="checkout-field checkout-field-full">
+                            <label for="coCep">CEP *</label>
+                            <div class="cep-wrapper">
+                                <input type="text" id="coCep" name="cep" required maxlength="9" inputmode="numeric" placeholder="00000-000">
+                                <span class="cep-status" id="coCepStatus"></span>
+                            </div>
+                        </div>
+
+                        <div class="checkout-field checkout-field-full">
+                            <label for="coStreet">Rua / Logradouro *</label>
+                            <input type="text" id="coStreet" name="street" required readonly>
+                        </div>
+
+                        <div class="checkout-field">
+                            <label for="coNumber">Número *</label>
+                            <input type="text" id="coNumber" name="number" required maxlength="20">
+                        </div>
+
+                        <div class="checkout-field">
+                            <label for="coComplement">Complemento</label>
+                            <input type="text" id="coComplement" name="complement" maxlength="100">
+                        </div>
+
+                        <div class="checkout-field checkout-field-full">
+                            <label for="coNeighborhood">Bairro *</label>
+                            <input type="text" id="coNeighborhood" name="neighborhood" required readonly>
+                        </div>
+
+                        <div class="checkout-field">
+                            <label for="coCity">Cidade *</label>
+                            <input type="text" id="coCity" name="city" required readonly>
+                        </div>
+
+                        <div class="checkout-field">
+                            <label for="coState">Estado *</label>
+                            <input type="text" id="coState" name="state" required readonly maxlength="2">
+                        </div>
+                    </form>
+                </section>
+
+                <!-- PAGAMENTO -->
+                <section class="checkout-section">
+                    <h2 class="checkout-section-title">
+                        <i class="fas fa-credit-card"></i>
+                        Forma de pagamento
+                    </h2>
+
+                    <div class="payment-methods" id="paymentMethods">
+
+                        <label class="payment-method">
+                            <input type="radio" name="payment_method" value="pix" checked>
+                            <div class="payment-method-box">
+                                <div class="payment-method-icon">
+                                    <i class="fas fa-qrcode"></i>
+                                </div>
+                                <div class="payment-method-info">
+                                    <strong>PIX</strong>
+                                    <span>Aprovação imediata · 5% de desconto</span>
+                                </div>
+                                <div class="payment-method-check">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                            </div>
+                        </label>
+
+                        <label class="payment-method">
+                            <input type="radio" name="payment_method" value="credit_card">
+                            <div class="payment-method-box">
+                                <div class="payment-method-icon">
+                                    <i class="fas fa-credit-card"></i>
+                                </div>
+                                <div class="payment-method-info">
+                                    <strong>Cartão de Crédito</strong>
+                                    <span>Em até 12x sem juros</span>
+                                </div>
+                                <div class="payment-method-check">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                            </div>
+                        </label>
+
+                        <label class="payment-method">
+                            <input type="radio" name="payment_method" value="boleto">
+                            <div class="payment-method-box">
+                                <div class="payment-method-icon">
+                                    <i class="fas fa-barcode"></i>
+                                </div>
+                                <div class="payment-method-info">
+                                    <strong>Boleto Bancário</strong>
+                                    <span>Vencimento em 3 dias úteis</span>
+                                </div>
+                                <div class="payment-method-check">
+                                    <i class="fas fa-check-circle"></i>
+                                </div>
+                            </div>
+                        </label>
+
+                    </div>
+                </section>
+
+                <!-- OBSERVAÇÕES -->
+                <section class="checkout-section">
+                    <h2 class="checkout-section-title">
+                        <i class="fas fa-comment-alt"></i>
+                        Observações (opcional)
+                    </h2>
+                    <textarea id="checkoutNotes" rows="3" maxlength="500" placeholder="Ex: entregar no período da tarde"></textarea>
+                </section>
+
+            </div>
+
+            <!-- COLUNA DIREITA: RESUMO -->
+            <aside class="checkout-summary-col">
+
+                <div class="checkout-summary">
+                    <h2 class="checkout-summary-title">Resumo do pedido</h2>
+
+                    <div class="checkout-summary-items" id="summaryItems">
+                        <!-- Itens renderizados via JS -->
+                    </div>
+
+                    <div class="checkout-summary-totals">
+                        <div class="checkout-total-row">
+                            <span>Subtotal</span>
+                            <span id="summarySubtotal">R$ 0,00</span>
+                        </div>
+                        <div class="checkout-total-row">
+                            <span>Frete</span>
+                            <span id="summaryShipping">—</span>
+                        </div>
+                        <div class="checkout-total-row checkout-total-row-divider">
+                            <span>Total</span>
+                            <strong id="summaryTotal">R$ 0,00</strong>
+                        </div>
+                    </div>
+
+                    <button type="button" class="checkout-submit" id="checkoutSubmitBtn">
+                        <i class="fas fa-lock"></i>
+                        Finalizar pedido
+                    </button>
+
+                    <div class="checkout-security">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Seus dados estão protegidos</span>
+                    </div>
+                </div>
+
+                <!-- CUPOM -->
+                <div class="checkout-coupon">
+                    <h3>
+                        <i class="fas fa-tag"></i>
+                        Cupom de desconto
+                    </h3>
+                    <div class="checkout-coupon-form">
+                        <input type="text" id="couponInput" placeholder="Digite o código" maxlength="20">
+                        <button type="button" id="applyCouponBtn">Aplicar</button>
+                    </div>
+                    <div class="checkout-coupon-feedback" id="couponFeedback"></div>
+                </div>
+
+            </aside>
+
+        </div>
+
+        <!-- CARRINHO VAZIO -->
+        <div id="checkoutEmpty" class="checkout-empty" style="display: none;">
+            <i class="fas fa-shopping-bag"></i>
+            <h2>Seu carrinho está vazio</h2>
+            <p>Adicione produtos antes de finalizar a compra</p>
+            <a href="/produtos" class="btn btn-primary">
+                <i class="fas fa-shopping-basket"></i>
+                Ver produtos
+            </a>
+        </div>
+
+    </main>
+
+    <!-- FOOTER MÍNIMO -->
+    <footer class="checkout-footer">
+        <p>&copy; 2024 Luxury Store. Todos os direitos reservados.</p>
+    </footer>
+
+    <script src="/js/core/utils.js" defer></script>
+    <script src="/js/core/api.js" defer></script>
+    <script src="/js/core/components.js" defer></script>
+    <script src="/js/checkout.js" defer></script>
+</body>
+</html>

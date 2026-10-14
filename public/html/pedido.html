@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pedido - Luxury Store</title>
+    <meta name="theme-color" content="#c9a96e">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📦</text></svg>">
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/variables.css">
+    <link rel="stylesheet" href="/css/animations.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="stylesheet" href="/css/checkout.css">
+    <link rel="stylesheet" href="/css/pedido.css">
+</head>
+<body class="order-page">
+
+    <a href="#main-content" class="skip-link">Pular para o conteúdo principal</a>
+    <div aria-live="polite" aria-atomic="true" id="announcer" class="sr-only"></div>
+
+    <!-- HEADER -->
+    <header class="checkout-header">
+        <a href="/" class="checkout-logo">LUXURY</a>
+        <div class="checkout-header-right">
+            <a href="/minha-conta" class="checkout-back">
+                <i class="fas fa-user"></i>
+                <span>Minha conta</span>
+            </a>
+            <a href="/" class="checkout-back">
+                <i class="fas fa-arrow-left"></i>
+                <span>Voltar para a loja</span>
+            </a>
+        </div>
+    </header>
+
+    <main id="main-content" class="order-main">
+
+        <div id="orderLoading" class="checkout-loading">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>Carregando pedido...</span>
+        </div>
+
+        <div id="orderContent" style="display: none;">
+
+            <!-- SUCESSO -->
+            <div class="order-success" id="orderSuccess">
+                <div class="order-success-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <h1>Pedido realizado!</h1>
+                <p class="order-success-subtitle">
+                    Seu pedido <strong>#<span id="orderId"></span></strong> foi criado com sucesso.
+                </p>
+                <div class="order-success-status" id="orderStatusBadge"></div>
+            </div>
+
+            <!-- CONTEÚDO -->
+            <div class="order-grid">
+
+                <!-- COLUNA PRINCIPAL -->
+                <div class="order-main-col">
+
+                    <!-- PAGAMENTO PENDENTE -->
+                    <div class="order-section order-payment-section" id="paymentSection" style="display: none;">
+                        <h2>
+                            <i class="fas fa-credit-card"></i>
+                            Pagamento
+                        </h2>
+                        <div class="order-payment-content" id="paymentContent"></div>
+                    </div>
+
+                    <!-- ITENS -->
+                    <div class="order-section">
+                        <h2>
+                            <i class="fas fa-box"></i>
+                            Itens do pedido
+                        </h2>
+                        <div class="order-items" id="orderItems"></div>
+                    </div>
+
+                    <!-- ENTREGA -->
+                    <div class="order-section">
+                        <h2>
+                            <i class="fas fa-map-marker-alt"></i>
+                            Endereço de entrega
+                        </h2>
+                        <div class="order-address" id="orderAddress"></div>
+                    </div>
+
+                </div>
+
+                <!-- COLUNA LATERAL -->
+                <aside class="order-side-col">
+
+                    <div class="order-summary">
+                        <h2>Resumo</h2>
+
+                        <div class="order-summary-totals">
+                            <div class="order-total-row">
+                                <span>Subtotal</span>
+                                <span id="orderSubtotal">—</span>
+                            </div>
+                            <div class="order-total-row">
+                                <span>Frete</span>
+                                <span id="orderShipping">—</span>
+                            </div>
+                            <div class="order-total-row" id="orderDiscountRow" style="display: none;">
+                                <span>Desconto</span>
+                                <span id="orderDiscount" style="color: var(--success-dark);">—</span>
+                            </div>
+                            <div class="order-total-row order-total-row-divider">
+                                <span>Total</span>
+                                <strong id="orderTotal">—</strong>
+                            </div>
+                        </div>
+
+                        <div class="order-summary-actions">
+                            <button type="button" class="order-action-btn order-action-danger" id="cancelOrderBtn" style="display: none;">
+                                <i class="fas fa-times"></i>
+                                Cancelar pedido
+                            </button>
+                            <a href="/produtos" class="order-action-btn order-action-secondary">
+                                <i class="fas fa-shopping-basket"></i>
+                                Continuar comprando
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="order-info-card">
+                        <h3>
+                            <i class="fas fa-info-circle"></i>
+                            Informações
+                        </h3>
+                        <div class="order-info-item">
+                            <span>Pedido</span>
+                            <strong>#<span id="orderInfoId"></span></strong>
+                        </div>
+                        <div class="order-info-item">
+                            <span>Data</span>
+                            <strong id="orderInfoDate"></strong>
+                        </div>
+                        <div class="order-info-item">
+                            <span>Forma de pagamento</span>
+                            <strong id="orderInfoPayment"></strong>
+                        </div>
+                    </div>
+
+                </aside>
+
+            </div>
+
+        </div>
+
+        <!-- NÃO ENCONTRADO -->
+        <div id="orderNotFound" class="checkout-empty" style="display: none;">
+            <i class="fas fa-box-open"></i>
+            <h2>Pedido não encontrado</h2>
+            <p>Verifique o link ou volte para o início</p>
+            <a href="/produtos" class="btn btn-primary">
+                <i class="fas fa-shopping-basket"></i>
+                Ver produtos
+            </a>
+        </div>
+
+    </main>
+
+    <footer class="checkout-footer">
+        <p>&copy; 2024 Luxury Store. Todos os direitos reservados.</p>
+    </footer>
+
+    <script src="/js/core/utils.js" defer></script>
+    <script src="/js/core/api.js" defer></script>
+    <script src="/js/core/components.js" defer></script>
+    <script src="/js/pedido.js" defer></script>
+</body>
+</html>

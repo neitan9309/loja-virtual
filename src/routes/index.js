@@ -1,3 +1,6 @@
+// ======================================================
+// src/routes/index.js
+// ======================================================
 const express = require('express');
 const router = express.Router();
 
@@ -11,6 +14,7 @@ const userRoutes = require('./users');
 const cepRoutes = require('./cep');
 const cartRoutes = require('./cart');
 const uploadRoutes = require('./upload');
+const orderRoutes = require('./orders');
 
 router.use('/products', productRoutes);
 router.use('/categories', categoryRoutes);
@@ -22,5 +26,6 @@ router.use('/users', userRoutes);
 router.use('/cep', cepRoutes);
 router.use('/cart', cartRoutes);
 router.use('/upload', uploadRoutes);
+router.use('/orders', orderRoutes);
 
 module.exports = router;

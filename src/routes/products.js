@@ -4,17 +4,15 @@
 const express = require('express');
 const router = express.Router();
 const { param } = require('express-validator');
-const { productController } = require('../controllers');
+const { productController, reviewController } = require('../controllers');
 const { authenticate, requireAdmin, optionalAuth } = require('../middleware/auth');
 
 // ======================================================
 // ROTAS ADMIN (DEVEM VIR ANTES DE /:id)
 // ======================================================
 
-// Listar produtos para o admin (com filtros + paginação)
 router.get('/admin/list', authenticate, requireAdmin, productController.adminList);
 
-// Buscar 1 produto para o admin (com sku, cost_price)
 router.get(
     '/admin/:id',
     authenticate,
@@ -27,18 +25,11 @@ router.get(
 // ROTAS PÚBLICAS
 // ======================================================
 
-// Buscar produtos (nome/sku/id)
 router.get('/search', productController.search);
-
-// Listar produtos
 router.get('/', productController.list);
 
-// Buscar por slug (URL amigável)
-// optionalAuth: se for admin, vê sku/cost_price; senão, esconde
 router.get('/slug/:slug', optionalAuth, productController.getBySlug);
 
-// Buscar por ID
-// optionalAuth: se for admin, vê sku/cost_price; senão, esconde
 router.get(
     '/:id',
     optionalAuth,
@@ -47,13 +38,57 @@ router.get(
 );
 
 // ======================================================
+// AVALIAÇÕES (reviews)
+// ⚠️ Precisam vir ANTES de rotas genéricas como /:id/images
+// ======================================================
+
+// Listar avaliações (público)
+router.get(
+    '/:productId/reviews',
+    param('productId').isInt({ min: 1 }).withMessage('ID inválido'),
+    reviewController.list
+);
+
+// Buscar a minha avaliação (logado)
+router.get(
+    '/:productId/reviews/mine',
+    authenticate,
+    param('productId').isInt({ min: 1 }).withMessage('ID inválido'),
+    reviewController.getMine
+);
+
+// Criar avaliação (logado)
+router.post(
+    '/:productId/reviews',
+    authenticate,
+    param('productId').isInt({ min: 1 }).withMessage('ID inválido'),
+    reviewController.create
+);
+
+// Atualizar minha avaliação (logado)
+router.put(
+    '/:productId/reviews/:reviewId',
+    authenticate,
+    param('productId').isInt({ min: 1 }).withMessage('ID inválido'),
+    param('reviewId').isInt({ min: 1 }).withMessage('ID inválido'),
+    reviewController.update
+);
+
+// Deletar minha avaliação (logado)
+router.delete(
+    '/:productId/reviews/:reviewId',
+    authenticate,
+    param('productId').isInt({ min: 1 }).withMessage('ID inválido'),
+    param('reviewId').isInt({ min: 1 }).withMessage('ID inválido'),
+    reviewController.delete
+);
+
+// ======================================================
 // ROTAS ADMINISTRATIVAS
 // ======================================================
 
-// Criar produto
 router.post('/', authenticate, requireAdmin, productController.create);
 
-// Atualizar produto completo
 router.put(
     '/:id',
     authenticate,
@@ -62,7 +97,6 @@ router.put(
     productController.update
 );
 
-// Atualizar apenas 1 campo (edição inline)
 router.patch(
     '/:id',
     authenticate,
@@ -71,7 +105,6 @@ router.patch(
     productController.patchField
 );
 
-// Soft delete
 router.delete(
     '/:id',
     authenticate,

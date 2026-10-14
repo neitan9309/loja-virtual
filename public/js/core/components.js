@@ -1,7 +1,9 @@
 // ======================================================
 // public/js/core/components.js
 // Renderizadores reutilizáveis (retornam strings HTML)
+// + ResponsiveCarousel (grid desktop / carrossel mobile)
 // Uso: window.LuxuryComponents.renderProductCard(product)
+//      window.LuxuryResponsiveCarousel.setup({ grid, ... })
 // ======================================================
 (function () {
     'use strict';
@@ -9,6 +11,9 @@
     // Dependência: LuxuryUtils
     const U = window.LuxuryUtils;
 
+    // ==================================================
+    // COMPONENTS (renderizadores de HTML)
+    // ==================================================
     const Components = {
         // ==================================================
         // PRODUTO (card padrão)
@@ -19,6 +24,7 @@
                 showButton = true,
                 buttonText = 'Ver Produto',
                 href = `/produto/${product.slug || ''}`,
+                clickableCard = false,
             } = options;
 
             const hasImage =
@@ -53,27 +59,39 @@
                     ? `<p class="product-short-desc">${U.escapeHtml(product.short_description)}</p>`
                     : '';
 
-            const buttonHtml = showButton
-                ? `<a href="${U.escapeAttr(href)}" class="product-btn">${U.escapeHtml(buttonText)}</a>`
+            const shouldShowButton = showButton && !clickableCard;
+
+            const buttonHtml = shouldShowButton
+                ? `<span class="product-btn">${U.escapeHtml(buttonText)}</span>`
                 : '';
 
-            return `
-                <article class="product-card">
-                    <div class="product-image-wrapper">
-                        ${discountBadge}
-                        ${imageHtml}
+            const innerHtml = `
+                <div class="product-image-wrapper">
+                    ${discountBadge}
+                    ${imageHtml}
+                </div>
+                <div class="product-info">
+                    <h3 class="product-name">${U.escapeHtml(product.name)}</h3>
+                    ${shortDescHtml}
+                    <div class="product-price-wrapper">
+                        <span class="product-price">${U.formatPrice(currentPrice)}</span>
+                        ${oldPriceHtml}
                     </div>
-                    <div class="product-info">
-                        <h3 class="product-name">${U.escapeHtml(product.name)}</h3>
-                        ${shortDescHtml}
-                        <div class="product-price-wrapper">
-                            <span class="product-price">${U.formatPrice(currentPrice)}</span>
-                            ${oldPriceHtml}
-                        </div>
-                        ${buttonHtml}
-                    </div>
-                </article>
+                    ${buttonHtml}
+                </div>
             `;
+
+            if (clickableCard) {
+                return `
+                    <a href="${U.escapeAttr(href)}"
+                       class="product-card product-card-link"
+                       aria-label="Ver ${U.escapeAttr(product.name)}">
+                        ${innerHtml}
+                    </a>
+                `;
+            }
+
+            return `<article class="product-card">${innerHtml}</article>`;
         },
 
         // ==================================================
@@ -223,7 +241,7 @@
         },
 
         // ==================================================
-        // TOAST (retorna elemento DOM, não string)
+        // TOAST (retorna elemento DOM)
         // ==================================================
         createToast(message, type = 'info', duration = 3500) {
             const icons = {
@@ -251,6 +269,173 @@
         },
     };
 
-    // Expõe globalmente
+    // ==================================================
+    // RESPONSIVE CAROUSEL
+    // Grid no desktop / Carrossel no mobile
+    // Uso:
+    //   window.LuxuryResponsiveCarousel.setup({
+    //     grid, dotsContainer, prevBtn, nextBtn, total
+    //   })
+    // ==================================================
+    const ResponsiveCarousel = {
+        MOBILE_BREAKPOINT: 768,
+
+        setup({ grid, dotsContainer, prevBtn, nextBtn, total }) {
+            if (!grid || total === 0) return;
+
+            let currentIndex = 0;
+            let isTransitioning = false;
+
+            const isMobile = () => window.innerWidth <= this.MOBILE_BREAKPOINT;
+
+            // ---------- LAYOUT ----------
+            const applyLayout = () => {
+                const btns = [prevBtn, nextBtn].filter(Boolean);
+                const dots = dotsContainer;
+
+                if (isMobile()) {
+                    grid.classList.add('is-carousel');
+                    btns.forEach((b) => b.removeAttribute('hidden'));
+                    dots?.removeAttribute('hidden');
+                } else {
+                    grid.classList.remove('is-carousel');
+                    btns.forEach((b) => b.setAttribute('hidden', ''));
+                    dots?.setAttribute('hidden', '');
+                }
+
+                grid.style.transform = '';
+                updateCarousel(false);
+            };
+
+            // ---------- UPDATE ----------
+            const updateCarousel = (animate = true) => {
+                if (!isMobile()) {
+                    grid.style.transition = 'none';
+                    grid.style.transform = '';
+                    return;
+                }
+
+                if (total === 0) return;
+
+                currentIndex = Math.max(0, Math.min(currentIndex, total - 1));
+
+                const card = grid.querySelector('.category-card, .product-card');
+                if (!card) return;
+
+                const cardWidth = card.offsetWidth;
+                const gap = parseFloat(getComputedStyle(grid).gap) || 0;
+                const offset = -(cardWidth + gap) * currentIndex;
+
+                grid.style.transition = animate
+                    ? 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                    : 'none';
+                grid.style.transform = `translateX(${offset}px)`;
+
+                if (dotsContainer) {
+                    dotsContainer.querySelectorAll('.carousel-dot').forEach((dot, i) => {
+                        dot.classList.toggle('active', i === currentIndex);
+                    });
+                }
+
+                if (prevBtn) prevBtn.disabled = currentIndex === 0;
+                if (nextBtn) nextBtn.disabled = currentIndex >= total - 1;
+            };
+
+            // ---------- DOTS ----------
+            const renderDots = () => {
+                if (!dotsContainer) return;
+                dotsContainer.innerHTML = '';
+
+                if (!isMobile() || total <= 1) return;
+
+                for (let i = 0; i < total; i++) {
+                    const dot = document.createElement('button');
+                    dot.className = 'carousel-dot';
+                    dot.setAttribute('aria-label', `Ir para item ${i + 1}`);
+                    dot.addEventListener('click', () => {
+                        currentIndex = i;
+                        updateCarousel(true);
+                    });
+                    dotsContainer.appendChild(dot);
+                }
+                updateCarousel(false);
+            };
+
+            // ---------- NAV ----------
+            const goTo = (index) => {
+                if (isTransitioning) return;
+                if (index < 0 || index >= total || index === currentIndex) return;
+
+                isTransitioning = true;
+                currentIndex = index;
+                updateCarousel(true);
+                setTimeout(() => {
+                    isTransitioning = false;
+                }, 450);
+            };
+
+            prevBtn?.addEventListener('click', () => goTo(currentIndex - 1));
+            nextBtn?.addEventListener('click', () => goTo(currentIndex + 1));
+
+            // ---------- TOUCH ----------
+            let touchStartX = 0;
+            let touchStartY = 0;
+            let isSwiping = false;
+
+            grid.addEventListener(
+                'touchstart',
+                (e) => {
+                    if (!isMobile() || isTransitioning) return;
+                    touchStartX = e.touches[0].clientX;
+                    touchStartY = e.touches[0].clientY;
+                    isSwiping = false;
+                },
+                { passive: true }
+            );
+
+            grid.addEventListener(
+                'touchmove',
+                (e) => {
+                    if (!isMobile() || isTransitioning) return;
+                    const deltaX = e.touches[0].clientX - touchStartX;
+                    const deltaY = e.touches[0].clientY - touchStartY;
+                    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 5) {
+                        isSwiping = true;
+                        e.preventDefault();
+                    }
+                },
+                { passive: false }
+            );
+
+            grid.addEventListener('touchend', (e) => {
+                if (!isMobile() || isTransitioning) return;
+                if (isSwiping) {
+                    const deltaX = e.changedTouches[0].clientX - touchStartX;
+                    if (Math.abs(deltaX) > 40) {
+                        if (deltaX < 0) goTo(currentIndex + 1);
+                        else goTo(currentIndex - 1);
+                    }
+                }
+                isSwiping = false;
+            });
+
+            // ---------- RESIZE ----------
+            const debouncedResize = U.debounce(() => {
+                applyLayout();
+                renderDots();
+            }, 200);
+
+            window.addEventListener('resize', debouncedResize);
+
+            // ---------- INIT ----------
+            applyLayout();
+            renderDots();
+        },
+    };
+
+    // ==================================================
+    // EXPOR GLOBAL
+    // ==================================================
     window.LuxuryComponents = Components;
+    window.LuxuryResponsiveCarousel = ResponsiveCarousel;
 })();

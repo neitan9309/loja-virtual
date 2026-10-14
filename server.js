@@ -137,6 +137,14 @@ app.get('/checkout', (req, res) => {
     res.sendFile(path.join(publicDir, 'html', 'checkout.html'));
 });
 
+app.get('/pedido/:id', (req, res) => {
+    res.sendFile(path.join(publicDir, 'html', 'pedido.html'));
+});
+
+app.get('/checkout', (req, res) => {
+    res.sendFile(path.join(publicDir, 'html', 'checkout.html'));
+});
+
 // ======================================================
 // PÁGINAS HTML (ADMIN)
 // ======================================================

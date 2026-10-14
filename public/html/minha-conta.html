@@ -5,17 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Minha Conta - Luxury Store</title>
     <meta name="theme-color" content="#c9a96e">
-    <meta name="theme-color" content="#171717" media="(prefers-color-scheme: dark)">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>👔</text></svg>">
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- ✅ Novos CSS globais -->
     <link rel="stylesheet" href="/css/variables.css">
     <link rel="stylesheet" href="/css/animations.css">
     <link rel="stylesheet" href="/css/components.css">
-
-    <!-- CSS específico -->
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="/css/minha-conta.css">
 </head>
@@ -87,8 +83,8 @@
                 </button>
             </div>
         </div>
+        <div class="menu-overlay" id="menuOverlay"></div>
     </header>
-    <div class="menu-overlay" id="menuOverlay"></div>
 
     <!-- ============ CONTEÚDO ============ -->
     <main id="main-content" class="account-page">
@@ -100,7 +96,7 @@
 
         <div class="account-content" id="accountContent" style="display: none;">
 
-            <!-- Sidebar -->
+            <!-- Sidebar (desktop) -->
             <aside class="account-sidebar">
                 <div class="account-user-card">
                     <div class="account-avatar" id="accountAvatar">U</div>
@@ -123,6 +119,10 @@
                         <i class="fas fa-lock"></i>
                         <span>Segurança</span>
                     </button>
+                    <button class="account-nav-item" data-tab="orders">
+                        <i class="fas fa-shopping-bag"></i>
+                        <span>Meus Pedidos</span>
+                    </button>
                     <button class="account-nav-item account-logout" id="logoutBtn">
                         <i class="fas fa-sign-out-alt"></i>
                         <span>Sair</span>
@@ -133,175 +133,250 @@
             <!-- Conteúdo -->
             <div class="account-panels">
 
-                <!-- Painel: Meus Dados -->
-                <section class="account-panel active" data-panel="profile">
-                    <header class="panel-header">
-                        <h1>Meus Dados</h1>
-                        <p>Gerencie suas informações pessoais</p>
-                    </header>
+                <!-- MEUS DADOS -->
+                <div class="account-accordion-item active" data-accordion="profile">
+                    <button type="button" class="account-accordion-header" aria-expanded="true" aria-controls="acc-body-profile">
+                        <span class="account-accordion-title">
+                            <i class="fas fa-user"></i>
+                            Meus Dados
+                        </span>
+                        <i class="fas fa-chevron-down account-accordion-icon"></i>
+                    </button>
+                    <div class="account-accordion-body" id="acc-body-profile">
+                        <div class="account-accordion-inner">
+                            <section class="account-panel active" data-panel="profile">
+                                <header class="panel-header">
+                                    <h1>Meus Dados</h1>
+                                    <p>Gerencie suas informações pessoais</p>
+                                </header>
 
-                    <form class="account-form" id="profileForm">
-                        <div class="form-field">
-                            <label for="accFullName">Nome completo</label>
-                            <input type="text" id="accFullName" name="full_name" maxlength="150">
+                                <form class="account-form" id="profileForm">
+                                    <div class="form-field">
+                                        <label for="accFullName">Nome completo</label>
+                                        <input type="text" id="accFullName" name="full_name" maxlength="150">
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-field">
+                                            <label for="accBirthDate">Data de nascimento</label>
+                                            <input type="date" id="accBirthDate" name="birth_date">
+                                        </div>
+                                        <div class="form-field">
+                                            <label for="accGender">Gênero</label>
+                                            <select id="accGender" name="gender">
+                                                <option value="">Selecione</option>
+                                                <option value="masculino">Masculino</option>
+                                                <option value="feminino">Feminino</option>
+                                                <option value="outro">Outro</option>
+                                                <option value="prefiro_nao_dizer">Prefiro não dizer</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-field">
+                                            <label for="accCpf">CPF</label>
+                                            <input type="text" id="accCpf" name="cpf" maxlength="14">
+                                        </div>
+                                        <div class="form-field">
+                                            <label for="accPhone">Telefone</label>
+                                            <input type="tel" id="accPhone" name="phone" maxlength="20">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-field">
+                                        <label for="accEmail">E-mail</label>
+                                        <input type="email" id="accEmail" name="email" disabled>
+                                        <small class="field-hint">O e-mail não pode ser alterado</small>
+                                    </div>
+
+                                    <div class="form-actions">
+                                        <button type="submit" class="btn-save" id="saveProfileBtn">
+                                            <i class="fas fa-check"></i>
+                                            Salvar alterações
+                                        </button>
+                                    </div>
+                                </form>
+                            </section>
                         </div>
-
-                        <div class="form-row">
-                            <div class="form-field">
-                                <label for="accBirthDate">Data de nascimento</label>
-                                <input type="date" id="accBirthDate" name="birth_date">
-                            </div>
-                            <div class="form-field">
-                                <label for="accGender">Gênero</label>
-                                <select id="accGender" name="gender">
-                                    <option value="">Selecione</option>
-                                    <option value="masculino">Masculino</option>
-                                    <option value="feminino">Feminino</option>
-                                    <option value="outro">Outro</option>
-                                    <option value="prefiro_nao_dizer">Prefiro não dizer</option>
-                                </select>
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-field">
-                                <label for="accCpf">CPF</label>
-                                <input type="text" id="accCpf" name="cpf" maxlength="14">
-                            </div>
-                            <div class="form-field">
-                                <label for="accPhone">Telefone</label>
-                                <input type="tel" id="accPhone" name="phone" maxlength="20">
-                            </div>
-                        </div>
-
-                        <div class="form-field">
-                            <label for="accEmail">E-mail</label>
-                            <input type="email" id="accEmail" name="email" disabled>
-                            <small class="field-hint">O e-mail não pode ser alterado</small>
-                        </div>
-
-                        <div class="form-actions">
-                            <button type="submit" class="btn-save" id="saveProfileBtn">
-                                <i class="fas fa-check"></i>
-                                Salvar alterações
-                            </button>
-                        </div>
-                    </form>
-                </section>
-
-                <!-- Painel: Endereço -->
-                <section class="account-panel" data-panel="address">
-                    <header class="panel-header">
-                        <h1>Endereço</h1>
-                        <p>Atualize seu endereço de entrega</p>
-                    </header>
-
-                    <form class="account-form" id="addressForm">
-                        <div class="form-field">
-                            <label for="accCep">CEP</label>
-                            <div class="cep-wrapper">
-                                <input type="text" id="accCep" name="cep" maxlength="9" inputmode="numeric">
-                                <span class="cep-status" id="accCepStatus"></span>
-                            </div>
-                        </div>
-
-                        <div class="form-field">
-                            <label for="accStreet">Rua / Logradouro</label>
-                            <input type="text" id="accStreet" name="street" readonly>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-field">
-                                <label for="accNumber">Número</label>
-                                <input type="text" id="accNumber" name="number" maxlength="20">
-                            </div>
-                            <div class="form-field">
-                                <label for="accComplement">Complemento</label>
-                                <input type="text" id="accComplement" name="complement" maxlength="100">
-                            </div>
-                        </div>
-
-                        <div class="form-field">
-                            <label for="accNeighborhood">Bairro</label>
-                            <input type="text" id="accNeighborhood" name="neighborhood" readonly>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-field">
-                                <label for="accCity">Cidade</label>
-                                <input type="text" id="accCity" name="city" readonly>
-                            </div>
-                            <div class="form-field">
-                                <label for="accState">Estado</label>
-                                <input type="text" id="accState" name="state" readonly maxlength="2">
-                            </div>
-                        </div>
-
-                        <div class="form-actions">
-                            <button type="submit" class="btn-save" id="saveAddressBtn">
-                                <i class="fas fa-check"></i>
-                                Salvar endereço
-                            </button>
-                        </div>
-                    </form>
-                </section>
-
-                <!-- Painel: Segurança -->
-                <section class="account-panel" data-panel="security">
-                    <header class="panel-header">
-                        <h1>Segurança</h1>
-                        <p>Altere sua senha de acesso</p>
-                    </header>
-
-                    <form class="account-form" id="passwordForm">
-                        <div class="form-field">
-                            <label for="accCurrentPassword">Senha atual</label>
-                            <div class="password-wrapper">
-                                <input type="password" id="accCurrentPassword" name="current_password" required autocomplete="current-password">
-                                <button type="button" class="toggle-password" data-target="accCurrentPassword" aria-label="Mostrar senha">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="form-field">
-                            <label for="accNewPassword">Nova senha</label>
-                            <div class="password-wrapper">
-                                <input type="password" id="accNewPassword" name="new_password" required minlength="6" autocomplete="new-password">
-                                <button type="button" class="toggle-password" data-target="accNewPassword" aria-label="Mostrar senha">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="form-field">
-                            <label for="accConfirmPassword">Confirmar nova senha</label>
-                            <input type="password" id="accConfirmPassword" name="confirm_password" required autocomplete="new-password">
-                        </div>
-
-                        <div class="form-actions">
-                            <button type="submit" class="btn-save" id="savePasswordBtn">
-                                <i class="fas fa-lock"></i>
-                                Alterar senha
-                            </button>
-                        </div>
-                    </form>
-
-                    <div class="danger-zone">
-                        <div class="danger-header">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            <div>
-                                <h3>Zona de perigo</h3>
-                                <p>Ações irreversíveis nesta área</p>
-                            </div>
-                        </div>
-
-                        <button type="button" class="btn-danger" id="deleteAccountBtn">
-                            <i class="fas fa-trash-alt"></i>
-                            Excluir minha conta
-                        </button>
                     </div>
-                </section>
+                </div>
+
+                <!-- ENDEREÇO -->
+                <div class="account-accordion-item" data-accordion="address">
+                    <button type="button" class="account-accordion-header" aria-expanded="false" aria-controls="acc-body-address">
+                        <span class="account-accordion-title">
+                            <i class="fas fa-map-marker-alt"></i>
+                            Endereço
+                        </span>
+                        <i class="fas fa-chevron-down account-accordion-icon"></i>
+                    </button>
+                    <div class="account-accordion-body" id="acc-body-address">
+                        <div class="account-accordion-inner">
+                            <section class="account-panel active" data-panel="address">
+                                <header class="panel-header">
+                                    <h1>Endereço</h1>
+                                    <p>Atualize seu endereço de entrega</p>
+                                </header>
+
+                                <form class="account-form" id="addressForm">
+                                    <div class="form-field">
+                                        <label for="accCep">CEP</label>
+                                        <div class="cep-wrapper">
+                                            <input type="text" id="accCep" name="cep" maxlength="9" inputmode="numeric">
+                                            <span class="cep-status" id="accCepStatus"></span>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-field">
+                                        <label for="accStreet">Rua / Logradouro</label>
+                                        <input type="text" id="accStreet" name="street" readonly>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-field">
+                                            <label for="accNumber">Número</label>
+                                            <input type="text" id="accNumber" name="number" maxlength="20">
+                                        </div>
+                                        <div class="form-field">
+                                            <label for="accComplement">Complemento</label>
+                                            <input type="text" id="accComplement" name="complement" maxlength="100">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-field">
+                                        <label for="accNeighborhood">Bairro</label>
+                                        <input type="text" id="accNeighborhood" name="neighborhood" readonly>
+                                    </div>
+
+                                    <div class="form-row">
+                                        <div class="form-field">
+                                            <label for="accCity">Cidade</label>
+                                            <input type="text" id="accCity" name="city" readonly>
+                                        </div>
+                                        <div class="form-field">
+                                            <label for="accState">Estado</label>
+                                            <input type="text" id="accState" name="state" readonly maxlength="2">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-actions">
+                                        <button type="submit" class="btn-save" id="saveAddressBtn">
+                                            <i class="fas fa-check"></i>
+                                            Salvar endereço
+                                        </button>
+                                    </div>
+                                </form>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SEGURANÇA -->
+                <div class="account-accordion-item" data-accordion="security">
+                    <button type="button" class="account-accordion-header" aria-expanded="false" aria-controls="acc-body-security">
+                        <span class="account-accordion-title">
+                            <i class="fas fa-lock"></i>
+                            Segurança
+                        </span>
+                        <i class="fas fa-chevron-down account-accordion-icon"></i>
+                    </button>
+                    <div class="account-accordion-body" id="acc-body-security">
+                        <div class="account-accordion-inner">
+                            <section class="account-panel active" data-panel="security">
+                                <header class="panel-header">
+                                    <h1>Segurança</h1>
+                                    <p>Altere sua senha de acesso</p>
+                                </header>
+
+                                <form class="account-form" id="passwordForm">
+                                    <div class="form-field">
+                                        <label for="accCurrentPassword">Senha atual</label>
+                                        <div class="password-wrapper">
+                                            <input type="password" id="accCurrentPassword" name="current_password" required autocomplete="current-password">
+                                            <button type="button" class="toggle-password" data-target="accCurrentPassword" aria-label="Mostrar senha">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-field">
+                                        <label for="accNewPassword">Nova senha</label>
+                                        <div class="password-wrapper">
+                                            <input type="password" id="accNewPassword" name="new_password" required minlength="6" autocomplete="new-password">
+                                            <button type="button" class="toggle-password" data-target="accNewPassword" aria-label="Mostrar senha">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-field">
+                                        <label for="accConfirmPassword">Confirmar nova senha</label>
+                                        <input type="password" id="accConfirmPassword" name="confirm_password" required autocomplete="new-password">
+                                    </div>
+
+                                    <div class="form-actions">
+                                        <button type="submit" class="btn-save" id="savePasswordBtn">
+                                            <i class="fas fa-lock"></i>
+                                            Alterar senha
+                                        </button>
+                                    </div>
+                                </form>
+
+                                <div class="danger-zone">
+                                    <div class="danger-header">
+                                        <i class="fas fa-exclamation-triangle"></i>
+                                        <div>
+                                            <h3>Zona de perigo</h3>
+                                            <p>Ações irreversíveis nesta área</p>
+                                        </div>
+                                    </div>
+
+                                    <button type="button" class="btn-danger" id="deleteAccountBtn">
+                                        <i class="fas fa-trash-alt"></i>
+                                        Excluir minha conta
+                                    </button>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MEUS PEDIDOS -->
+                <div class="account-accordion-item" data-accordion="orders">
+                    <button type="button" class="account-accordion-header" aria-expanded="false" aria-controls="acc-body-orders">
+                        <span class="account-accordion-title">
+                            <i class="fas fa-shopping-bag"></i>
+                            Meus Pedidos
+                        </span>
+                        <i class="fas fa-chevron-down account-accordion-icon"></i>
+                    </button>
+                    <div class="account-accordion-body" id="acc-body-orders">
+                        <div class="account-accordion-inner">
+                            <section class="account-panel active" data-panel="orders">
+                                <header class="panel-header">
+                                    <h1>Meus Pedidos</h1>
+                                    <p>Acompanhe o status dos seus pedidos</p>
+                                </header>
+
+                                <div id="ordersListContainer" class="orders-list-container">
+                                    <div class="loading-state">
+                                        <i class="fas fa-spinner fa-spin"></i>
+                                        <span>Carregando pedidos...</span>
+                                    </div>
+                                </div>
+
+                                <div id="ordersPagination" class="orders-pagination"></div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BOTÃO SAIR (mobile) -->
+                <button type="button" class="account-logout-mobile" id="logoutBtnMobile">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Sair</span>
+                </button>
 
             </div>
         </div>
@@ -341,12 +416,10 @@
         </div>
     </footer>
 
-    <!-- ✅ Core JS -->
     <script src="/js/core/utils.js" defer></script>
     <script src="/js/core/api.js" defer></script>
     <script src="/js/core/components.js" defer></script>
 
-    <!-- Scripts da página -->
     <script src="/js/cart.js" defer></script>
     <script src="/js/script.js" defer></script>
     <script src="/js/minha-conta.js" defer></script>

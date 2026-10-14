@@ -1,6 +1,5 @@
 // ======================================================
 // src/controllers/index.js
-// Agregador de controllers
 // ======================================================
 const authController = require('./authController');
 const brandController = require('./brandController');
@@ -8,8 +7,10 @@ const cartController = require('./cartController');
 const categoryController = require('./categoryController');
 const cepController = require('./cepController');
 const inventoryController = require('./inventoryController');
+const orderController = require('./orderController');
 const productController = require('./productController');
 const promotionController = require('./promotionController');
+const reviewController = require('./reviewController');
 const uploadController = require('./uploadController');
 const userController = require('./userController');
 
@@ -20,8 +21,10 @@ module.exports = {
     categoryController,
     cepController,
     inventoryController,
+    orderController,
     productController,
     promotionController,
+    reviewController,
     uploadController,
     userController,
 };

@@ -2327,6 +2327,196 @@ body {
 }
 
 /* ======================================================
+   CARD DE PRODUTO CLICÁVEL
+   ====================================================== */
+.product-card-link {
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+    display: flex;           /* mantém o layout flex do card */
+    flex-direction: column;
+}
+
+.product-card-link:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.product-card-link:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+/* Botão interno é só visual (o card inteiro é o link) */
+.product-card-link .product-btn {
+    pointer-events: none;
+    cursor: inherit;
+}
+
+/* Garante que as imagens e títulos não interfiram */
+.product-card-link * {
+    text-decoration: none;
+}
+
+/* ======================================================
+   CARROSSEL GENÉRICO (grid em desktop, carrossel em mobile)
+   Usado em /produtos, /categoria, /busca, etc.
+   ====================================================== */
+.carousel-wrapper-generic {
+    position: relative;
+    width: 100%;
+}
+
+.carousel-viewport-generic {
+    overflow: hidden;
+    width: 100%;
+    padding: 8px 4px 24px 4px;
+    margin: -8px -4px 0 -4px;
+}
+
+/* Botões */
+.carousel-btn-generic {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    color: var(--gray-700);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.95rem;
+    transition: var(--transition);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+.carousel-btn-generic:hover {
+    background: var(--accent);
+    color: var(--white);
+    border-color: var(--accent);
+    transform: translateY(-50%) scale(1.08);
+}
+
+.carousel-btn-generic:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    background: var(--white);
+    color: var(--gray-400);
+    transform: translateY(-50%);
+}
+
+.carousel-btn-generic[hidden] {
+    display: none !important;
+}
+
+.carousel-prev-generic {
+    left: 0;
+}
+
+.carousel-next-generic {
+    right: 0;
+}
+
+/* Dots */
+.carousel-dots-generic {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.carousel-dots-generic[hidden] {
+    display: none !important;
+}
+
+.carousel-dot {
+    width: 8px;
+    height: 8px;
+    border: 1px solid var(--gray-400);
+    background: transparent;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: var(--transition);
+    padding: 0;
+}
+
+.carousel-dot:hover {
+    border-color: var(--accent);
+}
+
+.carousel-dot.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    width: 24px;
+    border-radius: 4px;
+}
+
+/* ======================================================
+   MODO CARROSSEL (aplicado via JS em mobile)
+   ====================================================== */
+@media (max-width: 768px) {
+    /* Grid de produtos vira flex horizontal */
+    .products-grid-page.is-carousel {
+        display: flex;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        gap: 1rem;
+        padding: 0.5rem 0;
+        width: 100%;
+        transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    .products-grid-page.is-carousel .product-card {
+        flex: 0 0 100%;
+        width: 100%;
+        min-width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Grid de categorias vira flex horizontal */
+    .categories-grid.is-carousel {
+        display: flex;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        gap: 1rem;
+        padding: 0.5rem 0;
+        width: 100%;
+        transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    .categories-grid.is-carousel .category-card {
+        flex: 0 0 100%;
+        width: 100%;
+        min-width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    /* Botões do carrossel */
+    .carousel-btn-generic {
+        width: 38px;
+        height: 38px;
+        font-size: 0.85rem;
+    }
+
+    .carousel-prev-generic {
+        left: -8px;
+    }
+
+    .carousel-next-generic {
+        right: -8px;
+    }
+}
+
+/* ======================================================
    RESPONSIVO — 768px (MOBILE)
    ====================================================== */
 @media (max-width: 768px) {
@@ -3019,3 +3209,35 @@ body {
     }
 }
 
+/* ======================================================
+   FIX — eliminar scroll horizontal global
+   ====================================================== */
+html,
+body {
+    overflow-x: hidden;
+    max-width: 100%;
+    width: 100%;
+}
+
+/* Previne estouro de qualquer elemento que use 100vw */
+.hero-carousel,
+.promo-video-section,
+.promo-video-bg,
+footer.footer {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* Footer: impede que os filhos cresçam além do container */
+.footer-container,
+.footer-bottom,
+.footer-bottom-content {
+    max-width: 100%;
+    width: 100%;
+}
+
+/* Vídeo Vimeo (100vw causa estouro) */
+.promo-video-bg iframe {
+    max-width: 100vw;
+    overflow: hidden;
+}

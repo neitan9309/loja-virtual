@@ -6,7 +6,6 @@
 (function () {
     'use strict';
 
-    // Aliases pros módulos globais
     const U = window.LuxuryUtils;
     const API = window.LuxuryAPI;
     const C = window.LuxuryComponents;
@@ -19,7 +18,6 @@
         slug: null,
 
         async init() {
-            // Extrai slug da URL: /produto/<slug>
             const pathParts = window.location.pathname.split('/').filter(Boolean);
             this.slug = pathParts[1] || null;
 
@@ -68,7 +66,7 @@
             this.renderVariations();
             this.renderDescription();
             this.renderSpecs();
-            this.renderReviews();
+            this.loadReviews();        // ✅ async — carrega via API
             this.attachActions();
             this.loadRelated();
         },
@@ -166,7 +164,7 @@
         },
 
         // ==================================================
-        // BADGES (agora usando component)
+        // BADGES
         // ==================================================
         renderBadges() {
             const container = document.getElementById('productBadges');
@@ -187,7 +185,7 @@
         },
 
         // ==================================================
-        // AVALIAÇÃO (agora usando component)
+        // AVALIAÇÃO (estrelas no header do produto)
         // ==================================================
         renderRating() {
             const p = this.product;
@@ -211,9 +209,7 @@
             const p = this.product;
             const originalPrice = parseFloat(p.price);
             const discount = parseFloat(p.discount_percent || 0);
-            const currentPrice = discount > 0
-                ? originalPrice * (1 - discount / 100)
-                : originalPrice;
+            const currentPrice = discount > 0 ? originalPrice * (1 - discount / 100) : originalPrice;
 
             const discountEl = document.getElementById('productDiscount');
             const oldPriceEl = document.getElementById('productOldPrice');
@@ -232,13 +228,9 @@
 
             currentPriceEl.textContent = U.formatPrice(currentPrice);
 
-            // Parcelamento
             const maxInstallments = 12;
             const minInstallment = 5;
-            const installmentsCount = Math.min(
-                maxInstallments,
-                Math.max(1, Math.floor(currentPrice / minInstallment))
-            );
+            const installmentsCount = Math.min(maxInstallments, Math.max(1, Math.floor(currentPrice / minInstallment)));
             const installmentValue = currentPrice / installmentsCount;
 
             if (installmentsCount > 1) {
@@ -266,12 +258,7 @@
                 grouped[v.type].push(v);
             });
 
-            const labels = {
-                size: 'Tamanho',
-                color: 'Cor',
-                material: 'Material',
-                style: 'Estilo',
-            };
+            const labels = { size: 'Tamanho', color: 'Cor', material: 'Material', style: 'Estilo' };
 
             container.innerHTML = Object.entries(grouped).map(([type, vars]) => `
                 <div class="variation-group">
@@ -348,20 +335,451 @@
         },
 
         // ==================================================
-        // AVALIAÇÕES
+        // AVALIAÇÕES — carrega via API
         // ==================================================
-        renderReviews() {
-            const p = this.product;
-            const container = document.getElementById('productReviews');
+        async loadReviews() {
+            const statsEl = document.getElementById('reviewStats');
+            const listEl = document.getElementById('productReviews');
+            const formEl = document.getElementById('reviewForm');
 
-            if (!p.reviews || p.reviews.length === 0) {
-                container.innerHTML = '<p class="review-empty">Este produto ainda não tem avaliações. Seja o primeiro a avaliar!</p>';
+            try {
+                // Busca avaliações e (se logado) a avaliação do usuário
+                const promises = [
+                    API.get(`/products/${this.product.id}/reviews`),
+                ];
+                if (API.isLoggedIn()) {
+                    promises.push(API.get(`/products/${this.product.id}/reviews/mine`));
+                }
+
+                const [listData, mineData] = await Promise.all(promises);
+                const reviews = listData.reviews || [];
+                const stats = listData.stats || { avg_rating: 0, total_reviews: 0 };
+                const myReview = mineData?.review || null;
+
+                // Stats
+                if (statsEl) {
+                    this.renderReviewStats(statsEl, stats);
+                }
+
+                // Formulário
+                if (formEl) {
+                    if (!API.isLoggedIn()) {
+                        this.renderLoginPrompt(formEl);
+                    } else if (myReview) {
+                        this.renderMyReview(formEl, myReview);
+                    } else {
+                        this.renderReviewForm(formEl);
+                    }
+                }
+
+                // Lista
+                if (listEl) {
+                    this.renderReviewList(listEl, reviews, myReview);
+                }
+            } catch (error) {
+                console.error('Erro ao carregar avaliações:', error);
+                if (listEl) {
+                    listEl.innerHTML = '<p class="review-empty">Erro ao carregar avaliações.</p>';
+                }
+            }
+        },
+
+        // ==================================================
+        // STATS
+        // ==================================================
+        renderReviewStats(el, stats) {
+            if (stats.total_reviews === 0) {
+                el.innerHTML = '';
                 return;
             }
 
-            container.innerHTML = p.reviews.map((review) => {
-                const stars = Array(5).fill(0).map((_, i) =>
-                    i < review.rating
+            el.innerHTML = `
+                <div class="review-stats-summary">
+                    <div class="review-stats-average">
+                        <strong>${stats.avg_rating.toFixed(1)}</strong>
+                        <div class="review-stats-stars">
+                            ${C.renderStars(stats.avg_rating, { size: 1.1 })}
+                        </div>
+                        <span>${stats.total_reviews} ${stats.total_reviews === 1 ? 'avaliação' : 'avaliações'}</span>
+                    </div>
+                </div>
+            `;
+        },
+
+        // ==================================================
+        // FORMULÁRIO DE NOVA AVALIAÇÃO
+        // ==================================================
+        renderReviewForm(el) {
+            el.innerHTML = `
+                <div class="review-form">
+                    <h3 class="review-form-title">
+                        <i class="fas fa-star"></i>
+                        Deixe sua avaliação
+                    </h3>
+
+                    <div class="review-form-field">
+                        <label>Sua nota *</label>
+                        <div class="review-stars-input" id="reviewStarsInput" role="radiogroup" aria-label="Nota de 1 a 5 estrelas">
+                            ${[1, 2, 3, 4, 5].map((n) => `
+                                <button type="button" class="review-star" data-value="${n}" aria-label="${n} estrela${n > 1 ? 's' : ''}">
+                                    <i class="far fa-star"></i>
+                                </button>
+                            `).join('')}
+                        </div>
+                        <input type="hidden" id="reviewRating" value="0">
+                    </div>
+
+                    <div class="review-form-field">
+                        <label for="reviewTitle">Título da avaliação</label>
+                        <input type="text" id="reviewTitle" maxlength="100" placeholder="Resuma sua experiência">
+                    </div>
+
+                    <div class="review-form-field">
+                        <label for="reviewComment">Comentário</label>
+                        <textarea id="reviewComment" rows="4" maxlength="1000" placeholder="O que você achou do produto?"></textarea>
+                        <small class="review-form-hint">Máximo 1000 caracteres</small>
+                    </div>
+
+                    <div class="review-form-feedback" id="reviewFormFeedback"></div>
+
+                    <div class="review-form-actions">
+                        <button type="button" class="btn btn-primary" id="submitReviewBtn">
+                            <i class="fas fa-paper-plane"></i>
+                            Enviar avaliação
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            this.setupStarInput(el);
+            this.setupReviewSubmit(el);
+        },
+
+        // ==================================================
+        // MINHA AVALIAÇÃO (modo leitura + botões)
+        // ==================================================
+        renderMyReview(el, review) {
+            const stars = [1, 2, 3, 4, 5].map((i) =>
+                i <= review.rating
+                    ? '<i class="fas fa-star"></i>'
+                    : '<i class="far fa-star"></i>'
+            ).join('');
+
+            const date = review.created_at
+                ? new Date(review.created_at).toLocaleDateString('pt-BR')
+                : '';
+
+            el.innerHTML = `
+                <div class="review-my-card">
+                    <div class="review-my-header">
+                        <h3 class="review-my-title">
+                            <i class="fas fa-check-circle"></i>
+                            Sua avaliação
+                        </h3>
+                        <div class="review-my-actions">
+                            <button type="button" class="review-action-btn" id="editMyReviewBtn">
+                                <i class="fas fa-pen"></i>
+                                Editar
+                            </button>
+                            <button type="button" class="review-action-btn review-action-delete" id="deleteMyReviewBtn">
+                                <i class="fas fa-trash-alt"></i>
+                                Excluir
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="review-my-body">
+                        <div class="review-stars">${stars}</div>
+                        ${review.title ? `<div class="review-title">${U.escapeHtml(review.title)}</div>` : ''}
+                        ${review.comment ? `<div class="review-comment">${U.escapeHtml(review.comment)}</div>` : ''}
+                        <div class="review-date">Avaliado em ${U.escapeHtml(date)}</div>
+                    </div>
+                </div>
+            `;
+
+            // Bind dos botões
+            el.querySelector('#editMyReviewBtn')?.addEventListener('click', () => {
+                this.renderEditReviewForm(el, review);
+            });
+
+            el.querySelector('#deleteMyReviewBtn')?.addEventListener('click', () => {
+                this.confirmDeleteReview(review.id);
+            });
+        },
+
+        // ==================================================
+        // FORM DE EDIÇÃO (só aparece ao clicar em Editar)
+        // ==================================================
+        renderEditReviewForm(el, review) {
+            el.innerHTML = `
+                <div class="review-form review-form-editing">
+                    <h3 class="review-form-title">
+                        <i class="fas fa-pen"></i>
+                        Editando sua avaliação
+                    </h3>
+
+                    <div class="review-form-field">
+                        <label>Sua nota *</label>
+                        <div class="review-stars-input" id="reviewStarsInput" role="radiogroup" aria-label="Editar nota">
+                            ${[1, 2, 3, 4, 5].map((n) => `
+                                <button type="button" class="review-star ${n <= review.rating ? 'active' : ''}" data-value="${n}">
+                                    <i class="${n <= review.rating ? 'fas' : 'far'} fa-star"></i>
+                                </button>
+                            `).join('')}
+                        </div>
+                        <input type="hidden" id="reviewRating" value="${review.rating}">
+                    </div>
+
+                    <div class="review-form-field">
+                        <label for="reviewTitle">Título</label>
+                        <input type="text" id="reviewTitle" maxlength="100" value="${U.escapeAttr(review.title || '')}">
+                    </div>
+
+                    <div class="review-form-field">
+                        <label for="reviewComment">Comentário</label>
+                        <textarea id="reviewComment" rows="4" maxlength="1000">${U.escapeHtml(review.comment || '')}</textarea>
+                    </div>
+
+                    <div class="review-form-feedback" id="reviewFormFeedback"></div>
+
+                    <div class="review-form-actions">
+                        <button type="button" class="btn btn-secondary" id="cancelEditBtn">
+                            <i class="fas fa-times"></i>
+                            Cancelar
+                        </button>
+                        <button type="button" class="btn btn-primary" id="submitReviewBtn">
+                            <i class="fas fa-save"></i>
+                            Salvar alterações
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            this.setupStarInput(el);
+            this.setupReviewSubmit(el, review.id);
+
+            el.querySelector('#cancelEditBtn')?.addEventListener('click', () => {
+                this.renderMyReview(el, review);
+            });
+        },
+
+        // ==================================================
+        // CONFIRMAR EXCLUSÃO
+        // ==================================================
+        confirmDeleteReview(reviewId) {
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 420px;">
+                    <button class="close-modal" aria-label="Fechar">&times;</button>
+                    <div class="modal-icon" style="color: #dc2626;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <h2 style="text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.75rem;">
+                        Excluir avaliação?
+                    </h2>
+                    <p style="color: var(--gray-600); margin-bottom: 1.5rem;">
+                        Esta ação não pode ser desfeita. Sua avaliação será permanentemente removida.
+                    </p>
+                    <div style="display: flex; gap: 0.75rem; justify-content: flex-end;">
+                        <button type="button" class="btn btn-secondary" id="cancelDeleteReview">
+                            Cancelar
+                        </button>
+                        <button type="button" class="btn" id="confirmDeleteReview"
+                                style="background: #dc2626; color: white; border-color: #dc2626;">
+                            <i class="fas fa-trash-alt"></i>
+                            Excluir
+                        </button>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            document.body.style.overflow = 'hidden';
+
+            const close = () => {
+                modal.remove();
+                document.body.style.overflow = '';
+            };
+
+            modal.querySelector('.close-modal').addEventListener('click', close);
+            modal.querySelector('#cancelDeleteReview').addEventListener('click', close);
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) close();
+            });
+
+            modal.querySelector('#confirmDeleteReview').addEventListener('click', async () => {
+                const btn = modal.querySelector('#confirmDeleteReview');
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Excluindo...';
+
+                try {
+                    await API.delete(`/products/${this.product.id}/reviews/${reviewId}`);
+                    close();
+                    C.createToast('Avaliação removida com sucesso!', 'success');
+
+                    // Recarrega a lista + rating do header
+                    setTimeout(() => {
+                        this.loadReviews();
+                        this.loadProduct();
+                    }, 400);
+                } catch (error) {
+                    C.createToast(error.data?.error || 'Erro ao remover avaliação', 'error');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-trash-alt"></i> Excluir';
+                }
+            });
+        },
+
+        // ==================================================
+        // PROMPT DE LOGIN
+        // ==================================================
+        renderLoginPrompt(el) {
+            el.innerHTML = `
+                <div class="review-login-prompt">
+                    <i class="fas fa-lock"></i>
+                    <p>Faça login para avaliar este produto</p>
+                    <a href="/login" class="btn btn-primary">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Fazer login
+                    </a>
+                </div>
+            `;
+        },
+
+        // ==================================================
+        // ESTRELAS INTERATIVAS
+        // ==================================================
+        setupStarInput(container) {
+            const starButtons = container.querySelectorAll('.review-star');
+            const hidden = container.querySelector('#reviewRating');
+
+            starButtons.forEach((btn) => {
+                const value = parseInt(btn.dataset.value);
+
+                btn.addEventListener('mouseenter', () => {
+                    starButtons.forEach((b) => {
+                        const v = parseInt(b.dataset.value);
+                        const icon = b.querySelector('i');
+                        if (v <= value) {
+                            icon.className = 'fas fa-star';
+                        } else {
+                            icon.className = 'far fa-star';
+                        }
+                    });
+                });
+
+                btn.addEventListener('click', () => {
+                    hidden.value = value;
+                    starButtons.forEach((b) => {
+                        const v = parseInt(b.dataset.value);
+                        const icon = b.querySelector('i');
+                        if (v <= value) {
+                            icon.className = 'fas fa-star';
+                            b.classList.add('active');
+                        } else {
+                            icon.className = 'far fa-star';
+                            b.classList.remove('active');
+                        }
+                    });
+                });
+            });
+
+            container.addEventListener('mouseleave', () => {
+                const current = parseInt(hidden.value) || 0;
+                starButtons.forEach((b) => {
+                    const v = parseInt(b.dataset.value);
+                    const icon = b.querySelector('i');
+                    if (v <= current) {
+                        icon.className = 'fas fa-star';
+                        b.classList.add('active');
+                    } else {
+                        icon.className = 'far fa-star';
+                        b.classList.remove('active');
+                    }
+                });
+            });
+        },
+
+        // ==================================================
+        // SUBMIT DA AVALIAÇÃO
+        // ==================================================
+        setupReviewSubmit(container, reviewId = null) {
+            const btn = container.querySelector('#submitReviewBtn');
+            const feedback = container.querySelector('#reviewFormFeedback');
+
+            if (!btn) return;
+
+            btn.addEventListener('click', async () => {
+                const rating = parseInt(container.querySelector('#reviewRating').value);
+                const title = container.querySelector('#reviewTitle').value.trim();
+                const comment = container.querySelector('#reviewComment').value.trim();
+
+                // Validação
+                if (!rating || rating < 1 || rating > 5) {
+                    this.showFormFeedback(feedback, 'Selecione uma nota de 1 a 5 estrelas', 'error');
+                    return;
+                }
+
+                const originalHtml = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+
+                try {
+                    const payload = { rating, title: title || null, comment: comment || null };
+
+                    let result;
+                    if (reviewId) {
+                        result = await API.put(`/products/${this.product.id}/reviews/${reviewId}`, payload);
+                    } else {
+                        result = await API.post(`/products/${this.product.id}/reviews`, payload);
+                    }
+
+                    this.showFormFeedback(feedback, result.message || 'Avaliação enviada!', 'success');
+
+                    // Recarrega a lista e a média
+                    setTimeout(() => {
+                        this.loadReviews();
+                        this.loadProduct();
+                    }, 800);
+
+                } catch (error) {
+                    if (error.status === 409 && error.data?.code === 'ALREADY_REVIEWED') {
+                        this.showFormFeedback(feedback, 'Você já avaliou este produto.', 'error');
+                        setTimeout(() => this.loadReviews(), 1200);
+                    } else {
+                        this.showFormFeedback(feedback, error.data?.error || 'Erro ao enviar avaliação', 'error');
+                    }
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                }
+            });
+        },
+
+        showFormFeedback(el, message, type) {
+            if (!el) return;
+            el.className = `review-form-feedback show ${type}`;
+            el.textContent = message;
+            setTimeout(() => {
+                el.classList.remove('show');
+            }, 4000);
+        },
+
+        // ==================================================
+        // LISTA DE AVALIAÇÕES
+        // ==================================================
+        renderReviewList(el, reviews, myReview) {
+            if (!reviews || reviews.length === 0) {
+                el.innerHTML = `
+                    <p class="review-empty">
+                        Este produto ainda não tem avaliações. Seja o primeiro a avaliar!
+                    </p>
+                `;
+                return;
+            }
+
+            el.innerHTML = reviews.map((review) => {
+                const stars = [1, 2, 3, 4, 5].map((i) =>
+                    i <= review.rating
                         ? '<i class="fas fa-star"></i>'
                         : '<i class="far fa-star"></i>'
                 ).join('');
@@ -370,12 +788,22 @@
                     ? new Date(review.created_at).toLocaleDateString('pt-BR')
                     : '';
 
+                const author = review.author_name || 'Cliente';
+                const initials = author.charAt(0).toUpperCase();
+                const isMine = myReview && myReview.id === review.id;
+
                 return `
-                    <div class="review-card">
+                    <div class="review-card ${isMine ? 'review-mine' : ''}">
                         <div class="review-header">
-                            <div>
-                                <div class="review-author">Cliente verificado</div>
-                                <div class="review-stars">${stars}</div>
+                            <div class="review-author-block">
+                                <div class="review-avatar">${U.escapeHtml(initials)}</div>
+                                <div>
+                                    <div class="review-author">
+                                        ${U.escapeHtml(author)}
+                                        ${isMine ? '<span class="review-badge-mine">Sua</span>' : ''}
+                                    </div>
+                                    <div class="review-stars">${stars}</div>
+                                </div>
                             </div>
                             <div class="review-date">${U.escapeHtml(date)}</div>
                         </div>
@@ -422,27 +850,33 @@
                 this.calculateShipping();
             });
 
-            // Máscara de CEP (via Utils)
             const cepInput = document.getElementById('shippingCep');
             cepInput?.addEventListener('input', (e) => {
                 e.target.value = U.maskCep(e.target.value);
             });
 
-            // Tabs
-            document.querySelectorAll('.tab-btn').forEach((btn) => {
-                btn.addEventListener('click', () => {
-                    const tab = btn.dataset.tab;
-                    document.querySelectorAll('.tab-btn').forEach((b) => b.classList.remove('active'));
-                    document.querySelectorAll('.tab-content').forEach((c) => c.classList.remove('active'));
-                    btn.classList.add('active');
-                    document.getElementById(`tab-${tab}`)?.classList.add('active');
+            // ✅ Accordion (substitui tabs no mobile)
+            document.querySelectorAll('.accordion-header').forEach((header) => {
+                header.addEventListener('click', () => {
+                    const item = header.closest('.accordion-item');
+                    const isActive = item.classList.contains('active');
+
+                    // Fecha todos
+                    document.querySelectorAll('.accordion-item').forEach((el) => {
+                        el.classList.remove('active');
+                        const h = el.querySelector('.accordion-header');
+                        if (h) h.setAttribute('aria-expanded', 'false');
+                    });
+
+                    // Abre o clicado (se não estava aberto)
+                    if (!isActive) {
+                        item.classList.add('active');
+                        header.setAttribute('aria-expanded', 'true');
+                    }
                 });
             });
         },
 
-        // ==================================================
-        // CARRINHO
-        // ==================================================
         async addToCart(quantity) {
             const p = this.product;
 
@@ -464,12 +898,8 @@
             const p = this.product;
             C.createToast(`Redirecionando para o checkout: "${p.name}" (${quantity}x)`, 'info');
             U.announce('Redirecionando para o checkout');
-            // Futuramente: redirecionar para /checkout?product=<id>&qty=<quantity>
         },
 
-        // ==================================================
-        // FRETE
-        // ==================================================
         calculateShipping() {
             const cepInput = document.getElementById('shippingCep');
             const result = document.getElementById('shippingResult');
@@ -481,24 +911,18 @@
                 return;
             }
 
-            // Simulação (futuramente: integrar com API dos Correios)
             const region = parseInt(cep[0]);
             let price, days;
 
             if (region === 7 || region === 6) {
-                price = 0;
-                days = '2 a 4 dias úteis';
+                price = 0; days = '2 a 4 dias úteis';
             } else if (region === 8 || region === 1) {
-                price = 0;
-                days = '3 a 6 dias úteis';
+                price = 0; days = '3 a 6 dias úteis';
             } else {
-                price = 19.90;
-                days = '5 a 10 dias úteis';
+                price = 19.90; days = '5 a 10 dias úteis';
             }
 
-            const priceText = price === 0
-                ? '<strong>Frete GRÁTIS</strong>'
-                : `Frete: ${U.formatPrice(price)}`;
+            const priceText = price === 0 ? '<strong>Frete GRÁTIS</strong>' : `Frete: ${U.formatPrice(price)}`;
 
             result.style.display = 'block';
             result.innerHTML = `
@@ -508,7 +932,7 @@
         },
 
         // ==================================================
-        // PRODUTOS RELACIONADOS (usando component)
+        // PRODUTOS RELACIONADOS
         // ==================================================
         async loadRelated() {
             const section = document.getElementById('relatedSection');
@@ -529,11 +953,11 @@
                     return;
                 }
 
-                // ✅ Usa o component
                 grid.innerHTML = products.slice(0, 4)
                     .map((prod) => C.renderProductCard(prod, {
                         showShortDesc: true,
-                        showButton: false,   // related cards só linkam o card inteiro
+                        showButton: false,
+                        clickableCard: true,    // ✅ card inteiro clicável
                         href: `/produto/${prod.slug}`,
                     }))
                     .join('');
