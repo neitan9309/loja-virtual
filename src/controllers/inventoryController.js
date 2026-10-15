@@ -29,7 +29,7 @@ const inventoryController = {
     },
 
     // ======================================================
-    // MOVIMENTAÇÕES DE ESTOQUE
+    // MOVIMENTAÇÕES DE ESTOQUE (por produto)
     // ======================================================
     async getMovements(req, res) {
         try {
@@ -44,6 +44,20 @@ const inventoryController = {
             res.json(movements);
         } catch (error) {
             console.error('Erro ao buscar movimentações:', error);
+            res.status(500).json({ error: 'Erro ao buscar movimentações' });
+        }
+    },
+
+    // ======================================================
+    // MOVIMENTAÇÕES RECENTES (todos os produtos)
+    // ======================================================
+    async getRecentMovements(req, res) {
+        try {
+            const limit = Math.min(parseInt(req.query.limit) || 10, 50);
+            const movements = await Inventory.getRecentMovements(limit);
+            res.json(movements);
+        } catch (error) {
+            console.error('Erro ao buscar movimentações recentes:', error);
             res.status(500).json({ error: 'Erro ao buscar movimentações' });
         }
     },
@@ -117,7 +131,6 @@ const inventoryController = {
 
     // ======================================================
     // REGISTRAR MOVIMENTAÇÃO
-    // Model faz todo o trabalho (transação + lock + cálculo)
     // ======================================================
     async registerMovement(req, res) {
         try {
@@ -136,7 +149,6 @@ const inventoryController = {
                 return res.status(400).json({ error: 'ID inválido' });
             }
 
-            // Validações
             const validTypes = ['in', 'out', 'adjustment', 'return'];
             if (!validTypes.includes(movement_type)) {
                 return res.status(400).json({
@@ -150,7 +162,6 @@ const inventoryController = {
                 });
             }
 
-            // Busca o inventory pelo ID para pegar product_id e variation_id
             const client = await require('../config/database').pool.connect();
             let inventory;
             try {
@@ -167,7 +178,6 @@ const inventoryController = {
                 return res.status(404).json({ error: 'Estoque não encontrado' });
             }
 
-            // ✅ Model faz tudo: lock, cálculo, insert, update, sync
             const result = await Inventory.registerMovement({
                 product_id: inventory.product_id,
                 variation_id: inventory.variation_id,
@@ -180,7 +190,6 @@ const inventoryController = {
                 notes,
             });
 
-            // Busca o produto atualizado
             const product = await Product.findById(inventory.product_id);
 
             res.status(201).json({

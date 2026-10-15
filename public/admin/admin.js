@@ -425,39 +425,39 @@
         async loadRecentMovements() {
             const container = document.getElementById('recentMovementsList');
             if (!container) return;
-            container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><span>Carregando...</span></div>';
-            try {
-                const productsData = await API.get('/products?limit=1000');
-                const products = productsData.products || [];
-                if (products.length === 0) {
-                    container.innerHTML = '<p class="table-empty">Nenhum produto cadastrado ainda.</p>';
-                    return;
-                }
-                const movementsPromises = products.slice(0, 10).map((p) =>
-                    API.get(`/inventory/product/${p.id}/movements?limit=5`)
-                        .then((movs) => movs.map((m) => ({ ...m, product_name: p.name })))
-                        .catch(() => [])
-                );
-                const movementsArrays = await Promise.all(movementsPromises);
-                const allMovements = movementsArrays.flat()
-                    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-                    .slice(0, CONFIG.recentLimit);
 
-                if (allMovements.length === 0) {
+            container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><span>Carregando...</span></div>';
+
+            try {
+                const movements = await API.get(`/inventory/movements/recent?limit=${CONFIG.recentLimit}`);
+
+                if (!movements || movements.length === 0) {
                     container.innerHTML = '<p class="table-empty">Nenhuma movimentação registrada ainda.</p>';
                     return;
                 }
+
                 const iconMap = {
-                    in: 'fa-arrow-down', out: 'fa-arrow-up',
-                    adjustment: 'fa-sliders-h', return: 'fa-undo',
+                    in: 'fa-arrow-down',
+                    out: 'fa-arrow-up',
+                    adjustment: 'fa-sliders-h',
+                    return: 'fa-undo',
                 };
-                container.innerHTML = `<div class="movement-list">${allMovements.map((m) => {
+
+                container.innerHTML = `<div class="movement-list">${movements.map((m) => {
                     const type = m.movement_type || 'adjustment';
-                    const typeLabel = { in: 'Entrada', out: 'Saída', adjustment: 'Ajuste', return: 'Devolução' }[type] || type;
+                    const typeLabel = {
+                        in: 'Entrada',
+                        out: 'Saída',
+                        adjustment: 'Ajuste',
+                        return: 'Devolução',
+                    }[type] || type;
                     const valueSign = type === 'in' || type === 'return' ? '+' : type === 'out' ? '-' : '';
+
                     return `
                         <div class="movement-item ${type}">
-                            <div class="movement-icon ${type}"><i class="fas ${iconMap[type]}"></i></div>
+                            <div class="movement-icon ${type}">
+                                <i class="fas ${iconMap[type]}"></i>
+                            </div>
                             <div class="movement-info">
                                 <div class="movement-title">${Utils.escapeHtml(m.product_name)}</div>
                                 <div class="movement-meta">${typeLabel} · ${Utils.formatDate(m.created_at)}</div>
@@ -467,7 +467,7 @@
                     `;
                 }).join('')}</div>`;
             } catch (error) {
-                console.error(error);
+                console.error('Erro ao carregar movimentações:', error);
                 container.innerHTML = '<p class="table-empty">Erro ao carregar movimentações.</p>';
             }
         },

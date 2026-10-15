@@ -9,13 +9,16 @@ const { authenticate, requireAdmin } = require('../middleware/auth');
 
 // ======================================================
 // TODAS as rotas de inventory exigem admin
-// (dados sensíveis: localização, fornecedor, movimentações)
 // ======================================================
 router.use(authenticate, requireAdmin);
 
 // ========================
 // ROTAS DE CONSULTA
 // ========================
+
+// GET /api/inventory/movements/recent — Todas as movimentações recentes
+// (DEVE vir antes de /product/:productId para não conflitar)
+router.get('/movements/recent', inventoryController.getRecentMovements);
 
 // GET /api/inventory/product/:productId - Estoque por produto
 router.get(
@@ -24,7 +27,7 @@ router.get(
     inventoryController.getByProduct
 );
 
-// GET /api/inventory/product/:productId/movements - Movimentações
+// GET /api/inventory/product/:productId/movements - Movimentações do produto
 router.get(
     '/product/:productId/movements',
     param('productId').isInt({ min: 1 }).withMessage('ID inválido'),

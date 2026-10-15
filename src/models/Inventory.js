@@ -72,7 +72,6 @@ const Inventory = {
         try {
             await client.query('BEGIN');
 
-            // 🔒 Lock pessimista na linha
             const lockResult = await client.query(
                 'SELECT * FROM inventory WHERE id = $1 FOR UPDATE',
                 [id]
@@ -83,7 +82,6 @@ const Inventory = {
                 return null;
             }
 
-            // Atualiza inventory
             const updateResult = await client.query(`
                 UPDATE inventory
                 SET quantity = $1, last_restock_date = CURRENT_TIMESTAMP
@@ -93,7 +91,6 @@ const Inventory = {
 
             const inventory = updateResult.rows[0];
 
-            // Sincroniza products.stock_quantity
             await client.query(`
                 UPDATE products
                 SET stock_quantity = (
@@ -121,7 +118,6 @@ const Inventory = {
 
     // ======================================================
     // REGISTRAR MOVIMENTAÇÃO (com lock — resolve race condition)
-    // Calcula previous_quantity e new_quantity dentro da transação
     // ======================================================
     async registerMovement(data) {
         const {
@@ -140,7 +136,6 @@ const Inventory = {
         try {
             await client.query('BEGIN');
 
-            // 🔒 Lock pessimista na linha de estoque
             const lockResult = await client.query(
                 `SELECT * FROM inventory
                  WHERE product_id = $1
@@ -158,7 +153,6 @@ const Inventory = {
             const inventory = lockResult.rows[0];
             const previousQuantity = inventory.quantity;
 
-            // Calcula nova quantidade
             let newQuantity;
             if (movement_type === 'in' || movement_type === 'return') {
                 newQuantity = previousQuantity + quantity;
@@ -171,11 +165,9 @@ const Inventory = {
                 }
                 newQuantity = previousQuantity - quantity;
             } else {
-                // adjustment
                 newQuantity = quantity;
             }
 
-            // 1. Registra movimentação
             const movementResult = await client.query(`
                 INSERT INTO inventory_movements (
                     product_id, variation_id, movement_type, quantity,
@@ -197,7 +189,6 @@ const Inventory = {
                 notes || null,
             ]);
 
-            // 2. Atualiza inventory.quantity
             await client.query(`
                 UPDATE inventory
                 SET quantity = $1,
@@ -208,7 +199,6 @@ const Inventory = {
                 WHERE id = $3
             `, [newQuantity, movement_type, inventory.id]);
 
-            // 3. Sincroniza products.stock_quantity
             await client.query(`
                 UPDATE products
                 SET stock_quantity = (
@@ -252,6 +242,33 @@ const Inventory = {
             LIMIT $2
         `;
         const result = await pool.query(query, [productId, limit]);
+        return result.rows;
+    },
+
+    // ======================================================
+    // MOVIMENTAÇÕES RECENTES (todos os produtos)
+    // ======================================================
+    async getRecentMovements(limit = 10) {
+        const query = `
+            SELECT
+                im.id,
+                im.product_id,
+                im.movement_type,
+                im.quantity,
+                im.previous_quantity,
+                im.new_quantity,
+                im.reason,
+                im.reference_type,
+                im.reference_id,
+                im.created_at,
+                p.name as product_name,
+                p.sku as product_sku
+            FROM inventory_movements im
+            INNER JOIN products p ON p.id = im.product_id
+            ORDER BY im.created_at DESC
+            LIMIT $1
+        `;
+        const result = await pool.query(query, [limit]);
         return result.rows;
     },
 };
