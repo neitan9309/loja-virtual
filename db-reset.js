@@ -125,7 +125,7 @@ async function fixPasswords() {
             [hashCliente]
         );
 
-        log('Hashers corrigidos.', 'success');
+        log('Hashes corrigidos.', 'success');
     } catch (err) {
         log(`Erro ao corrigir senhas: ${err.message}`, 'error');
     } finally {
@@ -154,13 +154,19 @@ async function main() {
         log('🎉 Banco resetado com sucesso!', 'success');
         console.log('═══════════════════════════════════════════════\n');
         console.log('Credenciais:');
-        console.log('  👑 Admin:  admin@luxurystore.com  / Admin@2024');
-        console.log('  👤 Maria:  maria.silva@teste.com   / senha123');
-        console.log('  👤 João:   joao.santos@teste.com   / senha123');
-        console.log('  👤 Ana:    ana.costa@teste.com     / senha123');
-        console.log('  👤 Pedro:  pedro.oliveira@teste.com / senha123');
-        console.log('  👤 Carla:  carla.mendes@teste.com  / senha123');
-        console.log('  👤 Lucas:  lucas.pereira@teste.com / senha123\n');
+        console.log('  👑 Admin:  admin@luxurystore.com     / Admin@2024');
+        console.log('  👤 Maria:  maria.silva@teste.com     / senha123');
+        console.log('  👤 João:   joao.santos@teste.com     / senha123');
+        console.log('  👤 Ana:    ana.costa@teste.com       / senha123');
+        console.log('  👤 Pedro:  pedro.oliveira@teste.com  / senha123');
+        console.log('  👤 Carla:  carla.mendes@teste.com    / senha123');
+        console.log('  👤 Lucas:  lucas.pereira@teste.com   / senha123');
+        console.log('  👤 Bea:    beatriz.rocha@teste.com   / senha123');
+        console.log('  👤 Rafael: rafael.nunes@teste.com    / senha123');
+        console.log('  👤 Ju:     juliana.alves@teste.com   / senha123');
+        console.log('  👤 Thiago: thiago.barros@teste.com   / senha123');
+        console.log('  👤 Camila: camila.ribeiro@teste.com  / senha123');
+        console.log('  👤 Gustavo:gustavo.martins@teste.com / senha123\n');
     } catch (err) {
         console.error('\n❌ Erro durante o reset:');
         console.error(err.message);

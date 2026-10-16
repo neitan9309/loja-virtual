@@ -271,6 +271,150 @@ const Inventory = {
         const result = await pool.query(query, [limit]);
         return result.rows;
     },
+
+    // ======================================================
+    // [NOVO] BUSCAR MOVIMENTAÇÃO POR ID (com produto + usuário)
+    // ======================================================
+    async findMovementById(movementId) {
+        const query = `
+            SELECT
+                im.*,
+                p.name AS product_name,
+                p.slug AS product_slug,
+                p.sku AS product_sku,
+                u.full_name AS user_name,
+                u.email AS user_email
+            FROM inventory_movements im
+            INNER JOIN products p ON p.id = im.product_id
+            LEFT JOIN users u ON u.id = im.user_id
+            WHERE im.id = $1
+        `;
+        const result = await pool.query(query, [movementId]);
+        return result.rows[0] || null;
+    },
+
+    // ======================================================
+    // [NOVO] CONTAR MOVIMENTAÇÕES COM FILTROS
+    // ======================================================
+// ======================================================
+// src/models/Inventory.js — SOMENTE O MÉTODO countMovements
+// ======================================================
+    async countMovements({ type, from, to, q, product_name } = {}) {
+        const conditions = ['1=1'];
+        const params = [];
+        let p = 1;
+
+        if (type && ['in', 'out', 'adjustment', 'return'].includes(type)) {
+            conditions.push(`im.movement_type = $${p++}`);
+            params.push(type);
+        }
+        if (from) {
+            conditions.push(`im.created_at >= $${p++}`);
+            params.push(from);
+        }
+        if (to) {
+            conditions.push(`im.created_at <= $${p++}`);
+            params.push(to);
+        }
+        if (q && q.trim()) {
+            conditions.push(`(p.name ILIKE $${p} OR p.sku ILIKE $${p})`);
+            params.push(`%${q.trim()}%`);
+            p++;
+        }
+        if (product_name && product_name.trim()) {
+            conditions.push(`p.name ILIKE $${p++}`);
+            params.push(`%${product_name.trim()}%`);
+        }
+
+        const query = `
+            SELECT COUNT(*)::int AS total
+            FROM inventory_movements im
+            INNER JOIN products p ON p.id = im.product_id
+            WHERE ${conditions.join(' AND ')}
+        `;
+        const result = await pool.query(query, params);
+        return result.rows[0].total;
+    },
+
+    // ======================================================
+    // [NOVO] LISTAR MOVIMENTAÇÕES COM FILTROS E PAGINAÇÃO
+    // ======================================================
+// ======================================================
+// src/models/Inventory.js — SOMENTE O MÉTODO getMovementsList
+// ======================================================
+    async getMovementsList({
+        limit = 20,
+        offset = 0,
+        type = null,
+        from = null,
+        to = null,
+        sort = null,
+        order = 'desc',
+        q = '',
+        product_name = '',
+    } = {}) {
+        const conditions = ['1=1'];
+        const params = [];
+        let p = 1;
+
+        if (type && ['in', 'out', 'adjustment', 'return'].includes(type)) {
+            conditions.push(`im.movement_type = $${p++}`);
+            params.push(type);
+        }
+        if (from) {
+            conditions.push(`im.created_at >= $${p++}`);
+            params.push(from);
+        }
+        if (to) {
+            conditions.push(`im.created_at <= $${p++}`);
+            params.push(to);
+        }
+        if (q && q.trim()) {
+            conditions.push(`(p.name ILIKE $${p} OR p.sku ILIKE $${p})`);
+            params.push(`%${q.trim()}%`);
+            p++;
+        }
+        if (product_name && product_name.trim()) {
+            conditions.push(`p.name ILIKE $${p++}`);
+            params.push(`%${product_name.trim()}%`);
+        }
+
+        // ---------- Ordenação por coluna (whitelist) ----------
+        const sortMap = {
+            id: 'im.id',
+            created_at: 'im.created_at',
+            movement_type: 'im.movement_type',
+            product_name: 'p.name',
+            quantity: 'im.quantity',
+            previous_quantity: 'im.previous_quantity',
+            new_quantity: 'im.new_quantity',
+            reason: 'im.reason',
+        };
+        const sortField = sortMap[sort];
+        const sortOrder = order && order.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+        const orderBy = sortField ? `${sortField} ${sortOrder}` : 'im.created_at DESC';
+
+        const query = `
+            SELECT
+                im.id, im.product_id, im.movement_type, im.quantity,
+                im.previous_quantity, im.new_quantity, im.reason,
+                im.reference_type, im.reference_id, im.created_at,
+                p.name AS product_name,
+                p.slug AS product_slug,
+                p.sku AS product_sku
+            FROM inventory_movements im
+            INNER JOIN products p ON p.id = im.product_id
+            WHERE ${conditions.join(' AND ')}
+            ORDER BY ${orderBy}
+            LIMIT $${p} OFFSET $${p + 1}
+        `;
+        params.push(limit, offset);
+
+        const result = await pool.query(query, params);
+        return result.rows;
+    },
+
+// ... (resto do arquivo é idêntico)
 };
 
 module.exports = Inventory;

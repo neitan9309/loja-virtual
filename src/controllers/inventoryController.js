@@ -213,6 +213,65 @@ const inventoryController = {
             res.status(500).json({ error: 'Erro ao registrar movimentação' });
         }
     },
+
+    // ======================================================
+    // [NOVO] BUSCAR MOVIMENTAÇÃO POR ID
+    // ======================================================
+    async getMovementById(req, res) {
+        try {
+            const { id } = req.params;
+            if (isNaN(id)) {
+                return res.status(400).json({ error: 'ID inválido' });
+            }
+
+            const movement = await Inventory.findMovementById(id);
+            if (!movement) {
+                return res.status(404).json({ error: 'Movimentação não encontrada' });
+            }
+
+            res.json(movement);
+        } catch (error) {
+            console.error('Erro ao buscar movimentação:', error);
+            res.status(500).json({ error: 'Erro ao buscar movimentação' });
+        }
+    },
+
+    // ======================================================
+    // [NOVO] LISTAR MOVIMENTAÇÕES COM PAGINAÇÃO E FILTROS
+    // ======================================================
+// ======================================================
+// LISTAR MOVIMENTAÇÕES COM PAGINAÇÃO E FILTROS
+// ======================================================
+async getMovementsPaged(req, res) {
+    try {
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(Math.max(1, parseInt(req.query.limit) || 20), 100);
+        const offset = (page - 1) * limit;
+
+        const filters = {
+            type: req.query.type || null,
+            from: req.query.from || null,
+            to: req.query.to || null,
+            sort: req.query.sort || null,
+            order: req.query.order || 'desc',
+            q: req.query.q || '',
+            product_name: req.query.product_name || '',
+        };
+
+        const [movements, total] = await Promise.all([
+            Inventory.getMovementsList({ limit, offset, ...filters }),
+            Inventory.countMovements(filters),
+        ]);
+
+        res.json({
+            movements,
+            pagination: { page, limit, total, pages: Math.ceil(total / limit) },
+        });
+    } catch (error) {
+        console.error('Erro ao listar movimentações:', error);
+        res.status(500).json({ error: 'Erro ao listar movimentações' });
+    }
+},
 };
 
 module.exports = inventoryController;

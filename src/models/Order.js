@@ -6,14 +6,12 @@ const { pool } = require('../config/database');
 const Order = {
     // ==================================================
     // CRIAR PEDIDO A PARTIR DE ITENS
-    // (transação com lock do estoque)
     // ==================================================
     async create({ userId, items, shippingAddress, paymentMethod, subtotal, shippingCost, discount, total, notes }) {
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
 
-            // 1. Cria o pedido
             const orderResult = await client.query(`
                 INSERT INTO orders (
                     user_id, status, subtotal, shipping_cost, discount, total,
@@ -42,9 +40,7 @@ const Order = {
 
             const order = orderResult.rows[0];
 
-            // 2. Insere os itens + baixa estoque
             for (const item of items) {
-                // Snapshot do item
                 await client.query(`
                     INSERT INTO order_items (
                         order_id, product_id, product_name, product_slug, product_image,
@@ -61,7 +57,6 @@ const Order = {
                     item.subtotal,
                 ]);
 
-                // Baixa do estoque
                 const stockResult = await client.query(`
                     UPDATE products
                     SET stock_quantity = stock_quantity - $1,
@@ -79,7 +74,6 @@ const Order = {
                     throw err;
                 }
 
-                // Movimentação de estoque
                 await client.query(`
                     INSERT INTO inventory_movements (
                         product_id, movement_type, quantity,
@@ -94,14 +88,12 @@ const Order = {
                     order.id,
                 ]);
 
-                // Atualiza inventory também
                 await client.query(`
                     UPDATE inventory
                     SET quantity = GREATEST(0, quantity - $1)
                     WHERE product_id = $2
                 `, [item.quantity, item.product_id]);
 
-                // Incrementa sales_count
                 await client.query(`
                     UPDATE products
                     SET sales_count = sales_count + $1
@@ -109,7 +101,6 @@ const Order = {
                 `, [item.quantity, item.product_id]);
             }
 
-            // 3. Limpa o carrinho
             await client.query(`
                 DELETE FROM cart_items
                 WHERE cart_id IN (SELECT id FROM carts WHERE user_id = $1)
@@ -126,7 +117,7 @@ const Order = {
     },
 
     // ==================================================
-    // BUSCAR PEDIDO POR ID (com itens)
+    // BUSCAR PEDIDO POR ID (com itens + pagamentos)
     // ==================================================
     async findById(id, userId = null) {
         const query = `
@@ -166,7 +157,7 @@ const Order = {
     },
 
     // ==================================================
-    // LISTAR PEDIDOS DO USUÁRIO
+    // LISTAR PEDIDOS DO USUÁRIO (cliente)
     // ==================================================
     async findByUser(userId, { limit = 20, offset = 0 } = {}) {
         const query = `
@@ -192,9 +183,6 @@ const Order = {
         return result.rows;
     },
 
-    // ==================================================
-    // CONTAR PEDIDOS DO USUÁRIO
-    // ==================================================
     async countByUser(userId) {
         const result = await pool.query(
             'SELECT COUNT(*)::int as total FROM orders WHERE user_id = $1',
@@ -204,52 +192,146 @@ const Order = {
     },
 
     // ==================================================
-    // LISTAR TODOS (admin)
+    // HELPER — Constrói WHERE da listagem admin
+    // (usado por findAll E countAll para garantir consistência)
     // ==================================================
-    async findAll({ status, limit = 20, offset = 0 } = {}) {
-        let query = `
+    _buildAdminFilters({ status, q, from, to } = {}) {
+        const conditions = ['1=1'];
+        const params = [];
+        let p = 1;
+
+        if (status && ['pending', 'paid', 'shipped', 'delivered', 'cancelled'].includes(status)) {
+            conditions.push(`o.status = $${p++}`);
+            params.push(status);
+        }
+
+        if (q && q.trim()) {
+            conditions.push(`(
+                CAST(o.id AS TEXT) = $${p}
+                OR u.full_name ILIKE $${p + 1}
+                OR u.email ILIKE $${p + 1}
+            )`);
+            params.push(q.trim(), `%${q.trim()}%`);
+            p += 2;
+        }
+
+        if (from) {
+            conditions.push(`o.created_at >= $${p++}`);
+            params.push(from);
+        }
+        if (to) {
+            conditions.push(`o.created_at <= $${p++}`);
+            params.push(to);
+        }
+
+        return {
+            where: conditions.join(' AND '),
+            params,
+            paramCounter: p,
+        };
+    },
+
+    // ==================================================
+    // LISTAR PEDIDOS (admin, com filtros + ordenação)
+    // ==================================================
+    // ==================================================
+    // LISTAR PEDIDOS (admin, com filtros + ordenação)
+    // ==================================================
+    async findAll({ status, q, from, to, sort = 'created_at', order = 'desc', limit = 20, offset = 0 } = {}) {
+        const { where, params, paramCounter } = this._buildAdminFilters({ status, q, from, to });
+
+        const sortMap = {
+            id: 'o.id',
+            created_at: 'o.created_at',
+            user_name: 'u.full_name',
+            status: 'o.status',
+            total: 'o.total',
+            payment_method: 'o.payment_method',
+            // 🆕 ordenação pela coluna de envio derivada
+            shipping_status: `
+                CASE o.status
+                    WHEN 'paid'      THEN 1
+                    WHEN 'shipped'   THEN 2
+                    WHEN 'delivered' THEN 3
+                    WHEN 'cancelled' THEN 4
+                    ELSE 0
+                END
+            `,
+        };
+        const sortField = sortMap[sort] || 'o.created_at';
+        const sortOrder = String(order).toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+
+        const query = `
             SELECT
                 o.id,
+                o.user_id,
                 o.status,
                 o.total,
                 o.payment_method,
                 o.payment_status,
+                o.shipping_city,
+                o.shipping_state,
                 o.created_at,
+                o.updated_at,
                 u.full_name as user_name,
                 u.email as user_email,
-                (SELECT COUNT(*) FROM order_items WHERE order_id = o.id) as items_count
+                (SELECT COUNT(*)::int FROM order_items WHERE order_id = o.id) as items_count,
+                CASE o.status
+                    WHEN 'paid'      THEN 'awaiting_shipment'
+                    WHEN 'shipped'   THEN 'in_transit'
+                    WHEN 'delivered' THEN 'delivered'
+                    WHEN 'cancelled' THEN 'cancelled'
+                    ELSE 'not_applicable'
+                END AS shipping_status
             FROM orders o
             LEFT JOIN users u ON u.id = o.user_id
+            WHERE ${where}
+            ORDER BY ${sortField} ${sortOrder}
+            LIMIT $${paramCounter} OFFSET $${paramCounter + 1}
         `;
-        const params = [];
-        let paramCounter = 1;
 
-        if (status) {
-            query += ` WHERE o.status = $${paramCounter}`;
-            params.push(status);
-            paramCounter++;
-        }
-
-        query += ` ORDER BY o.created_at DESC LIMIT $${paramCounter} OFFSET $${paramCounter + 1}`;
-        params.push(limit, offset);
-
-        const result = await pool.query(query, params);
+        const queryParams = [...params, limit, offset];
+        const result = await pool.query(query, queryParams);
         return result.rows;
     },
 
     // ==================================================
-    // ATUALIZAR STATUS (admin)
+    // CONTAR PEDIDOS (admin, com os mesmos filtros)
+    // ==================================================
+    async countAll({ status, q, from, to } = {}) {
+        const { where, params } = this._buildAdminFilters({ status, q, from, to });
+
+        const query = `
+            SELECT COUNT(*)::int as total
+            FROM orders o
+            LEFT JOIN users u ON u.id = o.user_id
+            WHERE ${where}
+        `;
+        const result = await pool.query(query, params);
+        return result.rows[0].total;
+    },
+
+    // ==================================================
+    // ATUALIZAR STATUS
+    // ==================================================
+    // ==================================================
+    // ATUALIZAR STATUS
     // ==================================================
     async updateStatus(id, status, reason = null) {
+        // Se for cancelamento, usa o método dedicado (com estorno de estoque)
+        // Isso é só um guarda-corpo — o controller já roteia, mas reforçamos
+        if (status === 'cancelled') {
+            return this.cancel(id, reason);
+        }
+
         const query = `
             UPDATE orders
             SET status = $1,
-                cancelled_at = CASE WHEN $1 = 'cancelled' THEN CURRENT_TIMESTAMP ELSE cancelled_at END,
-                cancel_reason = CASE WHEN $1 = 'cancelled' THEN $2 ELSE cancel_reason END
-            WHERE id = $3
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = $2
             RETURNING *
         `;
-        const result = await pool.query(query, [status, reason, id]);
+        const result = await pool.query(query, [status, id]);
         return result.rows[0] || null;
     },
 
@@ -277,7 +359,6 @@ const Order = {
         try {
             await client.query('BEGIN');
 
-            // 1. Busca o pedido
             const orderResult = await client.query(
                 'SELECT * FROM orders WHERE id = $1',
                 [id]
@@ -295,7 +376,6 @@ const Order = {
                 return order;
             }
 
-            // 2. Devolve itens ao estoque
             const itemsResult = await client.query(
                 'SELECT product_id, quantity FROM order_items WHERE order_id = $1',
                 [id]
@@ -316,9 +396,22 @@ const Order = {
                     SET quantity = quantity + $1
                     WHERE product_id = $2
                 `, [item.quantity, item.product_id]);
+
+                // Registra movimentação de devolução
+                await client.query(`
+                    INSERT INTO inventory_movements (
+                        product_id, movement_type, quantity,
+                        previous_quantity, new_quantity,
+                        reason, reference_type, reference_id
+                    )
+                    SELECT
+                        $1, 'return', $2,
+                        (SELECT stock_quantity FROM products WHERE id = $1) - $2,
+                        (SELECT stock_quantity FROM products WHERE id = $1),
+                        'Cancelamento de pedido', 'order', $3
+                `, [item.product_id, item.quantity, id]);
             }
 
-            // 3. Marca como cancelado
             const updateResult = await client.query(`
                 UPDATE orders
                 SET status = 'cancelled',
@@ -343,10 +436,25 @@ const Order = {
     },
 
     // ==================================================
-    // ESTATÍSTICAS
+    // ESTATÍSTICAS (com filtros de período opcionais)
     // ==================================================
-    async getStats() {
-        const result = await pool.query(`
+    async getStats({ from = null, to = null } = {}) {
+        const conditions = ['1=1'];
+        const params = [];
+        let p = 1;
+
+        if (from) {
+            conditions.push(`created_at >= $${p++}`);
+            params.push(from);
+        }
+        if (to) {
+            conditions.push(`created_at <= $${p++}`);
+            params.push(to);
+        }
+
+        const where = conditions.join(' AND ');
+
+        const query = `
             SELECT
                 COUNT(*)::int as total,
                 COUNT(*) FILTER (WHERE status = 'pending')::int as pending,
@@ -354,9 +462,12 @@ const Order = {
                 COUNT(*) FILTER (WHERE status = 'shipped')::int as shipped,
                 COUNT(*) FILTER (WHERE status = 'delivered')::int as delivered,
                 COUNT(*) FILTER (WHERE status = 'cancelled')::int as cancelled,
-                COALESCE(SUM(total) FILTER (WHERE status != 'cancelled'), 0) as revenue
+                COALESCE(SUM(total) FILTER (WHERE status != 'cancelled'), 0)::numeric(12,2) as revenue
             FROM orders
-        `);
+            WHERE ${where}
+        `;
+
+        const result = await pool.query(query, params);
         return result.rows[0];
     },
 };

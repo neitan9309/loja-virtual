@@ -16,9 +16,19 @@ router.use(authenticate, requireAdmin);
 // ROTAS DE CONSULTA
 // ========================
 
+// ⚠️ ORDEM IMPORTA: /movements/recent DEVE vir antes de /movements/:id
 // GET /api/inventory/movements/recent — Todas as movimentações recentes
-// (DEVE vir antes de /product/:productId para não conflitar)
 router.get('/movements/recent', inventoryController.getRecentMovements);
+
+// [NOVO] GET /api/inventory/movements — Lista paginada com filtros
+router.get('/movements', inventoryController.getMovementsPaged);
+
+// [NOVO] GET /api/inventory/movements/:id — Detalhe de uma movimentação
+router.get(
+    '/movements/:id',
+    param('id').isInt({ min: 1 }).withMessage('ID inválido'),
+    inventoryController.getMovementById
+);
 
 // GET /api/inventory/product/:productId - Estoque por produto
 router.get(

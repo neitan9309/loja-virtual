@@ -11,6 +11,7 @@ const Cart = require('./Cart');
 const Review = require('./Review');
 const Order = require('./Order');
 const Payment = require('./Payment');
+const Metrics = require('./Metrics');
 
 module.exports = {
     Product,
@@ -23,4 +24,5 @@ module.exports = {
     Review,
     Order,
     Payment,
+    Metrics,
 };

@@ -634,6 +634,257 @@ const Product = {
             client.release();
         }
     },
+
+    // ======================================================
+    // ADMIN DASHBOARD — Estatísticas por tipo
+    // ======================================================
+// ======================================================
+// src/models/Product.js — SOMENTE O MÉTODO getAdminStats
+// ======================================================
+    async getAdminStats({
+        type,
+        page = 1,
+        limit = 20,
+        sort = null,
+        order = 'asc',
+        q = '',
+        sku = '',
+        category = '',
+        stock = 'all',
+        min_price = '',
+        max_price = '',
+    }) {
+        const lowStockThreshold = 10;
+        const offset = (page - 1) * limit;
+
+        // ---------- Condição WHERE por tipo ----------
+        const conditions = ['p.deleted_at IS NULL'];
+        let defaultOrderBy = 'p.created_at DESC';
+
+        switch (type) {
+            case 'in_stock':
+                conditions.push('p.stock_quantity > 0');
+                defaultOrderBy = 'p.stock_quantity DESC';
+                break;
+            case 'low_stock':
+                conditions.push(`p.stock_quantity > 0 AND p.stock_quantity <= ${lowStockThreshold}`);
+                defaultOrderBy = 'p.stock_quantity ASC';
+                break;
+            case 'out_of_stock':
+                conditions.push('p.stock_quantity = 0');
+                defaultOrderBy = 'p.name ASC';
+                break;
+            case 'total':
+            default:
+                break;
+        }
+
+        // ---------- Filtros adicionais ----------
+        const params = [];
+        let pc = 1;
+
+        if (q && q.trim()) {
+            conditions.push(`(p.name ILIKE $${pc} OR p.sku ILIKE $${pc})`);
+            params.push(`%${q.trim()}%`);
+            pc++;
+        }
+
+        if (sku && sku.trim()) {
+            conditions.push(`p.sku ILIKE $${pc}`);
+            params.push(`%${sku.trim()}%`);
+            pc++;
+        }
+
+        if (category && category.trim()) {
+            conditions.push(`c.name ILIKE $${pc}`);
+            params.push(`%${category.trim()}%`);
+            pc++;
+        }
+
+        // Filtro de estoque (independente do tipo já passado; refinamento)
+        if (stock === 'in') conditions.push('p.stock_quantity > 10');
+        else if (stock === 'low') conditions.push('p.stock_quantity > 0 AND p.stock_quantity <= 10');
+        else if (stock === 'out') conditions.push('p.stock_quantity = 0');
+
+        if (min_price !== '' && min_price !== null && min_price !== undefined) {
+            const v = parseFloat(min_price);
+            if (!isNaN(v)) {
+                conditions.push(`p.price >= $${pc}`);
+                params.push(v);
+                pc++;
+            }
+        }
+
+        if (max_price !== '' && max_price !== null && max_price !== undefined) {
+            const v = parseFloat(max_price);
+            if (!isNaN(v)) {
+                conditions.push(`p.price <= $${pc}`);
+                params.push(v);
+                pc++;
+            }
+        }
+
+        const whereClause = `WHERE ${conditions.join(' AND ')}`;
+
+        // ---------- Ordenação por coluna (whitelist) ----------
+        const sortMap = {
+            id: 'p.id',
+            name: 'p.name',
+            sku: 'p.sku',
+            price: 'p.price',
+            stock_quantity: 'p.stock_quantity',
+            category_name: 'c.name',
+        };
+        const sortField = sortMap[sort];
+        const sortOrder = order && order.toLowerCase() === 'desc' ? 'DESC' : 'ASC';
+        const orderBy = sortField ? `${sortField} ${sortOrder}` : defaultOrderBy;
+
+        // ---------- Query dos produtos ----------
+        const productsSql = `
+            SELECT
+                p.id, p.name, p.slug, p.sku, p.price, p.stock_quantity,
+                p.stock_status, p.is_active, p.is_featured, p.created_at,
+                c.name AS category_name,
+                b.name AS brand_name
+            FROM products p
+            LEFT JOIN categories c ON c.id = p.category_id
+            LEFT JOIN brands b ON b.id = p.brand_id
+            ${whereClause}
+            ORDER BY ${orderBy}
+            LIMIT $${pc} OFFSET $${pc + 1}
+        `;
+        const productsResult = await pool.query(productsSql, [...params, limit, offset]);
+
+        // ---------- Total (mesmos filtros) ----------
+        const countSql = `
+            SELECT COUNT(*)::int AS total
+            FROM products p
+            LEFT JOIN categories c ON c.id = p.category_id
+            LEFT JOIN brands b ON b.id = p.brand_id
+            ${whereClause}
+        `;
+        const countResult = await pool.query(countSql, params);
+        const total = countResult.rows[0].total;
+
+        // ---------- Summary ----------
+        let summary = {};
+        if (type === 'total') {
+            const summarySql = `
+                SELECT
+                    COUNT(*)::int AS total,
+                    COUNT(*) FILTER (WHERE is_active = true)::int AS active,
+                    COUNT(*) FILTER (WHERE is_active = false)::int AS inactive
+                FROM products
+                WHERE deleted_at IS NULL
+            `;
+            summary = (await pool.query(summarySql)).rows[0];
+            summary.low_stock_threshold = lowStockThreshold;
+        } else if (type === 'in_stock') {
+            const summarySql = `
+                SELECT
+                    COALESCE(SUM(stock_quantity), 0)::int AS total_items,
+                    COUNT(*) FILTER (WHERE stock_quantity > 0)::int AS products_with_stock
+                FROM products
+                WHERE deleted_at IS NULL
+            `;
+            summary = (await pool.query(summarySql)).rows[0];
+        } else if (type === 'low_stock' || type === 'out_of_stock') {
+            summary.threshold = lowStockThreshold;
+        }
+
+        return {
+            type,
+            summary,
+            products: productsResult.rows,
+            pagination: {
+                page,
+                limit,
+                total,
+                pages: Math.ceil(total / limit),
+            },
+        };
+    },
+
+    // ======================================================
+    // ADMIN DASHBOARD — Top produtos por vendas
+    // ======================================================
+    async getTopSellers({ limit = 5, offset = 0 }) {
+        const query = `
+            SELECT
+                p.id, p.name, p.slug, p.sku, p.price, p.sales_count,
+                p.stock_quantity, p.is_active,
+                c.name AS category_name,
+                b.name AS brand_name,
+                (p.price * p.sales_count) AS revenue
+            FROM products p
+            LEFT JOIN categories c ON c.id = p.category_id
+            LEFT JOIN brands b ON b.id = p.brand_id
+            WHERE p.deleted_at IS NULL
+              AND p.sales_count > 0
+            ORDER BY p.sales_count DESC, p.name ASC
+            LIMIT $1 OFFSET $2
+        `;
+        const result = await pool.query(query, [limit, offset]);
+        return result.rows;
+    },
+
+    // ======================================================
+    // ADMIN DASHBOARD — Estatísticas de venda de um produto
+    // ======================================================
+    async getSalesStats(productId) {
+        // Dados do produto
+        const productQuery = `
+            SELECT p.id, p.name, p.slug, p.sku, p.price, p.sales_count,
+                   p.stock_quantity, p.created_at
+            FROM products p
+            WHERE p.id = $1 AND p.deleted_at IS NULL
+        `;
+        const productResult = await pool.query(productQuery, [productId]);
+        if (productResult.rows.length === 0) return null;
+
+        const product = productResult.rows[0];
+
+        // Ranking
+        const rankQuery = `
+            SELECT COUNT(*)::int + 1 AS rank
+            FROM products
+            WHERE deleted_at IS NULL
+              AND sales_count > $1
+        `;
+        const rankResult = await pool.query(rankQuery, [product.sales_count]);
+        const rank = rankResult.rows[0].rank;
+
+        // Total de produtos com vendas (denominador)
+        const totalQuery = `
+            SELECT COUNT(*)::int AS total
+            FROM products
+            WHERE deleted_at IS NULL AND sales_count > 0
+        `;
+        const totalResult = await pool.query(totalQuery);
+        const totalWithSales = totalResult.rows[0].total;
+
+        // Última venda
+        const lastSaleQuery = `
+            SELECT MAX(o.created_at) AS last_sale_at
+            FROM order_items oi
+            INNER JOIN orders o ON o.id = oi.order_id
+            WHERE oi.product_id = $1
+              AND o.status != 'cancelled'
+        `;
+        const lastSaleResult = await pool.query(lastSaleQuery, [productId]);
+        const lastSaleAt = lastSaleResult.rows[0]?.last_sale_at || null;
+
+        // Receita total
+        const revenue = parseFloat(product.price) * product.sales_count;
+
+        return {
+            ...product,
+            rank,
+            total_ranked: totalWithSales,
+            revenue,
+            last_sale_at: lastSaleAt,
+        };
+    },
 };
 
 module.exports = Product;

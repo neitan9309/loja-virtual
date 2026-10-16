@@ -11,6 +11,32 @@ const { authenticate, requireAdmin, optionalAuth } = require('../middleware/auth
 // ROTAS ADMIN (DEVEM VIR ANTES DE /:id)
 // ======================================================
 
+// [NOVO] Estatísticas agregadas para o dashboard
+router.get(
+    '/admin/stats',
+    authenticate,
+    requireAdmin,
+    productController.adminStats
+);
+
+// [NOVO] Top produtos por vendas
+router.get(
+    '/admin/top-sellers',
+    authenticate,
+    requireAdmin,
+    productController.topSellers
+);
+
+// [NOVO] Estatísticas de venda de um produto específico
+// ⚠️ IMPORTANTE: precisa vir ANTES de /admin/:id
+router.get(
+    '/admin/top-sellers/:id/stats',
+    authenticate,
+    requireAdmin,
+    param('id').isInt({ min: 1 }).withMessage('ID inválido'),
+    productController.salesStats
+);
+
 router.get('/admin/list', authenticate, requireAdmin, productController.adminList);
 
 router.get(
@@ -39,17 +65,14 @@ router.get(
 
 // ======================================================
 // AVALIAÇÕES (reviews)
-// ⚠️ Precisam vir ANTES de rotas genéricas como /:id/images
 // ======================================================
 
-// Listar avaliações (público)
 router.get(
     '/:productId/reviews',
     param('productId').isInt({ min: 1 }).withMessage('ID inválido'),
     reviewController.list
 );
 
-// Buscar a minha avaliação (logado)
 router.get(
     '/:productId/reviews/mine',
     authenticate,
@@ -57,7 +80,6 @@ router.get(
     reviewController.getMine
 );
 
-// Criar avaliação (logado)
 router.post(
     '/:productId/reviews',
     authenticate,
@@ -65,7 +87,6 @@ router.post(
     reviewController.create
 );
 
-// Atualizar minha avaliação (logado)
 router.put(
     '/:productId/reviews/:reviewId',
     authenticate,
@@ -74,7 +95,6 @@ router.put(
     reviewController.update
 );
 
-// Deletar minha avaliação (logado)
 router.delete(
     '/:productId/reviews/:reviewId',
     authenticate,

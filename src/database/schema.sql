@@ -5,6 +5,9 @@
 --   psql -U postgres -d luxury_store -f src/database/schema.sql
 -- Ou:
 --   node db-reset.js
+--
+-- ⚠️ Este arquivo substitui o antigo migration-orders.sql.
+--    As tabelas orders/order_items/payments agora vivem aqui.
 -- ======================================================
 
 SET client_encoding = 'UTF8';
@@ -67,7 +70,7 @@ CREATE TABLE brands (
 );
 
 -- ======================================================
--- USUÁRIOS (com role já embutido)
+-- USUÁRIOS
 -- ======================================================
 CREATE TABLE users (
     id SERIAL PRIMARY KEY,
@@ -180,7 +183,7 @@ CREATE TABLE product_variations (
 );
 
 -- ======================================================
--- AVALIAÇÕES (já com FK e unique desde o início)
+-- AVALIAÇÕES
 -- ======================================================
 CREATE TABLE product_reviews (
     id SERIAL PRIMARY KEY,
@@ -372,11 +375,85 @@ CREATE TABLE cart_items (
 );
 
 -- ======================================================
+-- PEDIDOS (unificado — antes em migration-orders.sql)
+-- ======================================================
+CREATE TABLE orders (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+
+    status VARCHAR(20) NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending', 'paid', 'shipped', 'delivered', 'cancelled')),
+
+    subtotal DECIMAL(10,2) NOT NULL DEFAULT 0 CHECK (subtotal >= 0),
+    shipping_cost DECIMAL(10,2) NOT NULL DEFAULT 0 CHECK (shipping_cost >= 0),
+    discount DECIMAL(10,2) NOT NULL DEFAULT 0 CHECK (discount >= 0),
+    total DECIMAL(10,2) NOT NULL DEFAULT 0 CHECK (total >= 0),
+
+    payment_method VARCHAR(20) CHECK (payment_method IN ('pix', 'credit_card', 'boleto')),
+    payment_status VARCHAR(20) NOT NULL DEFAULT 'pending'
+        CHECK (payment_status IN ('pending', 'paid', 'failed', 'refunded')),
+
+    -- Snapshot do endereço
+    shipping_cep VARCHAR(9),
+    shipping_street VARCHAR(150),
+    shipping_number VARCHAR(20),
+    shipping_complement VARCHAR(100),
+    shipping_neighborhood VARCHAR(100),
+    shipping_city VARCHAR(100),
+    shipping_state VARCHAR(2),
+
+    notes TEXT,
+
+    cancelled_at TIMESTAMP,
+    cancel_reason VARCHAR(255),
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE order_items (
+    id SERIAL PRIMARY KEY,
+    order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    product_id INTEGER REFERENCES products(id) ON DELETE SET NULL,
+
+    -- Snapshot do produto
+    product_name VARCHAR(150) NOT NULL,
+    product_slug VARCHAR(150),
+    product_image VARCHAR(255),
+
+    quantity INTEGER NOT NULL CHECK (quantity > 0),
+    unit_price DECIMAL(10,2) NOT NULL CHECK (unit_price >= 0),
+    subtotal DECIMAL(10,2) NOT NULL CHECK (subtotal >= 0),
+
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE payments (
+    id SERIAL PRIMARY KEY,
+    order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+
+    method VARCHAR(20) NOT NULL CHECK (method IN ('pix', 'credit_card', 'boleto')),
+    status VARCHAR(20) NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending', 'paid', 'failed', 'refunded')),
+
+    amount DECIMAL(10,2) NOT NULL CHECK (amount >= 0),
+    transaction_id VARCHAR(100),
+    gateway_response JSONB,
+
+    paid_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ======================================================
 -- ÍNDICES
 -- ======================================================
+
+-- Categorias
 CREATE INDEX idx_categories_parent_id ON categories(parent_id);
 CREATE INDEX idx_categories_slug ON categories(slug);
 
+-- Produtos
 CREATE INDEX idx_products_category_id ON products(category_id);
 CREATE INDEX idx_products_brand_id ON products(brand_id);
 CREATE INDEX idx_products_slug ON products(slug);
@@ -396,17 +473,25 @@ CREATE INDEX idx_product_variations_sku ON product_variations(sku);
 CREATE INDEX idx_product_reviews_product_id ON product_reviews(product_id);
 CREATE INDEX idx_product_reviews_user_id ON product_reviews(user_id);
 CREATE INDEX idx_product_tags_product_id ON product_tags(product_id);
+
+-- Estoque
 CREATE INDEX idx_inventory_product_id ON inventory(product_id);
 CREATE INDEX idx_inventory_variation_id ON inventory(variation_id);
 CREATE INDEX idx_inventory_movements_product_id ON inventory_movements(product_id);
 CREATE INDEX idx_inventory_movements_created_at ON inventory_movements(created_at);
+
+-- Preços
 CREATE INDEX idx_prices_product_id ON prices(product_id);
 CREATE INDEX idx_prices_created_at ON prices(created_at);
+
+-- Promoções
 CREATE INDEX idx_promotions_is_active ON promotions(is_active);
 CREATE INDEX idx_promotions_start_date ON promotions(start_date);
 CREATE INDEX idx_promotions_end_date ON promotions(end_date);
 CREATE INDEX idx_promotion_products_promotion_id ON promotion_products(promotion_id);
 CREATE INDEX idx_promotion_products_product_id ON promotion_products(product_id);
+
+-- Relacionados / Bundles
 CREATE INDEX idx_product_related_product_id ON product_related(product_id);
 CREATE INDEX idx_product_related_related_product_id ON product_related(related_product_id);
 CREATE INDEX idx_bundle_products_bundle_id ON bundle_products(bundle_id);
@@ -416,15 +501,30 @@ CREATE INDEX idx_product_questions_product_id ON product_questions(product_id);
 CREATE INDEX idx_product_questions_user_id ON product_questions(user_id);
 CREATE INDEX idx_product_answers_question_id ON product_answers(question_id);
 
+-- Usuários
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_cpf ON users(cpf);
 CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_user_sessions_user_id ON user_sessions(user_id);
 CREATE INDEX idx_user_sessions_token ON user_sessions(token);
 
+-- Carrinho
 CREATE INDEX idx_carts_user_id ON carts(user_id);
 CREATE INDEX idx_cart_items_cart_id ON cart_items(cart_id);
 CREATE INDEX idx_cart_items_product_id ON cart_items(product_id);
+
+-- Pedidos
+CREATE INDEX idx_orders_user_id ON orders(user_id);
+CREATE INDEX idx_orders_status ON orders(status);
+CREATE INDEX idx_orders_created_at ON orders(created_at DESC);
+CREATE INDEX idx_orders_payment_status ON orders(payment_status);
+CREATE INDEX idx_orders_user_status ON orders(user_id, status);
+
+CREATE INDEX idx_order_items_order_id ON order_items(order_id);
+CREATE INDEX idx_order_items_product_id ON order_items(product_id);
+
+CREATE INDEX idx_payments_order_id ON payments(order_id);
+CREATE INDEX idx_payments_status ON payments(status);
 
 -- ======================================================
 -- TRIGGERS updated_at
@@ -440,6 +540,10 @@ CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECU
 CREATE TRIGGER update_carts_updated_at BEFORE UPDATE ON carts FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 CREATE TRIGGER update_cart_items_updated_at BEFORE UPDATE ON cart_items FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 CREATE TRIGGER update_product_reviews_updated_at BEFORE UPDATE ON product_reviews FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+
+-- Pedidos
+CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON orders FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+CREATE TRIGGER update_payments_updated_at BEFORE UPDATE ON payments FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 
 -- ======================================================
 -- FIM DO SCHEMA

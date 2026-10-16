@@ -13,6 +13,7 @@ const promotionController = require('./promotionController');
 const reviewController = require('./reviewController');
 const uploadController = require('./uploadController');
 const userController = require('./userController');
+const metricsController = require('./metricsController');
 
 module.exports = {
     authController,
@@ -27,4 +28,5 @@ module.exports = {
     reviewController,
     uploadController,
     userController,
+    metricsController,
 };

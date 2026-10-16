@@ -12,14 +12,12 @@ const SHIPPING_COST = 19.90;
 const orderController = {
     // ==================================================
     // POST /api/orders
-    // Cria um pedido a partir do carrinho do usuário
     // ==================================================
     async create(req, res) {
         try {
             const userId = req.userId;
             const { payment_method, shipping_address, notes } = req.body;
 
-            // Valida método de pagamento
             const validMethods = ['pix', 'credit_card', 'boleto'];
             if (!validMethods.includes(payment_method)) {
                 return res.status(400).json({
@@ -28,7 +26,6 @@ const orderController = {
                 });
             }
 
-            // Valida endereço
             const requiredAddress = ['cep', 'street', 'number', 'neighborhood', 'city', 'state'];
             const missing = requiredAddress.filter((field) => !shipping_address?.[field]);
             if (missing.length > 0) {
@@ -38,7 +35,6 @@ const orderController = {
                 });
             }
 
-            // Busca o carrinho atual
             const cart = await Cart.getItems(userId);
 
             if (!cart.items || cart.items.length === 0) {
@@ -48,13 +44,11 @@ const orderController = {
                 });
             }
 
-            // Calcula valores
             const subtotal = cart.total;
             const shippingCost = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
-            const discount = 0; // futuramente cupom de desconto
+            const discount = 0;
             const total = subtotal + shippingCost - discount;
 
-            // Prepara itens (com snapshot)
             const items = cart.items.map((item) => ({
                 product_id: item.product_id,
                 name: item.name,
@@ -65,7 +59,6 @@ const orderController = {
                 subtotal: item.subtotal,
             }));
 
-            // Cria o pedido (com transação no model)
             const order = await Order.create({
                 userId,
                 items,
@@ -78,7 +71,6 @@ const orderController = {
                 notes: notes || null,
             });
 
-            // Cria o registro de pagamento (pending inicialmente)
             const payment = await Payment.create({
                 order_id: order.id,
                 method: payment_method,
@@ -109,8 +101,7 @@ const orderController = {
     },
 
     // ==================================================
-    // GET /api/orders
-    // Lista pedidos do usuário autenticado
+    // GET /api/orders (meus pedidos — cliente)
     // ==================================================
     async listMine(req, res) {
         try {
@@ -142,7 +133,6 @@ const orderController = {
 
     // ==================================================
     // GET /api/orders/:id
-    // Busca um pedido específico do usuário
     // ==================================================
     async getById(req, res) {
         try {
@@ -167,8 +157,7 @@ const orderController = {
     },
 
     // ==================================================
-    // POST /api/orders/:id/pay
-    // Simula o pagamento (mock)
+    // POST /api/orders/:id/pay (mock)
     // ==================================================
     async pay(req, res) {
         try {
@@ -179,7 +168,6 @@ const orderController = {
                 return res.status(400).json({ error: 'ID inválido' });
             }
 
-            // Busca o pedido
             const order = await Order.findById(id, userId);
 
             if (!order) {
@@ -200,27 +188,26 @@ const orderController = {
                 });
             }
 
-            // Pega o último pagamento pendente
             const payments = await Payment.findByOrder(id);
-            const payment = payments.find((p) => p.status === 'pending') || payments[0];
+            const payment = payments.find((p) => p.status === 'pending');
 
             if (!payment) {
-                return res.status(404).json({ error: 'Pagamento não encontrado' });
+                return res.status(400).json({
+                    error: 'Nenhum pagamento pendente encontrado',
+                    code: 'NO_PENDING_PAYMENT',
+                });
             }
 
-            // Simula o resultado
             const result = Payment.simulatePayment(order.payment_method);
 
             let updatedPayment;
             let updatedOrder;
 
             if (result === 'paid') {
-                // Marca pagamento como pago
                 updatedPayment = await Payment.markAsPaid(payment.id, {
                     simulated: true,
                     approved_at: new Date().toISOString(),
                 });
-                // Marca pedido como pago
                 updatedOrder = await Order.markAsPaid(id);
             } else if (result === 'failed') {
                 updatedPayment = await Payment.markAsFailed(payment.id, {
@@ -229,7 +216,6 @@ const orderController = {
                 });
                 updatedOrder = order;
             } else {
-                // pending
                 updatedPayment = payment;
                 updatedOrder = order;
             }
@@ -266,7 +252,6 @@ const orderController = {
 
     // ==================================================
     // POST /api/orders/:id/cancel
-    // Cancela o pedido (devolve estoque)
     // ==================================================
     async cancel(req, res) {
         try {
@@ -278,7 +263,6 @@ const orderController = {
                 return res.status(400).json({ error: 'ID inválido' });
             }
 
-            // Busca o pedido
             const order = await Order.findById(id, userId);
 
             if (!order) {
@@ -309,27 +293,38 @@ const orderController = {
 
     // ==================================================
     // GET /api/orders/admin/list
-    // Lista todos os pedidos (admin)
+    // Lista com filtros (q, status, from, to, sort, order)
     // ==================================================
     async adminList(req, res) {
         try {
-            const status = req.query.status;
-            const page = parseInt(req.query.page) || 1;
-            const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+            const page = Math.max(1, parseInt(req.query.page) || 1);
+            const limit = Math.min(Math.max(1, parseInt(req.query.limit) || 20), 100);
             const offset = (page - 1) * limit;
 
-            const orders = await Order.findAll({ status, limit, offset });
-            const stats = await Order.getStats();
+            const filters = {
+                q: (req.query.q || '').trim() || null,
+                status: req.query.status || null,
+                from: req.query.from || null,
+                to: req.query.to || null,
+                sort: req.query.sort || 'created_at',
+                order: req.query.order || 'desc',
+                limit,
+                offset,
+            };
+
+            const [orders, total] = await Promise.all([
+                Order.findAll(filters),
+                Order.countAll(filters),
+            ]);
 
             res.json({
                 orders,
-                stats,
                 pagination: {
+                    page,
                     limit,
                     offset,
-                    page,
-                    total: stats.total,
-                    pages: Math.ceil(stats.total / limit),
+                    total,
+                    pages: Math.ceil(total / limit) || 1,
                 },
             });
         } catch (error) {
@@ -339,8 +334,33 @@ const orderController = {
     },
 
     // ==================================================
+    // GET /api/orders/admin/stats
+    // Estatísticas para os cards de resumo
+    // ==================================================
+    async adminStats(req, res) {
+        try {
+            const from = req.query.from || null;
+            const to = req.query.to || null;
+
+            const stats = await Order.getStats({ from, to });
+
+            res.json({
+                total: stats.total,
+                pending: stats.pending,
+                paid: stats.paid,
+                shipped: stats.shipped,
+                delivered: stats.delivered,
+                cancelled: stats.cancelled,
+                revenue: parseFloat(stats.revenue),
+            });
+        } catch (error) {
+            console.error('Erro ao buscar estatísticas:', error);
+            res.status(500).json({ error: 'Erro ao buscar estatísticas' });
+        }
+    },
+
+    // ==================================================
     // GET /api/orders/admin/:id
-    // Detalhe completo do pedido (admin)
     // ==================================================
     async adminGetById(req, res) {
         try {
@@ -365,7 +385,6 @@ const orderController = {
 
     // ==================================================
     // PATCH /api/orders/admin/:id/status
-    // Altera status do pedido (admin)
     // ==================================================
     async adminUpdateStatus(req, res) {
         try {
@@ -407,8 +426,7 @@ const orderController = {
     },
 
     // ==================================================
-    // GET /api/orders/shipping/quote?cep=XXXXX&subtotal=XXX
-    // Calcula frete (mock)
+    // GET /api/orders/shipping/quote
     // ==================================================
     async shippingQuote(req, res) {
         try {
@@ -421,7 +439,6 @@ const orderController = {
             const subtotalNum = parseFloat(subtotal) || 0;
             const isFree = subtotalNum >= FREE_SHIPPING_THRESHOLD;
 
-            // Simula por região (primeiro dígito do CEP)
             const region = parseInt(cep[0]);
             let days;
 

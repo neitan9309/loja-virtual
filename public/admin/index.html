@@ -7,13 +7,13 @@
     <meta name="robots" content="noindex, nofollow">
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚙️</text></svg>">
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+    <link rel="preconnect" href="https://cdn.jsdelivr.net">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <link rel="stylesheet" href="/admin/admin.css">
 </head>
 <body>
 
-    <!-- ============ GUARD DE AUTENTICAÇÃO ============ -->
-    <!-- Roda ANTES de qualquer coisa: se não tem token, redireciona pro login -->
     <script>
         (function () {
             const token = localStorage.getItem('luxury_admin_token');
@@ -36,8 +36,18 @@
                 <span>Início</span>
             </button>
 
+            <button class="nav-item" data-target="section-orders">
+                <i class="fas fa-receipt"></i>
+                <span>Pedidos</span>
+            </button>
+
+            <button class="nav-item" data-target="section-metrics">
+                <i class="fas fa-chart-pie"></i>
+                <span>Métricas</span>
+            </button>
+
             <div class="nav-group open" id="navGroupRegistro">
-                <button class="nav-item nav-item-parent" data-toggle="registro" aria-expanded="true">
+                <button class="nav-item nav-item-parent" data-toggle="registro">
                     <i class="fas fa-plus-circle"></i>
                     <span>Registro</span>
                     <i class="fas fa-chevron-down nav-arrow"></i>
@@ -71,7 +81,6 @@
         </div>
     </aside>
 
-    <!-- MOBILE -->
     <button class="mobile-toggle" id="mobileToggle" aria-label="Abrir menu">
         <i class="fas fa-bars"></i>
     </button>
@@ -131,6 +140,9 @@
                 <div class="card">
                     <div class="card-header">
                         <h2><i class="fas fa-trophy"></i> Produtos Mais Vendidos</h2>
+                        <button class="btn-icon" id="viewAllTopSellers" title="Ver todos" type="button">
+                            <i class="fas fa-expand"></i>
+                        </button>
                     </div>
                     <div class="card-body" id="topProductsList">
                         <div class="loading"><i class="fas fa-spinner fa-spin"></i><span>Carregando...</span></div>
@@ -140,12 +152,297 @@
                 <div class="card">
                     <div class="card-header">
                         <h2><i class="fas fa-history"></i> Movimentações Recentes</h2>
+                        <button class="btn-icon" id="viewAllMovements" title="Ver todos" type="button">
+                            <i class="fas fa-expand"></i>
+                        </button>
                     </div>
                     <div class="card-body" id="recentMovementsList">
                         <div class="loading"><i class="fas fa-spinner fa-spin"></i><span>Carregando...</span></div>
                     </div>
                 </div>
             </div>
+        </section>
+
+        <!-- ==================== PEDIDOS ==================== -->
+        <section class="section" id="section-orders">
+            <header class="section-header">
+                <div>
+                    <h1>Pedidos</h1>
+                    <p class="section-subtitle">Acompanhe e gerencie os pedidos da loja</p>
+                </div>
+                <button class="btn-refresh" id="refreshOrders">
+                    <i class="fas fa-sync-alt"></i>
+                    <span>Atualizar</span>
+                </button>
+            </header>
+
+                        <div class="orders-kpi-grid">
+                <button type="button" class="orders-kpi-card active" data-order-filter="all">
+                    <div class="orders-kpi-icon orders-kpi-icon-all">
+                        <i class="fas fa-receipt"></i>
+                    </div>
+                    <div class="orders-kpi-info">
+                        <span class="orders-kpi-label">Total</span>
+                        <span class="orders-kpi-value" id="ordersKpiTotal">—</span>
+                    </div>
+                </button>
+
+                <button type="button" class="orders-kpi-card" data-order-filter="pending">
+                    <div class="orders-kpi-icon orders-kpi-icon-warning">
+                        <i class="fas fa-hourglass-half"></i>
+                    </div>
+                    <div class="orders-kpi-info">
+                        <span class="orders-kpi-label">Pendentes</span>
+                        <span class="orders-kpi-value" id="ordersKpiPending">—</span>
+                    </div>
+                </button>
+
+                <button type="button" class="orders-kpi-card" data-order-filter="paid">
+                    <div class="orders-kpi-icon orders-kpi-icon-orange">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <div class="orders-kpi-info">
+                        <span class="orders-kpi-label">Aguardando envio</span>
+                        <span class="orders-kpi-value" id="ordersKpiPaid">—</span>
+                    </div>
+                </button>
+
+                <button type="button" class="orders-kpi-card" data-order-filter="shipped">
+                    <div class="orders-kpi-icon orders-kpi-icon-info">
+                        <i class="fas fa-truck"></i>
+                    </div>
+                    <div class="orders-kpi-info">
+                        <span class="orders-kpi-label">Enviados</span>
+                        <span class="orders-kpi-value" id="ordersKpiShipped">—</span>
+                    </div>
+                </button>
+
+                <button type="button" class="orders-kpi-card" data-order-filter="delivered">
+                    <div class="orders-kpi-icon orders-kpi-icon-success">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="orders-kpi-info">
+                        <span class="orders-kpi-label">Entregues</span>
+                        <span class="orders-kpi-value" id="ordersKpiDelivered">—</span>
+                    </div>
+                </button>
+
+                <button type="button" class="orders-kpi-card" data-order-filter="cancelled">
+                    <div class="orders-kpi-icon orders-kpi-icon-danger">
+                        <i class="fas fa-times-circle"></i>
+                    </div>
+                    <div class="orders-kpi-info">
+                        <span class="orders-kpi-label">Cancelados</span>
+                        <span class="orders-kpi-value" id="ordersKpiCancelled">—</span>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Tabela + filtros -->
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-list"></i> Lista de Pedidos</h2>
+                    <span class="orders-count-hint" id="ordersCountHint"></span>
+                </div>
+
+                <div class="card-body">
+                    <div class="table-wrapper">
+                        <table class="data-table" id="ordersTable">
+<thead>
+    <tr>
+        <th data-sort="id" data-type="number">Pedido</th>
+        <th data-sort="created_at" data-type="date" class="col-center">Data</th>
+        <th data-sort="user_name" data-type="string">Cliente</th>
+        <th data-sort="items_count" data-type="number" class="col-center">Itens</th>
+        <th data-sort="status" data-type="string" class="col-center">Status</th>
+        <th data-sort="shipping_status" data-type="string" class="col-center">Envio</th>
+        <th data-sort="payment_method" data-type="string" class="col-center">Pagamento</th>
+        <th data-sort="total" data-type="number" class="col-money">Total</th>
+    </tr>
+</thead>
+                            <tbody>
+                                <tr><td colspan="7" class="table-empty">Carregando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="ordersPagination" class="pagination"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== MÉTRICAS ==================== -->
+        <section class="section" id="section-metrics">
+            <header class="section-header">
+                <div>
+                    <h1>Métricas</h1>
+                    <p class="section-subtitle">Visão geral da saúde do negócio</p>
+                </div>
+                <div class="metrics-header-actions">
+                    <div class="period-selector" id="periodSelector" role="group" aria-label="Período das métricas">
+                        <button type="button" class="period-btn" data-period="7d">7 dias</button>
+                        <button type="button" class="period-btn active" data-period="30d">30 dias</button>
+                        <button type="button" class="period-btn" data-period="90d">90 dias</button>
+                        <button type="button" class="period-btn" data-period="12m">12 meses</button>
+                    </div>
+                    <button class="btn-refresh" id="refreshMetrics">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>Atualizar</span>
+                    </button>
+                </div>
+            </header>
+
+            <div class="metrics-kpi-grid">
+                <div class="metrics-kpi-card">
+                    <div class="metrics-kpi-icon metrics-kpi-icon-accent">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="metrics-kpi-info">
+                        <span class="metrics-kpi-label">Receita</span>
+                        <span class="metrics-kpi-value" id="metricsRevenue">—</span>
+                        <span class="metrics-kpi-delta" id="metricsRevenueDelta">—</span>
+                    </div>
+                </div>
+
+                <div class="metrics-kpi-card">
+                    <div class="metrics-kpi-icon metrics-kpi-icon-blue">
+                        <i class="fas fa-shopping-bag"></i>
+                    </div>
+                    <div class="metrics-kpi-info">
+                        <span class="metrics-kpi-label">Pedidos</span>
+                        <span class="metrics-kpi-value" id="metricsOrders">—</span>
+                        <span class="metrics-kpi-delta" id="metricsOrdersDelta">—</span>
+                    </div>
+                </div>
+
+                <div class="metrics-kpi-card">
+                    <div class="metrics-kpi-icon metrics-kpi-icon-green">
+                        <i class="fas fa-receipt"></i>
+                    </div>
+                    <div class="metrics-kpi-info">
+                        <span class="metrics-kpi-label">Ticket Médio</span>
+                        <span class="metrics-kpi-value" id="metricsTicketAvg">—</span>
+                        <span class="metrics-kpi-delta" id="metricsTicketAvgDelta">—</span>
+                    </div>
+                </div>
+
+                <div class="metrics-kpi-card">
+                    <div class="metrics-kpi-icon metrics-kpi-icon-purple">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <div class="metrics-kpi-info">
+                        <span class="metrics-kpi-label">Novos Clientes</span>
+                        <span class="metrics-kpi-value" id="metricsCustomers">—</span>
+                        <span class="metrics-kpi-delta" id="metricsCustomersDelta">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="metrics-charts-grid">
+                <div class="card metrics-card metrics-card-wide">
+                    <div class="card-header">
+                        <h2><i class="fas fa-chart-line"></i> Receita ao longo do tempo</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="chartRevenue"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card metrics-card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-chart-pie"></i> Pedidos por status</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container chart-container-donut">
+                            <canvas id="chartOrdersStatus"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card metrics-card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-credit-card"></i> Formas de pagamento</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container chart-container-donut">
+                            <canvas id="chartPaymentMethods"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card metrics-card metrics-card-wide">
+                    <div class="card-header">
+                        <h2><i class="fas fa-layer-group"></i> Top categorias por receita</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="chartTopCategories"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card metrics-card metrics-card-wide">
+                    <div class="card-header">
+                        <h2><i class="fas fa-exchange-alt"></i> Movimentações de estoque</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="chartStockMovements"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card metrics-card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-user-plus"></i> Novos clientes</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="chartNewCustomers"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card metrics-card">
+                    <div class="card-header">
+                        <h2><i class="fas fa-tags"></i> Distribuição de preços</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-container">
+                            <canvas id="chartPriceDistribution"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card metrics-card">
+                <div class="card-header">
+                    <h2><i class="fas fa-crown"></i> Top 10 clientes por receita</h2>
+                </div>
+                <div class="card-body">
+                    <div class="table-wrapper">
+                        <table class="data-table" id="topCustomersTable">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Cliente</th>
+                                    <th>E-mail</th>
+                                    <th>Pedidos</th>
+                                    <th>Receita</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="5" class="table-empty">Carregando...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <footer class="metrics-footer">
+                <span id="metricsGeneratedAt"></span>
+            </footer>
         </section>
 
         <!-- ==================== REGISTRAR NOVO PRODUTO ==================== -->
@@ -241,7 +538,6 @@
                             <textarea id="prodDesc" name="description" rows="4" required placeholder="Descreva o produto em detalhes..."></textarea>
                         </div>
 
-                        <!-- IMAGEM -->
                         <div class="form-group form-group-full">
                             <label>Imagem do Produto</label>
                             <div class="image-input-wrapper">
@@ -561,7 +857,7 @@
     <!-- ============ TOASTS ============ -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <!-- ============ MODAL DE DETALHES ============ -->
+    <!-- ============ MODAL DE DETALHES (produto) ============ -->
     <div class="modal" id="detailModal" role="dialog" aria-modal="true">
         <div class="modal-content modal-detail">
             <button class="close-modal" id="closeDetailModal" aria-label="Fechar modal">&times;</button>
@@ -648,6 +944,71 @@
             </div>
 
             <div class="picker-pagination" id="pickerPagination"></div>
+        </div>
+    </div>
+
+    <!-- ============ MODAL DE DETALHES DO DASHBOARD (KPIs) ============ -->
+    <div class="modal" id="dashboardDetailModal" role="dialog" aria-modal="true">
+        <div class="modal-content modal-dashboard-detail">
+            <button class="close-modal" id="closeDashboardDetail" aria-label="Fechar modal">&times;</button>
+            <div id="dashboardDetailBody">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>Carregando...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ MODAL DE PRODUTOS MAIS VENDIDOS ============ -->
+    <div class="modal" id="topSellersModal" role="dialog" aria-modal="true">
+        <div class="modal-content modal-dashboard-detail">
+            <button class="close-modal" id="closeTopSellers" aria-label="Fechar modal">&times;</button>
+            <div id="topSellersBody">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>Carregando...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ MODAL DE MOVIMENTAÇÕES ============ -->
+    <div class="modal" id="movementsModal" role="dialog" aria-modal="true">
+        <div class="modal-content modal-dashboard-detail">
+            <button class="close-modal" id="closeMovements" aria-label="Fechar modal">&times;</button>
+            <div id="movementsBody">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>Carregando...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ MODAL DE DETALHE DAS MÉTRICAS ============ -->
+    <div class="modal" id="metricsDetailModal" role="dialog" aria-modal="true">
+        <div class="modal-content modal-dashboard-detail">
+            <button class="close-modal" id="closeMetricsDetail" aria-label="Fechar modal">&times;</button>
+            <div id="metricsDetailBody">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>Carregando...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ MODAL DE DETALHE DO PEDIDO ============ -->
+    <div class="modal" id="orderDetailModal" role="dialog" aria-modal="true">
+        <div class="modal-content modal-dashboard-detail">
+            <button class="close-modal" id="closeOrderDetail" aria-label="Fechar modal">&times;</button>
+            <div id="orderDetailBody">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>Carregando...</span>
+                </div>
+            </div>
         </div>
     </div>
 

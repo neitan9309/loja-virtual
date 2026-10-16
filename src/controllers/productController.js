@@ -65,14 +65,12 @@ const productController = {
                 return res.status(404).json({ error: 'Produto não encontrado' });
             }
 
-            // ✅ Se NÃO for admin, esconde campos sensíveis
             if (req.userRole !== 'admin') {
                 delete product.sku;
                 delete product.cost_price;
                 delete product.meta_keywords;
             }
 
-            // Incrementa view count de forma assíncrona (não bloqueia resposta)
             Product.incrementViewCount(id).catch((err) =>
                 console.error('Erro ao incrementar views:', err)
             );
@@ -87,7 +85,6 @@ const productController = {
     // ==================================================
     // GET /api/products/admin/:id
     // Retorna TODOS os campos (incluindo sku, cost_price)
-    // Protegido por requireAdmin na rota
     // ==================================================
     async getByIdAdmin(req, res) {
         try {
@@ -103,7 +100,6 @@ const productController = {
                 return res.status(404).json({ error: 'Produto não encontrado' });
             }
 
-            // ✅ NÃO deleta nenhum campo — admin vê tudo
             res.json(product);
         } catch (error) {
             console.error('Erro ao buscar produto (admin):', error);
@@ -113,8 +109,6 @@ const productController = {
 
     // ==================================================
     // GET /api/products/slug/:slug
-    // Público: esconde sku, cost_price, meta_keywords
-    // Admin: retorna tudo
     // ==================================================
     async getBySlug(req, res) {
         try {
@@ -502,6 +496,86 @@ const productController = {
         } catch (error) {
             console.error('Erro ao definir imagem principal:', error);
             res.status(500).json({ error: 'Erro ao definir imagem principal' });
+        }
+    },
+
+    // ==================================================
+    // [NOVO] GET /api/products/admin/stats?type=...&page&limit
+    // Estatísticas agregadas para o dashboard
+    // ==================================================
+// ==================================================
+// GET /api/products/admin/stats
+// ==================================================
+async adminStats(req, res) {
+    try {
+        const type = req.query.type || 'total';
+        const validTypes = ['total', 'in_stock', 'low_stock', 'out_of_stock'];
+        if (!validTypes.includes(type)) {
+            return res.status(400).json({
+                error: 'Tipo inválido',
+                valid_types: validTypes,
+            });
+        }
+
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(Math.max(1, parseInt(req.query.limit) || 20), 100);
+
+        const data = await Product.getAdminStats({
+            type,
+            page,
+            limit,
+            sort: req.query.sort || null,
+            order: req.query.order || 'asc',
+            q: req.query.q || '',
+            sku: req.query.sku || '',
+            category: req.query.category || '',
+            stock: req.query.stock || 'all',
+            min_price: req.query.min_price || '',
+            max_price: req.query.max_price || '',
+        });
+        res.json(data);
+    } catch (error) {
+        console.error('Erro ao buscar estatísticas:', error);
+        res.status(500).json({ error: 'Erro ao buscar estatísticas' });
+    }
+},
+
+    // ==================================================
+    // [NOVO] GET /api/products/admin/top-sellers
+    // Top produtos por vendas
+    // ==================================================
+    async topSellers(req, res) {
+        try {
+            const limit = Math.min(Math.max(1, parseInt(req.query.limit) || 5), 100);
+            const offset = Math.max(0, parseInt(req.query.offset) || 0);
+            const products = await Product.getTopSellers({ limit, offset });
+            res.json({ products });
+        } catch (error) {
+            console.error('Erro ao buscar top sellers:', error);
+            res.status(500).json({ error: 'Erro ao buscar produtos mais vendidos' });
+        }
+    },
+
+    // ==================================================
+    // [NOVO] GET /api/products/admin/top-sellers/:id/stats
+    // Estatísticas de venda de um produto específico
+    // ==================================================
+    async salesStats(req, res) {
+        try {
+            const { id } = req.params;
+            if (isNaN(id)) {
+                return res.status(400).json({ error: 'ID inválido' });
+            }
+
+            const stats = await Product.getSalesStats(id);
+            if (!stats) {
+                return res.status(404).json({ error: 'Produto não encontrado' });
+            }
+
+            res.json(stats);
+        } catch (error) {
+            console.error('Erro ao buscar estatísticas de venda:', error);
+            res.status(500).json({ error: 'Erro ao buscar estatísticas' });
         }
     },
 };
