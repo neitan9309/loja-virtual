@@ -362,5 +362,11 @@
     // ======================================================
     document.addEventListener('DOMContentLoaded', () => {
         OrderPage.init();
+        if (sessionStorage.getItem('luxury_just_logged_in') === 'true') {
+    sessionStorage.removeItem('luxury_just_logged_in');
+    if (window.LuxuryWishlist) {
+        window.LuxuryWishlist.loadIds();
+    }
+}
     });
 })();

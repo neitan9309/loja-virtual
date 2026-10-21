@@ -10,18 +10,26 @@
     const API = window.LuxuryAPI;
     const C = window.LuxuryComponents;
 
+    const FAVORITES_SORT_KEY = 'luxury_favorites_sort';
+
     // ==================================================
     // PÁGINA
     // ==================================================
     const AccountPage = {
         user: null,
+        favoritesSort: 'recent',
+        favoritesCache: [],      // cache dos produtos para reordenar sem refetch
+        addingAllInProgress: false,
 
         async init() {
-            // Exige login
             if (!API.isLoggedIn()) {
                 window.location.href = '/login';
                 return;
             }
+
+            // Restaura ordenação salva
+            const savedSort = sessionStorage.getItem(FAVORITES_SORT_KEY);
+            if (savedSort) this.favoritesSort = savedSort;
 
             await this.loadUser();
             this.initTabs();
@@ -31,12 +39,13 @@
             this.initPasswordToggles();
             this.initDeleteAccount();
             this.initLogout();
+            this.initFavoritesToolbar();
             this.loadOrders();
-
+            this.loadFavorites();
         },
 
         // ==================================================
-        // CARREGAR USUÁRIO
+        // USUÁRIO
         // ==================================================
         async loadUser() {
             try {
@@ -64,7 +73,6 @@
         fillForms() {
             const user = this.user;
 
-            // Profile
             document.getElementById('accFullName').value = user.full_name || '';
             document.getElementById('accBirthDate').value = user.birth_date
                 ? user.birth_date.split('T')[0]
@@ -74,7 +82,6 @@
             document.getElementById('accPhone').value = user.phone || '';
             document.getElementById('accEmail').value = user.email || '';
 
-            // Address
             document.getElementById('accCep').value = user.cep || '';
             document.getElementById('accStreet').value = user.street || '';
             document.getElementById('accNumber').value = user.number || '';
@@ -88,23 +95,18 @@
         // TABS
         // ==================================================
         initTabs() {
-            // ==================================================
-            // Sidebar (desktop) — troca painel ativo
-            // ==================================================
+            // Sidebar (desktop)
             document.querySelectorAll('.account-nav-item[data-tab]').forEach((btn) => {
                 btn.addEventListener('click', () => {
                     const tab = btn.dataset.tab;
 
-                    // Marca o botão ativo
                     document.querySelectorAll('.account-nav-item').forEach((b) => b.classList.remove('active'));
                     btn.classList.add('active');
 
-                    // Fecha todos os accordions
                     document.querySelectorAll('.account-accordion-item').forEach((item) => {
                         item.classList.remove('active');
                     });
 
-                    // Abre o accordion correspondente
                     const target = document.querySelector(`.account-accordion-item[data-accordion="${tab}"]`);
                     if (target) {
                         target.classList.add('active');
@@ -112,33 +114,30 @@
                         if (header) header.setAttribute('aria-expanded', 'true');
                     }
 
-                    // Rola até o painel
                     target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+                    if (tab === 'favorites') this.loadFavorites();
                 });
             });
 
-            // ==================================================
-            // Accordion (mobile) — abre/fecha ao clicar no header
-            // ==================================================
+            // Accordion (mobile)
             document.querySelectorAll('.account-accordion-header').forEach((header) => {
                 header.addEventListener('click', () => {
                     const item = header.closest('.account-accordion-item');
                     const isActive = item.classList.contains('active');
 
-                    // Fecha todos
                     document.querySelectorAll('.account-accordion-item').forEach((el) => {
                         el.classList.remove('active');
                         const h = el.querySelector('.account-accordion-header');
                         if (h) h.setAttribute('aria-expanded', 'false');
                     });
 
-                    // Se não estava ativo, abre
                     if (!isActive) {
                         item.classList.add('active');
                         header.setAttribute('aria-expanded', 'true');
+                        if (item.dataset.accordion === 'favorites') this.loadFavorites();
                     }
 
-                    // Marca o botão correspondente na sidebar (se existir)
                     const tab = item.dataset.accordion;
                     document.querySelectorAll('.account-nav-item').forEach((b) => {
                         b.classList.toggle('active', b.dataset.tab === tab);
@@ -146,25 +145,29 @@
                 });
             });
 
-            // ==================================================
-            // Botão "Sair" (mobile)
-            // ==================================================
+            // Logout mobile
             document.getElementById('logoutBtnMobile')?.addEventListener('click', async () => {
                 try {
                     await API.post('/auth/logout', {});
-                } catch {
-                    // ignora
-                }
+                } catch { /* ignora */ }
                 API.clearSession();
+                if (window.LuxuryWishlist) window.LuxuryWishlist.clear();
                 window.location.href = '/';
             });
+
+            // URL ?tab=favorites
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('tab') === 'favorites') {
+                const favBtn = document.querySelector('.account-nav-item[data-tab="favorites"]');
+                if (favBtn) setTimeout(() => favBtn.click(), 100);
+            }
         },
 
         // ==================================================
         // FORMS
         // ==================================================
         initForms() {
-            // ===== Perfil =====
+            // Perfil
             document.getElementById('profileForm')?.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const btn = document.getElementById('saveProfileBtn');
@@ -193,7 +196,7 @@
                 }
             });
 
-            // ===== Endereço =====
+            // Endereço
             document.getElementById('addressForm')?.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const btn = document.getElementById('saveAddressBtn');
@@ -223,7 +226,7 @@
                 }
             });
 
-            // ===== Senha =====
+            // Senha
             document.getElementById('passwordForm')?.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 const current = document.getElementById('accCurrentPassword').value;
@@ -280,12 +283,11 @@
         },
 
         // ==================================================
-        // CONSULTA DE CEP
+        // CEP
         // ==================================================
         initCepLookup() {
             const cepInput = document.getElementById('accCep');
             const status = document.getElementById('accCepStatus');
-
             if (!cepInput) return;
 
             let lastCep = '';
@@ -317,7 +319,7 @@
         },
 
         // ==================================================
-        // TOGGLE DE SENHA
+        // TOGGLE SENHA
         // ==================================================
         initPasswordToggles() {
             document.querySelectorAll('.toggle-password').forEach((btn) => {
@@ -379,7 +381,6 @@
             const confirmBtn = modal.querySelector('#confirmDelete');
             const cancelBtn = modal.querySelector('#cancelDelete');
 
-            // Habilita botão só se confirmação estiver correta
             confirmInput.addEventListener('input', () => {
                 confirmBtn.disabled = confirmInput.value !== 'EXCLUIR';
             });
@@ -406,13 +407,11 @@
                 confirmBtn.disabled = true;
                 confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Excluindo...';
 
-try {
-    await API.deleteWithBody('/users/me', {
-        password,
-        confirmation,
-    });
+                try {
+                    await API.deleteWithBody('/users/me', { password, confirmation });
 
-    API.clearSession();
+                    API.clearSession();
+                    if (window.LuxuryWishlist) window.LuxuryWishlist.clear();
                     C.createToast('Conta excluída. Redirecionando...', 'success');
                     setTimeout(() => {
                         window.location.href = '/';
@@ -425,8 +424,8 @@ try {
             });
         },
 
-                // ==================================================
-        // MEUS PEDIDOS — listar
+        // ==================================================
+        // PEDIDOS
         // ==================================================
         async loadOrders(page = 1) {
             const container = document.getElementById('ordersListContainer');
@@ -462,17 +461,13 @@ try {
 
                 container.innerHTML = orders.map((order) => this.buildOrderCard(order)).join('');
 
-                // Bind clicks
                 container.querySelectorAll('.order-card').forEach((card) => {
                     card.addEventListener('click', () => {
-                        const id = card.dataset.orderId;
-                        window.location.href = `/pedido/${id}`;
+                        window.location.href = `/pedido/${card.dataset.orderId}`;
                     });
                 });
 
-                if (pagination) {
-                    this.renderOrdersPagination(pagination, data.pagination);
-                }
+                if (pagination) this.renderOrdersPagination(pagination, data.pagination);
             } catch (error) {
                 console.error('Erro ao carregar pedidos:', error);
                 container.innerHTML = `
@@ -485,9 +480,6 @@ try {
             }
         },
 
-        // ==================================================
-        // MEUS PEDIDOS — card
-        // ==================================================
         buildOrderCard(order) {
             const statusMap = {
                 pending: { label: 'Aguardando pagamento', class: 'warning', icon: 'fa-hourglass-half' },
@@ -504,9 +496,7 @@ try {
                 : `<i class="fas fa-image"></i>`;
 
             const date = U.formatDate(order.created_at);
-            const itemsLabel = order.items_count === 1
-                ? '1 item'
-                : `${order.items_count} itens`;
+            const itemsLabel = order.items_count === 1 ? '1 item' : `${order.items_count} itens`;
 
             return `
                 <div class="order-card" data-order-id="${order.id}">
@@ -519,9 +509,7 @@ try {
                                 ${status.label}
                             </span>
                         </div>
-                        <div class="order-card-meta">
-                            ${itemsLabel} · ${date}
-                        </div>
+                        <div class="order-card-meta">${itemsLabel} · ${date}</div>
                     </div>
                     <div class="order-card-price">
                         <strong>${U.formatPrice(order.total)}</strong>
@@ -531,9 +519,6 @@ try {
             `;
         },
 
-        // ==================================================
-        // MEUS PEDIDOS — paginação
-        // ==================================================
         renderOrdersPagination(container, pagination) {
             const { page, pages } = pagination;
             if (pages <= 1) {
@@ -553,24 +538,370 @@ try {
             container.querySelectorAll('button[data-page]').forEach((btn) => {
                 btn.addEventListener('click', () => {
                     const p = parseInt(btn.dataset.page);
-                    if (p >= 1 && p <= pages && p !== page) {
-                        this.loadOrders(p);
+                    if (p >= 1 && p <= pages && p !== page) this.loadOrders(p);
+                });
+            });
+        },
+
+        // ==================================================
+        // FAVORITOS — Toolbar (W-N1)
+        // ==================================================
+        initFavoritesToolbar() {
+            const sortSelect = document.getElementById('favoritesSort');
+            if (sortSelect && !sortSelect.dataset.bound) {
+                sortSelect.dataset.bound = 'true';
+                sortSelect.value = this.favoritesSort;
+
+                sortSelect.addEventListener('change', (e) => {
+                    this.favoritesSort = e.target.value;
+                    sessionStorage.setItem(FAVORITES_SORT_KEY, this.favoritesSort);
+                    this.renderFavoritesGrid();
+                });
+            }
+
+            const addAllBtn = document.getElementById('btnFavoritesAddAll');
+            if (addAllBtn && !addAllBtn.dataset.bound) {
+                addAllBtn.dataset.bound = 'true';
+                addAllBtn.addEventListener('click', () => this.addAllToCart());
+            }
+        },
+
+        // ==================================================
+        // FAVORITOS — Load
+        // ==================================================
+        async loadFavorites() {
+            const container = document.getElementById('favoritesContainer');
+            if (!container) return;
+
+            // Skeleton
+            container.innerHTML = `
+                <div class="favorites-skeleton">
+                    <div class="favorites-skeleton-card"></div>
+                    <div class="favorites-skeleton-card"></div>
+                    <div class="favorites-skeleton-card"></div>
+                    <div class="favorites-skeleton-card"></div>
+                </div>
+            `;
+
+            try {
+                const data = await API.get('/wishlist');
+                this.favoritesCache = data.products || [];
+
+                // Atualiza toolbar visibility
+                const toolbar = document.getElementById('favoritesToolbar');
+                if (toolbar) toolbar.style.display = this.favoritesCache.length > 0 ? 'flex' : 'none';
+
+                // Atualiza contadores
+                this.updateFavoritesCounters(this.favoritesCache.length);
+
+                // W-N4: banner de queda de preço
+                this.updatePriceAlert(this.favoritesCache);
+
+                if (this.favoritesCache.length === 0) {
+                    container.innerHTML = `
+                        <div class="orders-empty">
+                            <i class="far fa-heart"></i>
+                            <h3>Nenhum favorito ainda</h3>
+                            <p>Explore nossa coleção e salve os produtos que você amou.</p>
+                            <a href="/produtos" class="btn btn-primary">
+                                <i class="fas fa-shopping-basket"></i>
+                                Explorar produtos
+                            </a>
+                        </div>
+                    `;
+                    return;
+                }
+
+                this.renderFavoritesGrid();
+            } catch (error) {
+                console.error('Erro ao carregar favoritos:', error);
+                container.innerHTML = `
+                    <div class="orders-empty">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <h3>Erro ao carregar favoritos</h3>
+                        <p>Tente novamente em alguns instantes.</p>
+                    </div>
+                `;
+            }
+        },
+
+        // ==================================================
+        // FAVORITOS — Render (com W-N1 e W-N4)
+        // ==================================================
+        renderFavoritesGrid() {
+            const container = document.getElementById('favoritesContainer');
+            if (!container) return;
+
+            const products = this.sortFavorites([...this.favoritesCache]);
+
+            container.innerHTML = `<div class="favorites-grid" id="favoritesGrid"></div>`;
+            const grid = container.querySelector('#favoritesGrid');
+
+            grid.innerHTML = products.map((p) => {
+                const cardHtml = C.renderProductCard(p, {
+                    showShortDesc: false,
+                    showButton: false,
+                    clickableCard: false,
+                    showWishlistButton: false,
+                });
+
+                // W-N4: badge de queda de preço
+                const priceDroppedBadge = p.wishlist?.price_dropped
+                    ? `<span class="price-dropped-badge">
+                           <i class="fas fa-tag"></i>
+                           Preço caiu
+                       </span>`
+                    : '';
+
+                const extras = `
+                    <div class="favorite-actions">
+                        <button type="button" class="favorite-add-cart"
+                                data-favorite-add-cart="${p.id}">
+                            <i class="fas fa-shopping-bag"></i>
+                            Adicionar ao carrinho
+                        </button>
+                        <button type="button" class="favorite-remove"
+                                data-favorite-remove="${p.id}"
+                                title="Remover dos favoritos"
+                                aria-label="Remover dos favoritos">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                `;
+
+                const href = `/produto/${p.slug}`;
+
+                // W-N4: injeta o badge dentro do .product-image-wrapper
+                let finalCardHtml = cardHtml;
+                if (priceDroppedBadge) {
+                    finalCardHtml = finalCardHtml.replace(
+                        /(<div class="product-image-wrapper">)/,
+                        `$1${priceDroppedBadge}`
+                    );
+                }
+
+                return finalCardHtml.replace(
+                    /<article class="product-card">([\s\S]*?)<\/article>/,
+                    `<div class="favorite-card-wrapper">
+                        <a href="${U.escapeAttr(href)}" class="favorite-card-link"
+                           aria-label="Ver ${U.escapeAttr(p.name)}">
+                            <article class="product-card">$1</article>
+                        </a>
+                        ${extras}
+                    </div>`
+                );
+            }).join('');
+
+            // Bind remover
+            grid.querySelectorAll('[data-favorite-remove]').forEach((btn) => {
+                btn.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const id = btn.dataset.favoriteRemove;
+                    if (!window.LuxuryWishlist) return;
+                    await window.LuxuryWishlist.toggle(id);
+                    await this.loadFavorites();
+                });
+            });
+
+            // Bind add to cart
+            grid.querySelectorAll('[data-favorite-add-cart]').forEach((btn) => {
+                btn.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const id = parseInt(btn.dataset.favoriteAddCart);
+                    if (!window.LuxuryCart) return;
+                    try {
+                        await window.LuxuryCart.addToCart(id, 1);
+                        C.createToast('Adicionado ao carrinho', 'success');
+                    } catch (err) {
+                        C.createToast(err.data?.error || 'Erro ao adicionar', 'error');
                     }
                 });
             });
         },
 
         // ==================================================
-        // LOGOUT
+        // FAVORITOS — Ordenação (W-N1)
+        // ==================================================
+        sortFavorites(products) {
+            const sort = this.favoritesSort;
+
+            switch (sort) {
+                case 'price_asc':
+                    return products.sort((a, b) => {
+                        const pa = parseFloat(a.price) * (1 - (a.discount_percent || 0) / 100);
+                        const pb = parseFloat(b.price) * (1 - (b.discount_percent || 0) / 100);
+                        return pa - pb;
+                    });
+
+                case 'price_desc':
+                    return products.sort((a, b) => {
+                        const pa = parseFloat(a.price) * (1 - (a.discount_percent || 0) / 100);
+                        const pb = parseFloat(b.price) * (1 - (b.discount_percent || 0) / 100);
+                        return pb - pa;
+                    });
+
+                case 'name_asc':
+                    return products.sort((a, b) =>
+                        String(a.name).localeCompare(String(b.name), 'pt-BR', { sensitivity: 'base' })
+                    );
+
+                case 'recent':
+                default:
+                    return products.sort((a, b) => {
+                        const da = new Date(a.wishlist?.added_at || 0).getTime();
+                        const db = new Date(b.wishlist?.added_at || 0).getTime();
+                        return db - da;
+                    });
+            }
+        },
+
+        // ==================================================
+        // FAVORITOS — Contadores (bônus)
+        // ==================================================
+        updateFavoritesCounters(count) {
+            // Contador no accordion (mobile)
+            const tabCount = document.getElementById('favoritesTabCount');
+            if (tabCount) {
+                if (count > 0) {
+                    tabCount.textContent = count;
+                    tabCount.hidden = false;
+                } else {
+                    tabCount.hidden = true;
+                }
+            }
+
+            // Contador no título do painel
+            const panelCount = document.getElementById('favoritesPanelCount');
+            if (panelCount) {
+                if (count > 0) {
+                    panelCount.textContent = `(${count})`;
+                    panelCount.hidden = false;
+                } else {
+                    panelCount.hidden = true;
+                }
+            }
+        },
+
+        // ==================================================
+        // FAVORITOS — Banner de queda de preço (W-N4)
+        // ==================================================
+        updatePriceAlert(products) {
+            const alertEl = document.getElementById('favoritesPriceAlert');
+            const alertText = document.getElementById('favoritesPriceAlertText');
+            if (!alertEl || !alertText) return;
+
+            const droppedCount = products.filter((p) => p.wishlist?.price_dropped).length;
+
+            if (droppedCount === 0) {
+                alertEl.style.display = 'none';
+                return;
+            }
+
+            const totalSaved = products
+                .filter((p) => p.wishlist?.price_dropped)
+                .reduce((sum, p) => {
+                    const oldPrice = parseFloat(p.wishlist.price_when_added);
+                    const newPrice = parseFloat(p.price) * (1 - (p.discount_percent || 0) / 100);
+                    return sum + Math.max(0, oldPrice - newPrice);
+                }, 0);
+
+            alertEl.style.display = 'flex';
+
+            const productWord = droppedCount === 1 ? 'produto' : 'produtos';
+            alertText.innerHTML = `
+                <strong>${droppedCount} ${productWord}</strong>
+                ${droppedCount === 1 ? 'baixou' : 'baixaram'} de preço!
+                Você economizaria até <strong>${U.formatPrice(totalSaved)}</strong>.
+            `;
+        },
+
+        // ==================================================
+        // FAVORITOS — Adicionar todos ao carrinho (W-N2)
+        // ==================================================
+        async addAllToCart() {
+            if (this.addingAllInProgress) return;
+
+            if (!window.LuxuryCart) {
+                C.createToast('Carrinho não disponível', 'error');
+                return;
+            }
+
+            if (this.favoritesCache.length === 0) {
+                C.createToast('Nenhum favorito para adicionar', 'info');
+                return;
+            }
+
+            this.addingAllInProgress = true;
+            const btn = document.getElementById('btnFavoritesAddAll');
+            const originalHtml = btn?.innerHTML;
+
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Adicionando...';
+            }
+
+            const total = this.favoritesCache.length;
+            let successCount = 0;
+            const failures = [];
+
+            // Processa sequencialmente (evita race condition no carrinho)
+            for (const product of this.favoritesCache) {
+                try {
+                    await window.LuxuryCart.addToCart(product.id, 1);
+                    successCount++;
+                } catch (err) {
+                    failures.push({
+                        name: product.name,
+                        reason: err.data?.error || err.message || 'Erro desconhecido',
+                    });
+                }
+
+                // Atualiza progresso no botão
+                if (btn) {
+                    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${successCount + failures.length}/${total}`;
+                }
+            }
+
+            this.addingAllInProgress = false;
+
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = originalHtml;
+            }
+
+            // Relatório final
+            if (failures.length === 0) {
+                C.createToast(`${successCount} ${successCount === 1 ? 'produto adicionado' : 'produtos adicionados'} ao carrinho!`, 'success');
+            } else if (successCount === 0) {
+                C.createToast(`Nenhum produto foi adicionado. ${failures[0].reason}`, 'error');
+            } else {
+                // Sucesso parcial: mostra relatório com detalhes
+                const failureSummary = failures
+                    .slice(0, 3)
+                    .map((f) => `• ${f.name}: ${f.reason}`)
+                    .join('\n');
+                const moreCount = failures.length > 3 ? `\n...e mais ${failures.length - 3}` : '';
+
+                C.createToast(
+                    `${successCount} ${successCount === 1 ? 'adicionado' : 'adicionados'}, ${failures.length} falhou.\n\n${failureSummary}${moreCount}`,
+                    'warning',
+                    8000
+                );
+            }
+        },
+
+        // ==================================================
+        // LOGOUT (desktop)
         // ==================================================
         initLogout() {
             document.getElementById('logoutBtn')?.addEventListener('click', async () => {
                 try {
                     await API.post('/auth/logout', {});
-                } catch {
-                    // ignora erro, apenas limpa local
-                }
+                } catch { /* ignora */ }
                 API.clearSession();
+                if (window.LuxuryWishlist) window.LuxuryWishlist.clear();
                 window.location.href = '/';
             });
         },

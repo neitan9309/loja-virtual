@@ -14,6 +14,7 @@ const reviewController = require('./reviewController');
 const uploadController = require('./uploadController');
 const userController = require('./userController');
 const metricsController = require('./metricsController');
+const wishlistController = require('./wishlistController');   // ← ADICIONADO
 
 module.exports = {
     authController,
@@ -29,4 +30,5 @@ module.exports = {
     uploadController,
     userController,
     metricsController,
+    wishlistController,   // ← ADICIONADO
 };

@@ -1059,6 +1059,87 @@ const MobileMenu = {
     };
 
     // ======================================================
+    // BUSCA — Histórico (localStorage)
+    // ======================================================
+    const SearchHistory = {
+        KEY: 'luxury_search_history',
+        MAX_ITEMS: 5,
+        TTL_MS: 30 * 24 * 60 * 60 * 1000, // 30 dias
+
+        // ==================================================
+        // LER
+        // ==================================================
+        load() {
+            try {
+                const raw = localStorage.getItem(this.KEY);
+                if (!raw) return [];
+
+                const data = JSON.parse(raw);
+                if (!Array.isArray(data)) return [];
+
+                const now = Date.now();
+                // Filtra expirados
+                return data.filter(
+                    (item) =>
+                        item &&
+                        typeof item.query === 'string' &&
+                        typeof item.savedAt === 'number' &&
+                        now - item.savedAt < this.TTL_MS
+                );
+            } catch {
+                return [];
+            }
+        },
+
+        // ==================================================
+        // SALVAR
+        // ==================================================
+        save(query) {
+            const normalized = String(query || '').trim().toLowerCase();
+            if (!normalized || normalized.length < 2) return;
+
+            let items = this.load();
+
+            // Remove duplicata (mesmo query), preservando o mais recente
+            items = items.filter((it) => it.query !== normalized);
+
+            // Adiciona no início
+            items.unshift({
+                query: normalized,
+                savedAt: Date.now(),
+            });
+
+            // Limita a MAX_ITEMS
+            items = items.slice(0, this.MAX_ITEMS);
+
+            try {
+                localStorage.setItem(this.KEY, JSON.stringify(items));
+            } catch {
+                // localStorage cheio ou bloqueado — silencia
+            }
+        },
+
+        // ==================================================
+        // REMOVER UMA
+        // ==================================================
+        remove(query) {
+            const items = this.load().filter((it) => it.query !== query);
+            try {
+                localStorage.setItem(this.KEY, JSON.stringify(items));
+            } catch { /* silencia */ }
+        },
+
+        // ==================================================
+        // LIMPAR TUDO
+        // ==================================================
+        clear() {
+            try {
+                localStorage.removeItem(this.KEY);
+            } catch { /* silencia */ }
+        },
+    };
+
+    // ======================================================
     // MODAL DE BUSCA
     // ======================================================
     const SearchModal = {
@@ -1152,7 +1233,11 @@ const MobileMenu = {
                 if (e.key === 'Enter') {
                     e.preventDefault();
                     const val = this.input.value.trim();
-                    if (val) window.location.href = `/produtos?search=${encodeURIComponent(val)}`;
+                    if (val) {
+                        // Salva no histórico antes de navegar
+                        SearchHistory.save(val);
+                        window.location.href = `/produtos?search=${encodeURIComponent(val)}`;
+                    }
                 }
             });
 
@@ -1174,13 +1259,90 @@ const MobileMenu = {
         },
 
         showEmpty() {
+            const history = SearchHistory.load();
+
+            if (history.length === 0) {
+                // Sem histórico → mensagem padrão
+                this.resultsEl.innerHTML = `
+                    <div class="search-modal-empty">
+                        <i class="fas fa-search"></i>
+                        <h3>O que você está procurando?</h3>
+                        <p>Digite o nome do produto para começar</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Com histórico → mostra chips clicáveis
             this.resultsEl.innerHTML = `
-                <div class="search-modal-empty">
-                    <i class="fas fa-search"></i>
-                    <h3>O que você está procurando?</h3>
-                    <p>Digite o nome do produto para começar</p>
+                <div class="search-history">
+                    <div class="search-history-header">
+                        <span class="search-history-title">
+                            <i class="fas fa-clock"></i>
+                            Buscas recentes
+                        </span>
+                        <button type="button" class="search-history-clear" id="clearSearchHistory">
+                            Limpar
+                        </button>
+                    </div>
+                    <div class="search-history-chips">
+                        ${history
+                            .map(
+                                (item) => `
+                            <button type="button" class="search-history-chip"
+                                    data-search-history="${U.escapeAttr(item.query)}">
+                                <i class="fas fa-search"></i>
+                                <span>${U.escapeHtml(item.query)}</span>
+                                <span class="search-history-chip-remove"
+                                      data-remove-history="${U.escapeAttr(item.query)}"
+                                      role="button"
+                                      tabindex="0"
+                                      aria-label="Remover ${U.escapeAttr(item.query)}">
+                                    <i class="fas fa-times"></i>
+                                </span>
+                            </button>
+                        `
+                            )
+                            .join('')}
+                    </div>
+                    <div class="search-history-hint">
+                        <i class="fas fa-lightbulb"></i>
+                        Clique em uma busca para repeti-la
+                    </div>
                 </div>
             `;
+
+            // Bind: clicar em um chip preenche o input e busca
+            this.resultsEl.querySelectorAll('[data-search-history]').forEach((chip) => {
+                chip.addEventListener('click', (e) => {
+                    // Se clicou no "x" de remover, não dispara a busca
+                    if (e.target.closest('[data-remove-history]')) return;
+
+                    const query = chip.dataset.searchHistory;
+                    this.input.value = query;
+                    this.input.dispatchEvent(new Event('input'));
+                    this.modal.querySelector('#searchModalClear').style.display = 'flex';
+                });
+            });
+
+            // Bind: remover chip individual
+            this.resultsEl.querySelectorAll('[data-remove-history]').forEach((btn) => {
+                btn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
+                    const query = btn.dataset.removeHistory;
+                    SearchHistory.remove(query);
+                    this.showEmpty(); // re-renderiza
+                });
+            });
+
+            // Bind: limpar tudo
+            this.resultsEl.querySelector('#clearSearchHistory')?.addEventListener('click', () => {
+                if (!confirm('Limpar todo o histórico de buscas?')) return;
+                SearchHistory.clear();
+                this.showEmpty();
+            });
         },
 
         showLoading() {
@@ -1264,7 +1426,9 @@ const MobileMenu = {
                     : '';
 
                 return `
-                    <a href="/produto/${U.escapeAttr(p.slug)}" class="search-result-card">
+                    <a href="/produto/${U.escapeAttr(p.slug)}"
+                       class="search-result-card"
+                       data-search-query="${U.escapeAttr(this.lastQuery || '')}">
                         <div class="search-result-image">${imageHtml}</div>
                         <div class="search-result-info">
                             <h4 class="search-result-name">${U.escapeHtml(p.name)}</h4>
@@ -1301,6 +1465,15 @@ const MobileMenu = {
                 <div class="search-modal-list">${itemsHtml}</div>
                 ${footerHtml}
             `;
+                        // ============================================
+            // Salva a busca no histórico quando clica em um resultado
+            // ============================================
+            this.resultsEl.querySelectorAll('.search-result-card[data-search-query]').forEach((card) => {
+                card.addEventListener('click', () => {
+                    const query = card.dataset.searchQuery;
+                    if (query) SearchHistory.save(query);
+                });
+            });
         },
     };
 
@@ -1360,6 +1533,17 @@ const MobileMenu = {
 
         SearchModal.init();
 
+                // ============================================
+        // Sincroniza wishlist após login
+        // ============================================
+        if (sessionStorage.getItem('luxury_just_logged_in') === 'true') {
+            sessionStorage.removeItem('luxury_just_logged_in');
+            if (window.LuxuryWishlist) {
+                window.LuxuryWishlist.loadIds().then(() => {
+                    window.LuxuryWishlist.syncAllVisible();
+                });
+            }
+        }
         console.log('✅ Luxury Store - Sistema carregado com sucesso!');
     });
 })();

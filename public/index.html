@@ -101,11 +101,11 @@
 
             <div class="header-icons">
                 <button class="icon-btn" id="searchBtn" aria-label="Buscar produtos"><i class="fas fa-search"></i></button>
-                <button class="icon-btn" id="accountBtn" aria-label="Minha conta / Login"><i class="fas fa-user"></i></button>
-                <button class="icon-btn cart-btn" aria-label="Carrinho de compras">
-                    <i class="fas fa-shopping-bag"></i>
-                    <span class="cart-badge">0</span>
+                <button class="icon-btn wishlist-btn-header" id="wishlistHeaderBtn" aria-label="Meus favoritos">
+                    <i class="far fa-heart"></i>
+                    <span class="wishlist-badge">0</span>
                 </button>
+                <button class="icon-btn" id="accountBtn" aria-label="Minha conta / Login"><i class="fas fa-user"></i></button>
             </div>
         </div>
     </header>
@@ -375,10 +375,19 @@
         </div>
     </footer>
 
+    <!-- ======================================================
+         FAB — Carrinho Flutuante
+         ====================================================== -->
+    <button type="button" class="cart-fab" id="cartFab" aria-label="Abrir carrinho">
+        <i class="fas fa-shopping-bag"></i>
+        <span class="cart-fab-badge" style="display: none;">0</span>
+    </button>
+
     <script src="/js/core/utils.js" defer></script>
     <script src="/js/core/api.js" defer></script>
     <script src="/js/core/components.js" defer></script>
 
+    <script src="/js/wishlist.js" defer></script>   <!-- ← SEMPRE antes do cart.js -->
     <script src="/js/cart.js" defer></script>
     <script src="/js/script.js" defer></script>
 </body>

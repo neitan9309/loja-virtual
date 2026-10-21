@@ -1,7 +1,12 @@
+// ======================================================
+// src/controllers/promotionController.js
+// ======================================================
 const { Promotion } = require('../models');
 
 const promotionController = {
+    // ==================================================
     // GET /api/promotions - Listar todas as promoções
+    // ==================================================
     async list(req, res) {
         try {
             const promotions = await Promotion.findAll();
@@ -12,7 +17,9 @@ const promotionController = {
         }
     },
 
+    // ==================================================
     // GET /api/promotions/active - Promoções ativas no momento
+    // ==================================================
     async active(req, res) {
         try {
             const promotions = await Promotion.findActive();
@@ -23,7 +30,29 @@ const promotionController = {
         }
     },
 
+    // ==================================================
+    // GET /api/promotions/available?subtotal=X
+    // Retorna cupons aplicáveis ao carrinho
+    // ==================================================
+    async availableForCart(req, res) {
+        try {
+            const subtotal = parseFloat(req.query.subtotal) || 0;
+
+            if (subtotal < 0) {
+                return res.status(400).json({ error: 'Subtotal inválido' });
+            }
+
+            const coupons = await Promotion.findAvailableForCart({ subtotal });
+            res.json({ coupons });
+        } catch (error) {
+            console.error('Erro ao buscar cupons disponíveis:', error);
+            res.status(500).json({ error: 'Erro ao buscar cupons disponíveis' });
+        }
+    },
+
+    // ==================================================
     // GET /api/promotions/:id
+    // ==================================================
     async getById(req, res) {
         try {
             const { id } = req.params;
@@ -45,22 +74,24 @@ const promotionController = {
         }
     },
 
+    // ==================================================
     // GET /api/promotions/code/:code - Validar cupom
+    // ==================================================
     async getByCode(req, res) {
         try {
             const { code } = req.params;
             const promotion = await Promotion.findByCode(code);
 
             if (!promotion) {
-                return res.status(404).json({ 
-                    error: 'Cupom inválido ou expirado' 
+                return res.status(404).json({
+                    error: 'Cupom inválido ou expirado'
                 });
             }
 
             // Verifica limite de uso
             if (promotion.usage_limit && promotion.usage_count >= promotion.usage_limit) {
-                return res.status(400).json({ 
-                    error: 'Cupom atingiu o limite de uso' 
+                return res.status(400).json({
+                    error: 'Cupom atingiu o limite de uso'
                 });
             }
 
@@ -71,7 +102,9 @@ const promotionController = {
         }
     },
 
+    // ==================================================
     // POST /api/promotions - Criar promoção
+    // ==================================================
     async create(req, res) {
         try {
             const {
@@ -94,15 +127,15 @@ const promotionController = {
             // Valida tipo de desconto
             const validTypes = ['percentage', 'fixed', 'buy_x_get_y'];
             if (!validTypes.includes(discount_type)) {
-                return res.status(400).json({ 
-                    error: 'discount_type deve ser: percentage, fixed ou buy_x_get_y' 
+                return res.status(400).json({
+                    error: 'discount_type deve ser: percentage, fixed ou buy_x_get_y'
                 });
             }
 
             // Valida datas
             if (new Date(start_date) >= new Date(end_date)) {
-                return res.status(400).json({ 
-                    error: 'Data de início deve ser anterior à data de fim' 
+                return res.status(400).json({
+                    error: 'Data de início deve ser anterior à data de fim'
                 });
             }
 
@@ -119,7 +152,9 @@ const promotionController = {
         }
     },
 
+    // ==================================================
     // PUT /api/promotions/:id
+    // ==================================================
     async update(req, res) {
         try {
             const { id } = req.params;
@@ -132,8 +167,8 @@ const promotionController = {
             if (req.body.discount_type) {
                 const validTypes = ['percentage', 'fixed', 'buy_x_get_y'];
                 if (!validTypes.includes(req.body.discount_type)) {
-                    return res.status(400).json({ 
-                        error: 'discount_type deve ser: percentage, fixed ou buy_x_get_y' 
+                    return res.status(400).json({
+                        error: 'discount_type deve ser: percentage, fixed ou buy_x_get_y'
                     });
                 }
             }
@@ -141,8 +176,8 @@ const promotionController = {
             const promotion = await Promotion.update(id, req.body);
 
             if (!promotion) {
-                return res.status(404).json({ 
-                    error: 'Promoção não encontrada ou nenhum campo para atualizar' 
+                return res.status(404).json({
+                    error: 'Promoção não encontrada ou nenhum campo para atualizar'
                 });
             }
 
@@ -158,7 +193,9 @@ const promotionController = {
         }
     },
 
+    // ==================================================
     // DELETE /api/promotions/:id
+    // ==================================================
     async delete(req, res) {
         try {
             const { id } = req.params;

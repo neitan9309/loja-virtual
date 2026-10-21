@@ -12,12 +12,13 @@ const { authenticate, requireAdmin } = require('../middleware/auth');
 // ======================================================
 
 // GET /api/promotions/active - Promoções ativas no momento
-// (deve vir antes de /:id para não conflitar)
 router.get('/active', promotionController.active);
 
 // GET /api/promotions/code/:code - Validar cupom por código
-// (deve vir antes de /:id para não conflitar)
 router.get('/code/:code', promotionController.getByCode);
+
+// GET /api/promotions/available?subtotal=X - Cupons aplicáveis ao carrinho
+router.get('/available', promotionController.availableForCart);
 
 // GET /api/promotions - Listar todas as promoções
 router.get('/', promotionController.list);

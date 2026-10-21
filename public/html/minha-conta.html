@@ -76,11 +76,11 @@
 
             <div class="header-icons">
                 <button class="icon-btn" id="searchBtn" aria-label="Buscar produtos"><i class="fas fa-search"></i></button>
-                <button class="icon-btn" aria-label="Minha conta" id="accountBtn"><i class="fas fa-user"></i></button>
-                <button class="icon-btn cart-btn" aria-label="Carrinho de compras">
-                    <i class="fas fa-shopping-bag"></i>
-                    <span class="cart-badge">0</span>
+                <button class="icon-btn wishlist-btn-header" id="wishlistHeaderBtn" aria-label="Meus favoritos">
+                    <i class="far fa-heart"></i>
+                    <span class="wishlist-badge">0</span>
                 </button>
+                <button class="icon-btn" id="accountBtn" aria-label="Minha conta / Login"><i class="fas fa-user"></i></button>
             </div>
         </div>
         <div class="menu-overlay" id="menuOverlay"></div>
@@ -122,6 +122,10 @@
                     <button class="account-nav-item" data-tab="orders">
                         <i class="fas fa-shopping-bag"></i>
                         <span>Meus Pedidos</span>
+                    </button>
+                    <button class="account-nav-item" data-tab="favorites">
+                        <i class="fas fa-heart"></i>
+                        <span>Favoritos</span>
                     </button>
                     <button class="account-nav-item account-logout" id="logoutBtn">
                         <i class="fas fa-sign-out-alt"></i>
@@ -372,6 +376,62 @@
                     </div>
                 </div>
 
+                <!-- FAVORITOS -->
+                <div class="account-accordion-item" data-accordion="favorites">
+                    <button type="button" class="account-accordion-header" aria-expanded="false" aria-controls="acc-body-favorites">
+                        <span class="account-accordion-title">
+                            <i class="fas fa-heart"></i>
+                            Favoritos
+                            <span class="account-accordion-count" id="favoritesTabCount" hidden></span>
+                        </span>
+                        <i class="fas fa-chevron-down account-accordion-icon"></i>
+                    </button>
+                    <div class="account-accordion-body" id="acc-body-favorites">
+                        <div class="account-accordion-inner">
+                            <section class="account-panel active" data-panel="favorites">
+                                <header class="panel-header">
+                                    <h1>Meus Favoritos <span id="favoritesPanelCount" class="panel-count" hidden></span></h1>
+                                    <p>Produtos que você salvou para comprar depois</p>
+                                </header>
+
+                                <!-- Toolbar de favoritos: ordenação + add all -->
+                                <div class="favorites-toolbar" id="favoritesToolbar" style="display: none;">
+                                    <div class="favorites-toolbar-left">
+                                        <button type="button" class="btn-favorites-add-all" id="btnFavoritesAddAll">
+                                            <i class="fas fa-shopping-bag"></i>
+                                            Adicionar todos ao carrinho
+                                        </button>
+                                    </div>
+                                    <div class="favorites-toolbar-right">
+                                        <label for="favoritesSort" class="favorites-sort-label">Ordenar por</label>
+                                        <select id="favoritesSort" class="favorites-sort-select">
+                                            <option value="recent">Mais recentes</option>
+                                            <option value="price_asc">Menor preço</option>
+                                            <option value="price_desc">Maior preço</option>
+                                            <option value="name_asc">Nome (A-Z)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Banner de queda de preço -->
+                                <div class="favorites-price-alert" id="favoritesPriceAlert" style="display: none;">
+                                    <i class="fas fa-tag"></i>
+                                    <span id="favoritesPriceAlertText"></span>
+                                </div>
+
+                                <div id="favoritesContainer" class="favorites-container">
+                                    <div class="favorites-skeleton">
+                                        <div class="favorites-skeleton-card"></div>
+                                        <div class="favorites-skeleton-card"></div>
+                                        <div class="favorites-skeleton-card"></div>
+                                        <div class="favorites-skeleton-card"></div>
+                                    </div>
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- BOTÃO SAIR (mobile) -->
                 <button type="button" class="account-logout-mobile" id="logoutBtnMobile">
                     <i class="fas fa-sign-out-alt"></i>
@@ -416,10 +476,19 @@
         </div>
     </footer>
 
+    <!-- ======================================================
+         FAB — Carrinho Flutuante
+         ====================================================== -->
+    <button type="button" class="cart-fab" id="cartFab" aria-label="Abrir carrinho">
+        <i class="fas fa-shopping-bag"></i>
+        <span class="cart-fab-badge" style="display: none;">0</span>
+    </button>
+
     <script src="/js/core/utils.js" defer></script>
     <script src="/js/core/api.js" defer></script>
     <script src="/js/core/components.js" defer></script>
 
+    <script src="/js/wishlist.js" defer></script>   <!-- ← SEMPRE antes do cart.js -->
     <script src="/js/cart.js" defer></script>
     <script src="/js/script.js" defer></script>
     <script src="/js/minha-conta.js" defer></script>

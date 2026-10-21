@@ -18,7 +18,7 @@
         items: [],
         total: 0,
         totalItems: 0,
-        modal: null,   // Referência ao modal aberto
+        modal: null,
 
         // ==================================================
         // INICIALIZAÇÃO
@@ -34,24 +34,23 @@
         },
 
         // ==================================================
-        // HEADER: cliques no carrinho e na conta
+        // FAB: cliques no carrinho flutuante
         // ==================================================
         attachHeaderHandlers() {
-            document.querySelectorAll('.cart-btn').forEach((btn) => {
-                // Evita duplicar listener se rodar 2x
-                if (btn.dataset.cartBound) return;
-                btn.dataset.cartBound = 'true';
+            // Carrinho FAB (botão flutuante)
+            const fab = document.getElementById('cartFab');
+            if (fab && !fab.dataset.cartBound) {
+                fab.dataset.cartBound = 'true';
 
-                btn.addEventListener('click', (e) => {
+                fab.addEventListener('click', (e) => {
                     e.preventDefault();
-                    // ✅ Se já tem modal aberto, fecha
                     if (this.modal) {
                         this.closeModal();
                         return;
                     }
                     this.openModal();
                 });
-            });
+            }
 
             // Botão de conta
             const accountBtn =
@@ -80,7 +79,7 @@
         },
 
         // ==================================================
-        // BADGE (contador no header)
+        // BADGE
         // ==================================================
         async refreshBadge() {
             if (!API.isLoggedIn()) {
@@ -103,6 +102,23 @@
         },
 
         updateBadge(count) {
+            const fabBadge = document.querySelector('.cart-fab-badge');
+            if (fabBadge) {
+                if (count > 0) {
+                    const oldCount = parseInt(fabBadge.textContent) || 0;
+                    fabBadge.textContent = count > 99 ? '99+' : count;
+                    fabBadge.style.display = 'flex';
+
+                    if (count > oldCount) {
+                        fabBadge.classList.remove('pulse');
+                        void fabBadge.offsetWidth;
+                        fabBadge.classList.add('pulse');
+                    }
+                } else {
+                    fabBadge.style.display = 'none';
+                }
+            }
+
             const badges = document.querySelectorAll('.cart-badge');
             badges.forEach((badge) => {
                 badge.textContent = count;
@@ -115,7 +131,6 @@
         // ==================================================
         async addToCart(productId, quantity = 1) {
             if (!API.isLoggedIn()) {
-                // Não logado → salva intenção e redireciona
                 sessionStorage.setItem('cart_pending', JSON.stringify({ productId, quantity }));
                 window.location.href = '/login';
                 return;
@@ -184,7 +199,6 @@
         // MODAL DO CARRINHO
         // ==================================================
         async openModal() {
-            // ✅ Evita abrir 2 modais
             if (this.modal) return;
 
             const modal = document.createElement('div');
@@ -218,22 +232,20 @@
             `;
             document.body.appendChild(modal);
             document.body.style.overflow = 'hidden';
+            document.body.classList.add('cart-modal-open');
 
             this.modal = modal;
 
-            // ✅ Fecha ao clicar no X ou no backdrop
             modal.querySelector('#closeCartModal').addEventListener('click', () => this.closeModal());
             modal.addEventListener('click', (e) => {
                 if (e.target === modal) this.closeModal();
             });
 
-            // ✅ Fecha ao apertar ESC (registrado ao abrir)
             this.handleEscape = (e) => {
                 if (e.key === 'Escape') this.closeModal();
             };
             document.addEventListener('keydown', this.handleEscape);
 
-            // Se não está logado
             if (!API.isLoggedIn()) {
                 this.renderNotLoggedIn(modal);
                 return;
@@ -255,13 +267,14 @@
                     `;
                 }
             }
-// Fecha o menu mobile se estiver aberto
-const navMenu = document.getElementById('navMenu');
-const overlay = document.getElementById('menuOverlay');
-if (navMenu?.classList.contains('active')) {
-    navMenu.classList.remove('active');
-    overlay?.classList.remove('active');
-}
+
+            // Fecha o menu mobile se estiver aberto
+            const navMenu = document.getElementById('navMenu');
+            const overlay = document.getElementById('menuOverlay');
+            if (navMenu?.classList.contains('active')) {
+                navMenu.classList.remove('active');
+                overlay?.classList.remove('active');
+            }
         },
 
         closeModal() {
@@ -269,9 +282,9 @@ if (navMenu?.classList.contains('active')) {
 
             this.modal.remove();
             document.body.style.overflow = '';
+            document.body.classList.remove('cart-modal-open');
             this.modal = null;
 
-            // ✅ Remove o listener de ESC
             if (this.handleEscape) {
                 document.removeEventListener('keydown', this.handleEscape);
                 this.handleEscape = null;
@@ -353,7 +366,6 @@ if (navMenu?.classList.contains('active')) {
             footer.style.display = 'block';
             modal.querySelector('#cartModalTotal').textContent = U.formatPrice(cart.total);
 
-            // Handlers de quantidade
             body.querySelectorAll('.cart-qty-btn').forEach((btn) => {
                 btn.addEventListener('click', async () => {
                     const itemId = btn.dataset.itemId;
@@ -368,7 +380,6 @@ if (navMenu?.classList.contains('active')) {
                         const result = await this.updateQuantity(itemId, newQty);
                         this.renderCartItems(modal, result.cart);
                     } catch (error) {
-                        // ✅ Toast em vez de alert
                         if (C && C.createToast) {
                             C.createToast(error.data?.error || 'Erro ao atualizar quantidade', 'error');
                         } else {
@@ -378,7 +389,6 @@ if (navMenu?.classList.contains('active')) {
                 });
             });
 
-            // Handlers de remover
             body.querySelectorAll('.cart-item-remove').forEach((btn) => {
                 btn.addEventListener('click', async () => {
                     const itemId = btn.dataset.itemId;
@@ -395,7 +405,6 @@ if (navMenu?.classList.contains('active')) {
                 });
             });
 
-            // Botão finalizar
             const checkoutBtn = modal.querySelector('#cartCheckoutBtn');
             checkoutBtn.addEventListener('click', () => {
                 window.location.href = '/checkout';

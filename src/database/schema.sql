@@ -355,6 +355,18 @@ CREATE TABLE product_answers (
 );
 
 -- ======================================================
+-- WISHLIST (Favoritos)
+-- ======================================================
+CREATE TABLE wishlists (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    price_when_added DECIMAL(10,2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (user_id, product_id)
+);
+
+-- ======================================================
 -- CARRINHO
 -- ======================================================
 CREATE TABLE carts (
@@ -512,6 +524,11 @@ CREATE INDEX idx_user_sessions_token ON user_sessions(token);
 CREATE INDEX idx_carts_user_id ON carts(user_id);
 CREATE INDEX idx_cart_items_cart_id ON cart_items(cart_id);
 CREATE INDEX idx_cart_items_product_id ON cart_items(product_id);
+
+-- Wishlist
+CREATE INDEX idx_wishlists_user_id ON wishlists(user_id);
+CREATE INDEX idx_wishlists_product_id ON wishlists(product_id);
+CREATE INDEX idx_wishlists_created_at ON wishlists(created_at DESC);
 
 -- Pedidos
 CREATE INDEX idx_orders_user_id ON orders(user_id);

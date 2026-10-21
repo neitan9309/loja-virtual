@@ -25,6 +25,7 @@
                 buttonText = 'Ver Produto',
                 href = `/produto/${product.slug || ''}`,
                 clickableCard = false,
+                showWishlistButton = true,   // ← NOVO
             } = options;
 
             const hasImage =
@@ -65,9 +66,27 @@
                 ? `<span class="product-btn">${U.escapeHtml(buttonText)}</span>`
                 : '';
 
+            // Coração de favoritos
+            const wishlist = window.LuxuryWishlist;
+            const isFavorited = wishlist && product.id ? wishlist.has(product.id) : false;
+            const heartIcon = isFavorited ? 'fas fa-heart' : 'far fa-heart';
+            const heartLabel = isFavorited ? 'Remover dos favoritos' : 'Adicionar aos favoritos';
+
+            const wishlistBtnHtml = showWishlistButton && product.id
+                ? `<button type="button"
+                          class="product-wishlist-btn ${isFavorited ? 'is-favorited' : ''}"
+                          data-wishlist-btn
+                          data-product-id="${product.id}"
+                          aria-label="${heartLabel}"
+                          title="${heartLabel}">
+                       <i class="${heartIcon}"></i>
+                   </button>`
+                : '';
+
             const innerHtml = `
                 <div class="product-image-wrapper">
                     ${discountBadge}
+                    ${wishlistBtnHtml}
                     ${imageHtml}
                 </div>
                 <div class="product-info">

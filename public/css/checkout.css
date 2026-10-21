@@ -694,6 +694,143 @@
 }
 
 /* ======================================================
+   CUPONS DISPONÍVEIS (automático)
+   ====================================================== */
+.checkout-coupons-available {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.checkout-coupons-available h3 {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--gray-800);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.checkout-coupons-available h3 i {
+    color: var(--accent);
+}
+
+.coupons-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.coupon-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1rem;
+    background: linear-gradient(135deg, rgba(201, 169, 110, 0.06) 0%, rgba(201, 169, 110, 0.02) 100%);
+    border: 1px dashed rgba(201, 169, 110, 0.4);
+    border-radius: 8px;
+    transition: var(--transition);
+}
+
+.coupon-card:hover {
+    border-color: var(--accent);
+    background: linear-gradient(135deg, rgba(201, 169, 110, 0.1) 0%, rgba(201, 169, 110, 0.04) 100%);
+}
+
+.coupon-card-left {
+    flex: 1;
+    min-width: 0;
+}
+
+.coupon-card-code {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: 1px;
+    margin-bottom: 0.3rem;
+}
+
+.coupon-card-code i {
+    font-size: 0.8rem;
+}
+
+.coupon-card-name {
+    font-size: 0.85rem;
+    color: var(--gray-800);
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+    line-height: 1.3;
+}
+
+.coupon-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    font-size: 0.75rem;
+    color: var(--gray-500);
+}
+
+.coupon-card-type {
+    color: var(--success);
+    font-weight: 600;
+}
+
+.coupon-card-sep {
+    color: var(--gray-300);
+}
+
+.coupon-card-apply {
+    padding: 0.5rem 1rem;
+    background: var(--gray-900);
+    color: var(--white);
+    border: none;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.coupon-card-apply:hover {
+    background: var(--accent);
+}
+
+.coupon-card-apply:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ======================================================
+   RESPONSIVO
+   ====================================================== */
+@media (max-width: 500px) {
+    .coupon-card {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .coupon-card-apply {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+/* ======================================================
    RESPONSIVO
    ====================================================== */
 @media (max-width: 900px) {

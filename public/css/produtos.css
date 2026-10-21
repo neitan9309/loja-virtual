@@ -321,6 +321,751 @@
 }
 
 /* ======================================================
+   FILTROS DE PRODUTOS (L1)
+   Adicionar ao final do arquivo produtos.css
+   ====================================================== */
+
+/* ======================================================
+   TOOLBAR (resultado + ordenação)
+   ====================================================== */
+.products-toolbar {
+    max-width: 1200px;
+    margin: 0 auto 1rem;
+    padding: 0.75rem 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    background: var(--white);
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.toolbar-left {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.toolbar-results {
+    font-size: 0.9rem;
+    color: var(--gray-600);
+}
+
+.toolbar-results #resultsCount {
+    font-weight: 700;
+    color: var(--gray-900);
+}
+
+.toolbar-sort-label {
+    font-size: 0.85rem;
+    color: var(--gray-600);
+    font-weight: 500;
+}
+
+.toolbar-sort-select {
+    padding: 0.5rem 2rem 0.5rem 0.75rem;
+    border: 1px solid var(--gray-300);
+    border-radius: 6px;
+    background: var(--white);
+    font-family: inherit;
+    font-size: 0.85rem;
+    color: var(--gray-900);
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 1rem;
+    transition: var(--transition);
+}
+
+.toolbar-sort-select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(201, 169, 110, 0.15);
+}
+
+/* Botão "Filtros" (mobile) */
+.btn-filters-toggle {
+    display: none;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.55rem 1rem;
+    background: var(--white);
+    border: 1px solid var(--gray-300);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    cursor: pointer;
+    transition: var(--transition);
+    position: relative;
+}
+
+.btn-filters-toggle:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.btn-filters-toggle i {
+    font-size: 0.9rem;
+}
+
+.filters-count-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 0.35rem;
+    background: var(--accent);
+    color: var(--white);
+    font-size: 0.7rem;
+    font-weight: 700;
+    border-radius: 9px;
+    line-height: 1;
+}
+
+/* ======================================================
+   CHIPS DE FILTROS ATIVOS
+   ====================================================== */
+.active-filters {
+    max-width: 1200px;
+    margin: 0 auto 1rem;
+    padding: 0 2rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0.6rem 0.35rem 0.75rem;
+    background: rgba(201, 169, 110, 0.1);
+    border: 1px solid rgba(201, 169, 110, 0.4);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--gray-800);
+    transition: var(--transition);
+}
+
+.filter-chip strong {
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.filter-chip button {
+    background: none;
+    border: none;
+    color: var(--gray-500);
+    cursor: pointer;
+    padding: 0;
+    width: 18px;
+    height: 18px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: var(--transition);
+    font-size: 0.7rem;
+}
+
+.filter-chip button:hover {
+    background: var(--danger-bg);
+    color: var(--danger);
+}
+
+.active-filters-clear {
+    margin-left: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--danger);
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: underline;
+    font-family: inherit;
+    font-weight: 600;
+}
+
+.active-filters-clear:hover {
+    color: #991b1b;
+}
+
+/* ======================================================
+   LAYOUT (sidebar + produtos)
+   ====================================================== */
+.products-layout {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 2rem 3rem;
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 2rem;
+    align-items: start;
+}
+
+/* Quando o toolbar está oculto (listagem de categorias),
+   a área principal ocupa tudo */
+.products-layout.no-sidebar {
+    grid-template-columns: 1fr;
+}
+
+.products-layout.no-sidebar .filters-sidebar {
+    display: none;
+}
+
+.products-main {
+    min-width: 0;
+    min-height: 400px;
+}
+
+/* ======================================================
+   SIDEBAR DE FILTROS
+   ====================================================== */
+.filters-sidebar {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: 10px;
+    overflow: hidden;
+    position: sticky;
+    top: 100px;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+}
+
+.filters-sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--gray-200);
+    background: var(--gray-50);
+}
+
+.filters-sidebar-header h2 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--gray-900);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0;
+}
+
+.filters-close {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    color: var(--gray-500);
+    cursor: pointer;
+    padding: 0.25rem;
+    border-radius: 4px;
+    transition: var(--transition);
+}
+
+.filters-close:hover {
+    background: var(--gray-200);
+    color: var(--gray-900);
+}
+
+.filters-body {
+    padding: 0.5rem 0;
+}
+
+/* ======================================================
+   GRUPOS DE FILTRO (accordion)
+   ====================================================== */
+.filter-group {
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.filter-group:last-of-type {
+    border-bottom: none;
+}
+
+.filter-group-toggle {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.9rem 1.25rem;
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--gray-800);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: var(--transition);
+    text-align: left;
+}
+
+.filter-group-toggle:hover {
+    color: var(--accent);
+    background: var(--gray-50);
+}
+
+.filter-group-toggle i {
+    font-size: 0.7rem;
+    color: var(--gray-400);
+    transition: transform 0.25s ease;
+}
+
+.filter-group-toggle[aria-expanded="false"] i {
+    transform: rotate(-90deg);
+}
+
+.filter-group-body {
+    padding: 0 1.25rem 1rem;
+    max-height: 2000px;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.25s ease, opacity 0.2s ease;
+    opacity: 1;
+}
+
+.filter-group-toggle[aria-expanded="false"] + .filter-group-body {
+    max-height: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    opacity: 0;
+}
+
+/* ======================================================
+   ÁRVORE DE CATEGORIAS
+   ====================================================== */
+.filter-category-tree {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.filter-category-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-category-label {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.85rem;
+    color: var(--gray-700);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: var(--transition);
+    text-decoration: none;
+    background: none;
+    border: none;
+    font-family: inherit;
+    text-align: left;
+    width: 100%;
+}
+
+.filter-category-label:hover {
+    background: var(--gray-100);
+    color: var(--accent);
+}
+
+.filter-category-label.active {
+    background: rgba(201, 169, 110, 0.12);
+    color: var(--accent);
+    font-weight: 600;
+}
+
+.filter-category-label .cat-toggle {
+    width: 16px;
+    height: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    color: var(--gray-400);
+    cursor: pointer;
+    font-size: 0.65rem;
+    padding: 0;
+    transition: transform 0.2s ease;
+    flex-shrink: 0;
+}
+
+.filter-category-label .cat-toggle.open {
+    transform: rotate(90deg);
+}
+
+.filter-category-label .cat-toggle-placeholder {
+    width: 16px;
+    flex-shrink: 0;
+}
+
+.filter-category-label .cat-name {
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.filter-category-children {
+    margin-left: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    padding-left: 0.5rem;
+    border-left: 1px solid var(--gray-200);
+}
+
+/* ======================================================
+   CHECKLIST DE MARCAS
+   ====================================================== */
+.filter-checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.filter-check-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.85rem;
+    color: var(--gray-700);
+    cursor: pointer;
+    border-radius: 5px;
+    transition: var(--transition);
+}
+
+.filter-check-item:hover {
+    background: var(--gray-100);
+    color: var(--gray-900);
+}
+
+.filter-check-item input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--accent);
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.filter-check-item .check-label {
+    flex: 1;
+    min-width: 0;
+}
+
+.filter-check-item .check-count {
+    font-size: 0.75rem;
+    color: var(--gray-400);
+}
+
+/* ======================================================
+   FILTRO DE PREÇO
+   ====================================================== */
+.filter-price {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.filter-price-input {
+    flex: 1;
+    min-width: 0;
+    padding: 0.5rem 0.6rem;
+    border: 1px solid var(--gray-300);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    color: var(--gray-900);
+    transition: var(--transition);
+}
+
+.filter-price-input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(201, 169, 110, 0.15);
+}
+
+.filter-price-sep {
+    font-size: 0.75rem;
+    color: var(--gray-500);
+    flex-shrink: 0;
+}
+
+.btn-apply-price {
+    width: 100%;
+    padding: 0.55rem 1rem;
+    background: var(--gray-900);
+    color: var(--white);
+    border: none;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-apply-price:hover {
+    background: var(--accent);
+}
+
+/* ======================================================
+   RODAPÉ DA SIDEBAR
+   ====================================================== */
+.filters-footer {
+    padding: 1rem 1.25rem;
+    border-top: 1px solid var(--gray-200);
+    background: var(--gray-50);
+}
+
+.btn-clear-filters {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.6rem 1rem;
+    background: var(--white);
+    color: var(--danger);
+    border: 1px solid var(--danger-bg);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-clear-filters:hover {
+    background: var(--danger-bg);
+    border-color: var(--danger);
+}
+
+/* ======================================================
+   OVERLAY (mobile)
+   ====================================================== */
+.filters-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9998; /* ← era 999, agora fica acima do header (9999 no menu mobile) */
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.filters-overlay.active {
+    display: block;
+    opacity: 1;
+}
+
+/* ======================================================
+   BOTÃO "CARREGAR MAIS"
+   ====================================================== */
+.load-more-wrapper {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 0 2rem;
+    display: flex;
+    justify-content: center;
+}
+
+.btn-load-more {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.85rem 2rem;
+    background: var(--white);
+    color: var(--gray-900);
+    border: 2px solid var(--gray-300);
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-load-more:hover {
+    border-color: var(--accent);
+    background: var(--accent);
+    color: var(--white);
+}
+
+.btn-load-more:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--gray-100);
+    border-color: var(--gray-200);
+    color: var(--gray-400);
+}
+
+.btn-load-more i {
+    font-size: 0.85rem;
+}
+
+/* ======================================================
+   FILTER LOADING (spinner dentro da sidebar)
+   ====================================================== */
+.filter-loading {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 0.5rem;
+    font-size: 0.8rem;
+    color: var(--gray-500);
+}
+
+.filter-loading i {
+    color: var(--accent);
+    font-size: 0.9rem;
+}
+
+/* ======================================================
+   FILTROS — ícones das flags (Destaques)
+   ====================================================== */
+.filter-check-item .check-label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.filter-check-item .check-icon {
+    font-size: 0.8rem;
+    width: 14px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.check-icon-sale {
+    color: #dc2626;
+}
+
+.check-icon-new {
+    color: var(--accent);
+}
+
+.check-icon-featured {
+    color: #fbbf24;
+}
+
+.check-icon-bestseller {
+    color: #b45309;
+}
+
+/* ======================================================
+   RESPONSIVO
+   ====================================================== */
+
+/* <= 1024px: sidebar vira drawer */
+@media (max-width: 1024px) {
+    .products-toolbar {
+        padding: 0.75rem 1rem;
+    }
+
+    .btn-filters-toggle {
+        display: inline-flex;
+    }
+
+    .products-layout {
+        grid-template-columns: 1fr;
+        padding: 0 1rem 2rem;
+    }
+
+    .products-layout.no-sidebar {
+        grid-template-columns: 1fr;
+    }
+
+    .filters-sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 320px;
+        max-width: 85vw;
+        height: 100vh;
+        max-height: 100vh;
+        z-index: 9999;   /* ← acima do header e do overlay */
+        border-radius: 0;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        overflow-y: auto;
+    }
+
+    .filters-sidebar.open {
+        transform: translateX(0);
+        box-shadow: 4px 0 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .filters-close {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .active-filters {
+        padding: 0 1rem;
+    }
+
+    .load-more-wrapper {
+        padding: 0 1rem;
+    }
+}
+
+/* <= 768px: layout mais compacto */
+@media (max-width: 768px) {
+    .products-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .toolbar-left {
+        justify-content: space-between;
+    }
+
+    .toolbar-right {
+        justify-content: space-between;
+        padding-top: 0.5rem;
+        border-top: 1px solid var(--gray-100);
+    }
+
+    .toolbar-sort-select {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .filter-price {
+        flex-direction: column;
+        gap: 0.4rem;
+        align-items: stretch;
+    }
+
+    .filter-price-sep {
+        text-align: center;
+    }
+}
+
+/* ======================================================
    ANIMAÇÃO
    ====================================================== */
 @keyframes fadeIn {

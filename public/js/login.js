@@ -168,6 +168,7 @@
                     API.setUser(result.user);
 
                     showFeedback(form, 'Login realizado! Redirecionando...', 'success');
+                    sessionStorage.setItem('luxury_just_logged_in', 'true'); 
                     setTimeout(() => {
                         window.location.href = '/minha-conta';
                     }, 800);
@@ -251,6 +252,7 @@
                     API.setUser(result.user);
 
                     showFeedback(form, 'Conta criada com sucesso! Redirecionando...', 'success');
+                    sessionStorage.setItem('luxury_just_logged_in', 'true');   // ← ADICIONAR
                     setTimeout(() => {
                         window.location.href = '/minha-conta';
                     }, 800);

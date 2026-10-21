@@ -850,31 +850,57 @@
                 this.calculateShipping();
             });
 
+            // Botão de favoritar na página de produto
+            this.attachWishlistButton();
+
             const cepInput = document.getElementById('shippingCep');
             cepInput?.addEventListener('input', (e) => {
                 e.target.value = U.maskCep(e.target.value);
             });
 
-            // ✅ Accordion (substitui tabs no mobile)
+            // Accordion
             document.querySelectorAll('.accordion-header').forEach((header) => {
                 header.addEventListener('click', () => {
                     const item = header.closest('.accordion-item');
                     const isActive = item.classList.contains('active');
 
-                    // Fecha todos
                     document.querySelectorAll('.accordion-item').forEach((el) => {
                         el.classList.remove('active');
                         const h = el.querySelector('.accordion-header');
                         if (h) h.setAttribute('aria-expanded', 'false');
                     });
 
-                    // Abre o clicado (se não estava aberto)
                     if (!isActive) {
                         item.classList.add('active');
                         header.setAttribute('aria-expanded', 'true');
                     }
                 });
             });
+        },
+
+        // ==================================================
+        // BOTÃO DE FAVORITAR (página do produto)
+        // ==================================================
+        attachWishlistButton() {
+            const container = document.getElementById('wishlistBtnContainer');
+            if (!container || !this.product) return;
+
+            const wishlist = window.LuxuryWishlist;
+            const isFavorited = wishlist ? wishlist.has(this.product.id) : false;
+            const heartIcon = isFavorited ? 'fas fa-heart' : 'far fa-heart';
+            const heartLabel = isFavorited ? 'Remover dos favoritos' : 'Adicionar aos favoritos';
+
+            container.innerHTML = `
+                <button type="button"
+                        class="btn-wishlist-page ${isFavorited ? 'is-favorited' : ''}"
+                        data-wishlist-btn
+                        data-product-id="${this.product.id}"
+                        aria-label="${heartLabel}"
+                        title="${heartLabel}">
+                    <i class="${heartIcon}"></i>
+                    <span>Favoritar</span>
+                </button>
+            `;
         },
 
         async addToCart(quantity) {

@@ -91,6 +91,7 @@
 
                 await this.calculateShipping();
                 this.renderSummary();
+                await this.loadAvailableCoupons();
 
                 document.getElementById('checkoutLoading').style.display = 'none';
                 document.getElementById('checkoutContent').style.display = 'grid';
@@ -106,7 +107,6 @@
         async calculateShipping() {
             const cep = document.getElementById('coCep').value.replace(/\D/g, '');
 
-            // Sem CEP → frete padrão
             if (cep.length !== 8) {
                 state.shippingCost = state.subtotal >= 99.9 ? 0 : 19.9;
                 state.shippingFree = state.shippingCost === 0;
@@ -161,6 +161,7 @@
         updateTotals() {
             const subtotalEl = document.getElementById('summarySubtotal');
             const shippingEl = document.getElementById('summaryShipping');
+            const discountEl = document.getElementById('summaryDiscount');
             const totalEl = document.getElementById('summaryTotal');
 
             if (subtotalEl) subtotalEl.textContent = U.formatPrice(state.subtotal);
@@ -170,6 +171,14 @@
                     shippingEl.innerHTML = '<span style="color: var(--success-dark); font-weight: 700;">Grátis</span>';
                 } else {
                     shippingEl.textContent = U.formatPrice(state.shippingCost);
+                }
+            }
+
+            if (discountEl) {
+                if (state.discount > 0) {
+                    discountEl.innerHTML = `<span style="color: var(--success-dark); font-weight: 700;">- ${U.formatPrice(state.discount)}</span>`;
+                } else {
+                    discountEl.textContent = '—';
                 }
             }
 
@@ -197,7 +206,6 @@
             const status = document.getElementById('coCepStatus');
             if (!cepInput) return;
 
-            // Máscara
             cepInput.addEventListener('input', (e) => {
                 e.target.value = U.maskCep(e.target.value);
             });
@@ -221,7 +229,6 @@
                     status.className = 'cep-status success';
                     document.getElementById('coNumber')?.focus();
 
-                    // Recalcula frete
                     await this.calculateShipping();
                 } catch (error) {
                     status.className = 'cep-status error';
@@ -238,11 +245,81 @@
         // ==================================================
         setupPaymentMethods() {
             // CSS já lida com o visual, só precisamos garantir que está OK
-            // Nada a fazer — o input:checked + .payment-method-box faz o trabalho
         },
 
         // ==================================================
-        // CUPOM
+        // CUPONS DISPONÍVEIS (automático)
+        // ==================================================
+        async loadAvailableCoupons() {
+            const container = document.getElementById('availableCoupons');
+            const list = document.getElementById('availableCouponsList');
+            if (!container || !list) return;
+
+            try {
+                const data = await API.get(`/promotions/available?subtotal=${state.subtotal}`);
+                const coupons = data.coupons || [];
+
+                if (coupons.length === 0) {
+                    container.style.display = 'none';
+                    return;
+                }
+
+                // Oculta cupons que já foram aplicados
+                const filtered = coupons.filter((c) => c.code !== state.couponCode);
+
+                if (filtered.length === 0) {
+                    container.style.display = 'none';
+                    return;
+                }
+
+                container.style.display = 'block';
+
+                list.innerHTML = filtered.map((c) => {
+                    const minText = c.min_purchase
+                        ? `Mínimo: ${U.formatPrice(c.min_purchase)}`
+                        : 'Sem valor mínimo';
+
+                    const typeLabel = c.discount_type === 'percentage'
+                        ? `${c.discount_value}% OFF`
+                        : `R$ ${c.discount_value.toFixed(2).replace('.', ',')} OFF`;
+
+                    return `
+                        <div class="coupon-card" data-coupon-code="${U.escapeAttr(c.code)}">
+                            <div class="coupon-card-left">
+                                <div class="coupon-card-code">
+                                    <i class="fas fa-ticket-alt"></i>
+                                    ${U.escapeHtml(c.code)}
+                                </div>
+                                <div class="coupon-card-name">${U.escapeHtml(c.name)}</div>
+                                <div class="coupon-card-meta">
+                                    <span class="coupon-card-type">${typeLabel}</span>
+                                    <span class="coupon-card-sep">·</span>
+                                    <span>${minText}</span>
+                                </div>
+                            </div>
+                            <button type="button" class="coupon-card-apply"
+                                    data-apply-coupon="${U.escapeAttr(c.code)}">
+                                Aplicar
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+
+                // Bind "Aplicar" em cada cupom
+                list.querySelectorAll('[data-apply-coupon]').forEach((btn) => {
+                    btn.addEventListener('click', () => {
+                        const code = btn.dataset.applyCoupon;
+                        this.applyCouponByCode(code);
+                    });
+                });
+            } catch (error) {
+                console.error('Erro ao carregar cupons disponíveis:', error);
+                container.style.display = 'none';
+            }
+        },
+
+        // ==================================================
+        // CUPOM (manual + auto)
         // ==================================================
         setupCoupon() {
             const btn = document.getElementById('applyCouponBtn');
@@ -262,37 +339,80 @@
                     return;
                 }
 
-                btn.disabled = true;
-                btn.textContent = '...';
-
-                try {
-                    const promo = await API.get(`/promotions/code/${code}`);
-                    // Aplica desconto
-                    let discount = 0;
-                    if (promo.discount_type === 'percentage') {
-                        discount = (state.subtotal * parseFloat(promo.discount_value)) / 100;
-                    } else if (promo.discount_type === 'fixed') {
-                        discount = parseFloat(promo.discount_value);
-                    }
-
-                    state.discount = Math.min(discount, state.subtotal);
-                    state.couponCode = code;
-                    this.updateTotals();
-
-                    feedback.className = 'checkout-coupon-feedback success';
-                    feedback.textContent = `Cupom aplicado! Desconto: ${U.formatPrice(state.discount)}`;
-                    C.createToast('Cupom aplicado com sucesso!', 'success');
-                } catch (error) {
-                    feedback.className = 'checkout-coupon-feedback error';
-                    feedback.textContent = error.data?.error || 'Cupom inválido ou expirado';
-                    state.discount = 0;
-                    state.couponCode = null;
-                    this.updateTotals();
-                } finally {
-                    btn.disabled = false;
-                    btn.textContent = 'Aplicar';
-                }
+                await this.applyCouponByCode(code, { source: 'manual', feedbackEl: feedback, btnEl: btn });
             });
+        },
+
+        // ==================================================
+        // APLICA CUPOM (usado por manual e auto)
+        // ==================================================
+        async applyCouponByCode(code, opts = {}) {
+            const { source = 'auto', feedbackEl, btnEl } = opts;
+
+            const feedback = feedbackEl || document.getElementById('couponFeedback');
+            const input = document.getElementById('couponInput');
+
+            if (source === 'manual' && btnEl) {
+                btnEl.disabled = true;
+                btnEl.textContent = '...';
+            }
+
+            feedback.className = 'checkout-coupon-feedback';
+            feedback.textContent = '';
+
+            try {
+                const promo = await API.get(`/promotions/code/${encodeURIComponent(code)}`);
+
+                // Valida min_purchase
+                if (promo.min_purchase && state.subtotal < parseFloat(promo.min_purchase)) {
+                    throw {
+                        data: {
+                            error: `Este cupom exige compra mínima de ${U.formatPrice(promo.min_purchase)}`,
+                        },
+                    };
+                }
+
+                // Calcula desconto
+                let discount = 0;
+                if (promo.discount_type === 'percentage') {
+                    discount = (state.subtotal * parseFloat(promo.discount_value)) / 100;
+                    if (promo.max_discount) {
+                        discount = Math.min(discount, parseFloat(promo.max_discount));
+                    }
+                } else if (promo.discount_type === 'fixed') {
+                    discount = parseFloat(promo.discount_value);
+                }
+
+                state.discount = Math.min(discount, state.subtotal);
+                state.couponCode = code;
+                this.updateTotals();
+
+                // Preenche o input manual (para consistência visual)
+                if (input) input.value = code;
+
+                feedback.className = 'checkout-coupon-feedback success';
+                feedback.textContent = `Cupom "${code}" aplicado! Desconto: ${U.formatPrice(state.discount)}`;
+
+                C.createToast(`Cupom aplicado: ${U.formatPrice(state.discount)} de desconto`, 'success');
+
+                // Recarrega a lista de cupons disponíveis (para excluir o aplicado)
+                await this.loadAvailableCoupons();
+            } catch (error) {
+                feedback.className = 'checkout-coupon-feedback error';
+                feedback.textContent = error.data?.error || 'Cupom inválido ou expirado';
+                state.discount = 0;
+                state.couponCode = null;
+                this.updateTotals();
+
+                if (source === 'auto') {
+                    C.createToast(error.data?.error || 'Cupom inválido', 'error');
+                }
+            } finally {
+                if (source === 'manual' && btnEl) {
+                    btnEl.disabled = false;
+                    btnEl.textContent = 'Aplicar';
+                }
+            }
         },
 
         // ==================================================
@@ -364,9 +484,10 @@
                         state,
                     },
                     notes: notes || null,
+                    coupon_code: state.couponCode,   // 👈 enviado ao backend
                 });
 
-                // Atualiza badge do carrinho (fica 0)
+                // Atualiza badge do carrinho
                 if (window.LuxuryCart) {
                     window.LuxuryCart.updateBadge(0);
                 }

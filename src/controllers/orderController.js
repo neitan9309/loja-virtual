@@ -1,7 +1,7 @@
 // ======================================================
 // src/controllers/orderController.js
 // ======================================================
-const { Order, Payment, Cart, Product } = require('../models');
+const { Order, Payment, Cart, Product, Promotion } = require('../models');
 
 // ======================================================
 // CONFIGURAÇÕES DE FRETE
@@ -16,8 +16,9 @@ const orderController = {
     async create(req, res) {
         try {
             const userId = req.userId;
-            const { payment_method, shipping_address, notes } = req.body;
+            const { payment_method, shipping_address, notes, coupon_code } = req.body;
 
+            // Valida método de pagamento
             const validMethods = ['pix', 'credit_card', 'boleto'];
             if (!validMethods.includes(payment_method)) {
                 return res.status(400).json({
@@ -26,6 +27,7 @@ const orderController = {
                 });
             }
 
+            // Valida endereço
             const requiredAddress = ['cep', 'street', 'number', 'neighborhood', 'city', 'state'];
             const missing = requiredAddress.filter((field) => !shipping_address?.[field]);
             if (missing.length > 0) {
@@ -35,6 +37,7 @@ const orderController = {
                 });
             }
 
+            // Busca o carrinho atual
             const cart = await Cart.getItems(userId);
 
             if (!cart.items || cart.items.length === 0) {
@@ -44,11 +47,63 @@ const orderController = {
                 });
             }
 
+            // Calcula valores base
             const subtotal = cart.total;
             const shippingCost = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
-            const discount = 0;
+
+            // ==================================================
+            // PROCESSA CUPOM (se enviado)
+            // ==================================================
+            let discount = 0;
+            let couponApplied = null;
+
+            if (coupon_code) {
+                const promo = await Promotion.findByCode(coupon_code);
+
+                if (!promo) {
+                    return res.status(400).json({
+                        error: 'Cupom inválido ou expirado',
+                        code: 'INVALID_COUPON',
+                    });
+                }
+
+                // Verifica limite de uso
+                if (promo.usage_limit && promo.usage_count >= promo.usage_limit) {
+                    return res.status(400).json({
+                        error: 'Cupom atingiu o limite de uso',
+                        code: 'COUPON_USAGE_LIMIT',
+                    });
+                }
+
+                // Verifica valor mínimo
+                if (promo.min_purchase && subtotal < parseFloat(promo.min_purchase)) {
+                    return res.status(400).json({
+                        error: `Este cupom exige compra mínima de R$ ${parseFloat(promo.min_purchase).toFixed(2).replace('.', ',')}`,
+                        code: 'COUPON_MIN_PURCHASE',
+                    });
+                }
+
+                // Calcula desconto
+                if (promo.discount_type === 'percentage') {
+                    discount = (subtotal * parseFloat(promo.discount_value)) / 100;
+                    if (promo.max_discount) {
+                        discount = Math.min(discount, parseFloat(promo.max_discount));
+                    }
+                } else if (promo.discount_type === 'fixed') {
+                    discount = parseFloat(promo.discount_value);
+                }
+                // buy_x_get_y: desconto = 0 (não implementado)
+
+                // Garante que não ultrapasse o subtotal
+                discount = Math.min(discount, subtotal);
+                discount = Math.round(discount * 100) / 100; // arredonda para 2 casas
+
+                couponApplied = promo;
+            }
+
             const total = subtotal + shippingCost - discount;
 
+            // Prepara itens (com snapshot)
             const items = cart.items.map((item) => ({
                 product_id: item.product_id,
                 name: item.name,
@@ -59,6 +114,7 @@ const orderController = {
                 subtotal: item.subtotal,
             }));
 
+            // Cria o pedido (com transação no model)
             const order = await Order.create({
                 userId,
                 items,
@@ -71,12 +127,25 @@ const orderController = {
                 notes: notes || null,
             });
 
+            // Cria o registro de pagamento (pending inicialmente)
             const payment = await Payment.create({
                 order_id: order.id,
                 method: payment_method,
                 amount: total,
                 status: 'pending',
             });
+
+            // ==================================================
+            // INCREMENTA USO DO CUPOM (após sucesso)
+            // ==================================================
+            if (couponApplied) {
+                try {
+                    await Promotion.incrementUsage(couponApplied.id);
+                } catch (err) {
+                    // Não bloqueia a resposta se falhar (pedido já foi criado)
+                    console.error('Erro ao incrementar uso do cupom:', err);
+                }
+            }
 
             res.status(201).json({
                 message: 'Pedido criado com sucesso!',
@@ -88,6 +157,10 @@ const orderController = {
                     status: payment.status,
                     amount: payment.amount,
                 },
+                coupon: couponApplied ? {
+                    code: couponApplied.code,
+                    discount,
+                } : null,
             });
         } catch (error) {
             console.error('Erro ao criar pedido:', error);
@@ -188,6 +261,7 @@ const orderController = {
                 });
             }
 
+            // ✅ Pega APENAS o pagamento pendente (sem fallback)
             const payments = await Payment.findByOrder(id);
             const payment = payments.find((p) => p.status === 'pending');
 
@@ -293,7 +367,6 @@ const orderController = {
 
     // ==================================================
     // GET /api/orders/admin/list
-    // Lista com filtros (q, status, from, to, sort, order)
     // ==================================================
     async adminList(req, res) {
         try {
@@ -335,7 +408,6 @@ const orderController = {
 
     // ==================================================
     // GET /api/orders/admin/stats
-    // Estatísticas para os cards de resumo
     // ==================================================
     async adminStats(req, res) {
         try {

@@ -492,6 +492,605 @@
 }
 
 /* ======================================================
+   WISHLIST — Botão de coração nos cards
+   ====================================================== */
+.product-wishlist-btn {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.95);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gray-700);
+    font-size: 1rem;
+    cursor: pointer;
+    z-index: 5;
+    transition: var(--transition);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+}
+
+.product-wishlist-btn:hover {
+    background: var(--white);
+    color: var(--danger);
+    transform: scale(1.08);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.product-wishlist-btn.is-favorited {
+    color: var(--danger);
+}
+
+.product-wishlist-btn.is-favorited i {
+    animation: wishlist-pop 0.35s ease;
+}
+
+@keyframes wishlist-pop {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.35); }
+    70% { transform: scale(0.9); }
+    100% { transform: scale(1); }
+}
+
+/* ======================================================
+   WISHLIST — Ícone no header
+   ====================================================== */
+.wishlist-btn-header {
+    position: relative;
+}
+
+.wishlist-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    background: var(--danger);
+    color: var(--white);
+    font-size: 0.65rem;
+    font-weight: 700;
+    border-radius: 9px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+/* ======================================================
+   WISHLIST — Botão na página do produto
+   ====================================================== */
+.wishlist-btn-container {
+    margin-top: 1rem;
+}
+
+.btn-wishlist-page {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.85rem 1.5rem;
+    background: var(--white);
+    border: 1.5px solid var(--gray-300);
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--gray-700);
+    cursor: pointer;
+    transition: var(--transition);
+    width: 100%;
+    justify-content: center;
+}
+
+.btn-wishlist-page:hover {
+    border-color: var(--danger);
+    color: var(--danger);
+    background: var(--danger-bg);
+}
+
+.btn-wishlist-page.is-favorited {
+    border-color: var(--danger);
+    background: var(--danger-bg);
+    color: var(--danger);
+}
+
+.btn-wishlist-page.is-favorited i {
+    animation: wishlist-pop 0.35s ease;
+}
+
+/* ======================================================
+   WISHLIST — Aba de favoritos na minha-conta
+   ====================================================== */
+.favorites-container {
+    min-height: 200px;
+}
+
+.favorites-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.25rem;
+}
+
+.favorites-grid .product-card {
+    position: relative;
+}
+
+.favorites-grid .product-card .product-wishlist-btn {
+    display: none; /* esconde o coração porque já estamos na tela de favoritos */
+}
+
+.favorite-actions {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0 1rem 1rem;
+}
+
+.favorite-add-cart {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.4rem;
+    padding: 0.6rem 1rem;
+    background: var(--gray-900);
+    color: var(--white);
+    border: none;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.favorite-add-cart:hover {
+    background: var(--accent);
+}
+
+.favorite-remove {
+    width: 38px;
+    height: 38px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--white);
+    border: 1px solid var(--danger-bg);
+    border-radius: 6px;
+    color: var(--danger);
+    cursor: pointer;
+    transition: var(--transition);
+    flex-shrink: 0;
+}
+
+.favorite-remove:hover {
+    background: var(--danger-bg);
+    border-color: var(--danger);
+}
+
+/* ======================================================
+   FAVORITOS — Card clicável
+   ====================================================== */
+.favorite-card-wrapper {
+    display: flex;
+    flex-direction: column;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: var(--transition);
+}
+
+.favorite-card-wrapper:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.favorite-card-link {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+}
+
+.favorite-card-link:hover {
+    text-decoration: none;
+    color: inherit;
+}
+
+.favorite-card-link .product-card {
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    transition: none;
+}
+
+.favorite-card-link .product-card:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+/* Botões de ação ficam abaixo do card, separados visualmente */
+.favorite-card-wrapper .favorite-actions {
+    padding: 0.75rem 1rem 1rem;
+    border-top: 1px solid var(--gray-100);
+}
+
+/* ======================================================
+   FAVORITOS — Contador no título
+   ====================================================== */
+.account-accordion-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 0.4rem;
+    background: var(--accent);
+    color: var(--white);
+    font-size: 0.7rem;
+    font-weight: 700;
+    border-radius: 10px;
+    margin-left: 0.4rem;
+    line-height: 1;
+}
+
+/* Respeita o atributo [hidden] */
+.account-accordion-count[hidden] {
+    display: none;
+}
+
+.panel-count {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--gray-500);
+    margin-left: 0.25rem;
+}
+
+.panel-count[hidden] {
+    display: none;
+}
+
+/* ======================================================
+   FAVORITOS — Toolbar (ordenação + add all)
+   ====================================================== */
+.favorites-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    padding: 0.85rem 1rem;
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.favorites-toolbar-left,
+.favorites-toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.btn-favorites-add-all {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.1rem;
+    background: var(--gray-900);
+    color: var(--white);
+    border: none;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+}
+
+.btn-favorites-add-all:hover:not(:disabled) {
+    background: var(--accent);
+}
+
+.btn-favorites-add-all:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.favorites-sort-label {
+    font-size: 0.85rem;
+    color: var(--gray-600);
+    font-weight: 500;
+}
+
+.favorites-sort-select {
+    padding: 0.5rem 2rem 0.5rem 0.75rem;
+    border: 1px solid var(--gray-300);
+    border-radius: 6px;
+    background: var(--white);
+    font-family: inherit;
+    font-size: 0.85rem;
+    color: var(--gray-900);
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23737373' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 1rem;
+    transition: var(--transition);
+}
+
+.favorites-sort-select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(201, 169, 110, 0.15);
+}
+
+/* ======================================================
+   FAVORITOS — Banner de queda de preço
+   ====================================================== */
+.favorites-price-alert {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.9rem 1.1rem;
+    background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);
+    border: 1px solid #a7f3d0;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    color: #166534;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.favorites-price-alert i {
+    font-size: 1.1rem;
+    color: #22c55e;
+    flex-shrink: 0;
+}
+
+.favorites-price-alert strong {
+    color: #14532d;
+}
+
+/* ======================================================
+   FAVORITOS — Badge de "preço caiu" no card
+   ====================================================== */
+.favorite-card-wrapper .price-dropped-badge {
+    position: absolute;
+    bottom: 12px;              /* ← colado na base da imagem */
+    left: 50%;                 /* ← centralizado */
+    transform: translateX(-50%);
+    background: #22c55e;
+    color: var(--white);
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    box-shadow: 0 2px 8px rgba(34, 197, 94, 0.35);
+    white-space: nowrap;       /* ← evita quebrar em duas linhas */
+}
+
+.favorite-card-wrapper {
+    position: relative;
+}
+
+/* ======================================================
+   FAVORITOS — Skeleton loader
+   ====================================================== */
+.favorites-skeleton {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1.25rem;
+}
+
+.favorites-skeleton-card {
+    height: 320px;
+    background: linear-gradient(
+        90deg,
+        var(--gray-100) 25%,
+        var(--gray-200) 50%,
+        var(--gray-100) 75%
+    );
+    background-size: 200% 100%;
+    border-radius: 8px;
+    animation: favorites-skeleton-shimmer 1.5s infinite;
+}
+
+/* ======================================================
+   FAB — Carrinho Flutuante
+   ====================================================== */
+.cart-fab {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--white);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    z-index: 900;
+}
+
+.cart-fab:hover {
+    background: var(--accent);
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 28px rgba(201, 169, 110, 0.4);
+}
+
+.cart-fab:active {
+    transform: translateY(-1px) scale(0.98);
+}
+
+.cart-fab:focus-visible {
+    outline: 3px solid var(--accent);
+    outline-offset: 3px;
+}
+
+.cart-fab i {
+    pointer-events: none;
+}
+
+/* Badge do FAB */
+.cart-fab-badge {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    min-width: 22px;
+    height: 22px;
+    padding: 0 6px;
+    background: var(--danger);
+    color: var(--white);
+    font-size: 0.7rem;
+    font-weight: 700;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    border: 2px solid var(--white);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+/* Animação quando o badge atualiza (pulso) */
+.cart-fab-badge.pulse {
+    animation: cartFabPulse 0.4s ease;
+}
+
+@keyframes cartFabPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.4); }
+    100% { transform: scale(1); }
+}
+
+/* Esconde o FAB quando o modal do carrinho estiver aberto */
+body.cart-modal-open .cart-fab {
+    opacity: 0;
+    pointer-events: none;
+    transform: scale(0.8);
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+/* ======================================================
+   FAB — Responsivo
+   ====================================================== */
+@media (max-width: 768px) {
+    .cart-fab {
+        width: 56px;
+        height: 56px;
+        bottom: 1.25rem;
+        right: 1.25rem;
+        font-size: 1.25rem;
+    }
+
+    .cart-fab-badge {
+        min-width: 20px;
+        height: 20px;
+        font-size: 0.65rem;
+    }
+}
+
+@keyframes favorites-skeleton-shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ======================================================
+   FAVORITOS — Responsivo
+   ====================================================== */
+@media (max-width: 600px) {
+    .favorites-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+    }
+
+    .favorites-toolbar-left,
+    .favorites-toolbar-right {
+        display: flex;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+        width: 100%;
+    }
+
+    .btn-favorites-add-all {
+        width: 100%;
+        justify-content: center;
+        white-space: normal;      /* ← permite quebrar se necessário */
+        line-height: 1.3;
+        padding: 0.7rem 1rem;
+    }
+
+    .favorites-sort-label {
+        display: none;            /* esconde o label em mobile */
+    }
+
+    .favorites-sort-select {
+        width: 100%;
+    }
+
+    .favorites-skeleton {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+
+    .favorites-skeleton-card {
+        height: 240px;
+    }
+}
+
+/* ======================================================
+   WISHLIST — Responsivo
+   ====================================================== */
+@media (max-width: 600px) {
+    .favorites-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.75rem;
+    }
+
+    .favorite-actions {
+        padding: 0 0.75rem 0.75rem;
+        flex-direction: column;
+    }
+
+    .favorite-add-cart {
+        font-size: 0.7rem;
+        padding: 0.5rem;
+    }
+
+    .favorite-remove {
+        width: 100%;
+        height: 34px;
+    }
+}
+
+/* ======================================================
    RESPONSIVO
    ====================================================== */
 @media (max-width: 768px) {

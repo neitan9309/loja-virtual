@@ -12,6 +12,7 @@ const Review = require('./Review');
 const Order = require('./Order');
 const Payment = require('./Payment');
 const Metrics = require('./Metrics');
+const Wishlist = require('./Wishlist');   // ← ADICIONADO
 
 module.exports = {
     Product,
@@ -25,4 +26,5 @@ module.exports = {
     Order,
     Payment,
     Metrics,
+    Wishlist,   // ← ADICIONADO
 };

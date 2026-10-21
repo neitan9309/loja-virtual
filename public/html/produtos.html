@@ -12,12 +12,10 @@
     <link rel="preconnect" href="https://images.pexels.com">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
-    <!-- ✅ Novos CSS globais -->
     <link rel="stylesheet" href="/css/variables.css">
     <link rel="stylesheet" href="/css/animations.css">
     <link rel="stylesheet" href="/css/components.css">
 
-    <!-- CSS específico -->
     <link rel="stylesheet" href="/css/styles.css">
     <link rel="stylesheet" href="/css/produtos.css">
 </head>
@@ -81,11 +79,11 @@
 
             <div class="header-icons">
                 <button class="icon-btn" id="searchBtn" aria-label="Buscar produtos"><i class="fas fa-search"></i></button>
-                <button class="icon-btn" id="accountBtn" aria-label="Minha conta / Login"><i class="fas fa-user"></i></button>
-                <button class="icon-btn cart-btn" aria-label="Carrinho de compras">
-                    <i class="fas fa-shopping-bag"></i>
-                    <span class="cart-badge">0</span>
+                <button class="icon-btn wishlist-btn-header" id="wishlistHeaderBtn" aria-label="Meus favoritos">
+                    <i class="far fa-heart"></i>
+                    <span class="wishlist-badge">0</span>
                 </button>
+                <button class="icon-btn" id="accountBtn" aria-label="Minha conta / Login"><i class="fas fa-user"></i></button>
             </div>
         </div>
     </header>
@@ -105,12 +103,171 @@
             <p id="pageSubtitle">Explore nossa coleção exclusiva</p>
         </header>
 
-        <section id="contentContainer" class="content-container">
-            <div class="loading-state">
-                <i class="fas fa-spinner fa-spin"></i>
-                <span>Carregando...</span>
+        <!-- Barra de ferramentas de produtos (oculta quando é listagem de categorias) -->
+        <div class="products-toolbar" id="productsToolbar" style="display: none;">
+            <div class="toolbar-left">
+                <button type="button" class="btn-filters-toggle" id="btnFiltersToggle">
+                    <i class="fas fa-sliders-h"></i>
+                    <span>Filtros</span>
+                    <span class="filters-count-badge" id="filtersCountBadge" hidden>0</span>
+                </button>
+
+                <span class="toolbar-results" id="toolbarResults">
+                    <span id="resultsCount">—</span> produtos encontrados
+                </span>
             </div>
-        </section>
+
+            <div class="toolbar-right">
+                <label for="sortSelect" class="toolbar-sort-label">Ordenar por</label>
+                <select id="sortSelect" class="toolbar-sort-select">
+                    <option value="created_at_desc">Mais recentes</option>
+                    <option value="price_asc">Menor preço</option>
+                    <option value="price_desc">Maior preço</option>
+                    <option value="sales_count_desc">Mais vendidos</option>
+                    <option value="rating_avg_desc">Melhor avaliados</option>
+                    <option value="name_asc">Nome (A-Z)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Chips de filtros ativos -->
+        <div class="active-filters" id="activeFilters" style="display: none;"></div>
+
+        <!-- Layout com sidebar -->
+        <div class="products-layout" id="productsLayout">
+
+            <!-- Sidebar de filtros (desktop) / drawer (mobile) -->
+            <aside class="filters-sidebar" id="filtersSidebar" aria-label="Filtros de produtos">
+                <div class="filters-sidebar-header">
+                    <h2>Filtros</h2>
+                    <button type="button" class="filters-close" id="filtersClose" aria-label="Fechar filtros">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div class="filters-body">
+                    <!-- Categoria -->
+                    <div class="filter-group filter-group-collapsible" data-filter-group="category">
+                        <button type="button" class="filter-group-toggle" aria-expanded="true">
+                            <span>Categoria</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="filter-group-body">
+                            <div id="filterCategories" class="filter-category-tree">
+                                <div class="filter-loading">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    <span>Carregando...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Marca -->
+                    <div class="filter-group filter-group-collapsible" data-filter-group="brand">
+                        <button type="button" class="filter-group-toggle" aria-expanded="true">
+                            <span>Marca</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="filter-group-body">
+                            <div id="filterBrands" class="filter-checklist">
+                                <div class="filter-loading">
+                                    <i class="fas fa-spinner fa-spin"></i>
+                                    <span>Carregando...</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Destaques -->
+                    <div class="filter-group filter-group-collapsible" data-filter-group="badges">
+                        <button type="button" class="filter-group-toggle" aria-expanded="true">
+                            <span>Destaques</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="filter-group-body">
+                            <div class="filter-checklist" id="filterBadges">
+                                <label class="filter-check-item">
+                                    <input type="checkbox" value="on_sale" data-badge-flag="on_sale">
+                                    <span class="check-label">
+                                        <i class="fas fa-fire check-icon check-icon-sale"></i>
+                                        Em promoção
+                                    </span>
+                                </label>
+
+                                <label class="filter-check-item">
+                                    <input type="checkbox" value="is_new" data-badge-flag="is_new">
+                                    <span class="check-label">
+                                        <i class="fas fa-wand-magic-sparkles check-icon check-icon-new"></i>
+                                        Novidades
+                                    </span>
+                                </label>
+
+                                <label class="filter-check-item">
+                                    <input type="checkbox" value="is_featured" data-badge-flag="featured">
+                                    <span class="check-label">
+                                        <i class="fas fa-star check-icon check-icon-featured"></i>
+                                        Em destaque
+                                    </span>
+                                </label>
+
+                                <label class="filter-check-item">
+                                    <input type="checkbox" value="is_best_seller" data-badge-flag="best_seller">
+                                    <span class="check-label">
+                                        <i class="fas fa-trophy check-icon check-icon-bestseller"></i>
+                                        Mais vendidos
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Preço -->
+                    <div class="filter-group filter-group-collapsible" data-filter-group="price">
+                        <button type="button" class="filter-group-toggle" aria-expanded="true">
+                            <span>Preço</span>
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        <div class="filter-group-body">
+                            <div class="filter-price">
+                                <input type="number" id="filterPriceMin" class="filter-price-input" placeholder="Mín" min="0" step="0.01">
+                                <span class="filter-price-sep">até</span>
+                                <input type="number" id="filterPriceMax" class="filter-price-input" placeholder="Máx" min="0" step="0.01">
+                            </div>
+                            <button type="button" class="btn-apply-price" id="btnApplyPrice">
+                                Aplicar
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Ações -->
+                    <div class="filters-footer">
+                        <button type="button" class="btn-clear-filters" id="btnClearFilters">
+                            <i class="fas fa-times"></i>
+                            Limpar filtros
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Overlay (mobile) -->
+            <div class="filters-overlay" id="filtersOverlay"></div>
+
+            <!-- Área principal de produtos -->
+            <section id="contentContainer" class="products-main">
+                <div class="loading-state">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>Carregando...</span>
+                </div>
+            </section>
+        </div>
+
+        <!-- Botão "Carregar mais" -->
+        <div class="load-more-wrapper" id="loadMoreWrapper" style="display: none;">
+            <button type="button" class="btn-load-more" id="btnLoadMore">
+                <i class="fas fa-plus"></i>
+                Carregar mais
+            </button>
+        </div>
 
     </main>
 
@@ -151,12 +308,19 @@
         </div>
     </footer>
 
-    <!-- ✅ Core JS -->
+    <!-- ======================================================
+         FAB — Carrinho Flutuante
+         ====================================================== -->
+    <button type="button" class="cart-fab" id="cartFab" aria-label="Abrir carrinho">
+        <i class="fas fa-shopping-bag"></i>
+        <span class="cart-fab-badge" style="display: none;">0</span>
+    </button>
+
     <script src="/js/core/utils.js" defer></script>
     <script src="/js/core/api.js" defer></script>
     <script src="/js/core/components.js" defer></script>
 
-    <!-- Scripts da página -->
+    <script src="/js/wishlist.js" defer></script>   <!-- ← SEMPRE antes do cart.js -->
     <script src="/js/cart.js" defer></script>
     <script src="/js/script.js" defer></script>
     <script src="/js/produtos.js" defer></script>
