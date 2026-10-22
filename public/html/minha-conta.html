@@ -218,60 +218,21 @@
                     <div class="account-accordion-body" id="acc-body-address">
                         <div class="account-accordion-inner">
                             <section class="account-panel active" data-panel="address">
-                                <header class="panel-header">
-                                    <h1>Endereço</h1>
-                                    <p>Atualize seu endereço de entrega</p>
-                                </header>
+    <header class="panel-header">
+        <h1>Meus Endereços</h1>
+        <p>Gerencie os endereços de entrega</p>
+        <button type="button" class="btn btn-primary" id="btnNewAddress" style="margin-top: 1rem;">
+            <i class="fas fa-plus"></i> Novo Endereço
+        </button>
+    </header>
 
-                                <form class="account-form" id="addressForm">
-                                    <div class="form-field">
-                                        <label for="accCep">CEP</label>
-                                        <div class="cep-wrapper">
-                                            <input type="text" id="accCep" name="cep" maxlength="9" inputmode="numeric">
-                                            <span class="cep-status" id="accCepStatus"></span>
-                                        </div>
-                                    </div>
-
-                                    <div class="form-field">
-                                        <label for="accStreet">Rua / Logradouro</label>
-                                        <input type="text" id="accStreet" name="street" readonly>
-                                    </div>
-
-                                    <div class="form-row">
-                                        <div class="form-field">
-                                            <label for="accNumber">Número</label>
-                                            <input type="text" id="accNumber" name="number" maxlength="20">
-                                        </div>
-                                        <div class="form-field">
-                                            <label for="accComplement">Complemento</label>
-                                            <input type="text" id="accComplement" name="complement" maxlength="100">
-                                        </div>
-                                    </div>
-
-                                    <div class="form-field">
-                                        <label for="accNeighborhood">Bairro</label>
-                                        <input type="text" id="accNeighborhood" name="neighborhood" readonly>
-                                    </div>
-
-                                    <div class="form-row">
-                                        <div class="form-field">
-                                            <label for="accCity">Cidade</label>
-                                            <input type="text" id="accCity" name="city" readonly>
-                                        </div>
-                                        <div class="form-field">
-                                            <label for="accState">Estado</label>
-                                            <input type="text" id="accState" name="state" readonly maxlength="2">
-                                        </div>
-                                    </div>
-
-                                    <div class="form-actions">
-                                        <button type="submit" class="btn-save" id="saveAddressBtn">
-                                            <i class="fas fa-check"></i>
-                                            Salvar endereço
-                                        </button>
-                                    </div>
-                                </form>
-                            </section>
+    <div id="addressListContainer" class="address-list">
+        <div class="loading-state">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>Carregando endereços...</span>
+        </div>
+    </div>
+</section>
                         </div>
                     </div>
                 </div>

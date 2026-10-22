@@ -816,6 +816,52 @@
 }
 
 /* ======================================================
+   CHECKOUT - SELEÇÃO DE ENDEREÇO
+   ====================================================== */
+.checkout-address-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.checkout-address-option {
+    cursor: pointer;
+    display: block;
+}
+
+.checkout-address-option input[type="radio"] {
+    display: none;
+}
+
+.checkout-address-box {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 1rem;
+    border: 2px solid var(--gray-200);
+    border-radius: 8px;
+    transition: var(--transition);
+    background: var(--white);
+}
+
+.checkout-address-option input:checked + .checkout-address-box {
+    border-color: var(--accent);
+    background: rgba(201, 169, 110, 0.05);
+    box-shadow: 0 0 0 3px rgba(201, 169, 110, 0.15);
+}
+
+.checkout-address-box strong {
+    font-size: 0.9rem;
+    color: var(--gray-900);
+    margin-bottom: 0.25rem;
+}
+
+.checkout-address-box span {
+    font-size: 0.85rem;
+    color: var(--gray-600);
+}
+
+/* ======================================================
    RESPONSIVO
    ====================================================== */
 @media (max-width: 500px) {

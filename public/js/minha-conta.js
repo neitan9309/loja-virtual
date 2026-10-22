@@ -18,7 +18,7 @@
     const AccountPage = {
         user: null,
         favoritesSort: 'recent',
-        favoritesCache: [],      // cache dos produtos para reordenar sem refetch
+        favoritesCache: [],
         addingAllInProgress: false,
 
         async init() {
@@ -27,7 +27,6 @@
                 return;
             }
 
-            // Restaura ordenação salva
             const savedSort = sessionStorage.getItem(FAVORITES_SORT_KEY);
             if (savedSort) this.favoritesSort = savedSort;
 
@@ -35,11 +34,15 @@
             this.initTabs();
             this.initForms();
             this.initMasks();
-            this.initCepLookup();
             this.initPasswordToggles();
             this.initDeleteAccount();
             this.initLogout();
             this.initFavoritesToolbar();
+            
+            // Novas inicializações de endereço
+            this.initAddressSection();
+            await this.loadAddresses();
+
             this.loadOrders();
             this.loadFavorites();
         },
@@ -81,14 +84,6 @@
             document.getElementById('accCpf').value = user.cpf || '';
             document.getElementById('accPhone').value = user.phone || '';
             document.getElementById('accEmail').value = user.email || '';
-
-            document.getElementById('accCep').value = user.cep || '';
-            document.getElementById('accStreet').value = user.street || '';
-            document.getElementById('accNumber').value = user.number || '';
-            document.getElementById('accComplement').value = user.complement || '';
-            document.getElementById('accNeighborhood').value = user.neighborhood || '';
-            document.getElementById('accCity').value = user.city || '';
-            document.getElementById('accState').value = user.state || '';
         },
 
         // ==================================================
@@ -117,6 +112,7 @@
                     target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
                     if (tab === 'favorites') this.loadFavorites();
+                    if (tab === 'address') this.loadAddresses();
                 });
             });
 
@@ -136,6 +132,7 @@
                         item.classList.add('active');
                         header.setAttribute('aria-expanded', 'true');
                         if (item.dataset.accordion === 'favorites') this.loadFavorites();
+                        if (item.dataset.accordion === 'address') this.loadAddresses();
                     }
 
                     const tab = item.dataset.accordion;
@@ -164,7 +161,7 @@
         },
 
         // ==================================================
-        // FORMS
+        // FORMS (Perfil e Senha)
         // ==================================================
         initForms() {
             // Perfil
@@ -190,36 +187,6 @@
                     C.createToast('Dados salvos com sucesso!', 'success');
                 } catch (error) {
                     C.createToast(error.data?.error || 'Erro ao salvar dados', 'error');
-                } finally {
-                    btn.disabled = false;
-                    btn.innerHTML = originalText;
-                }
-            });
-
-            // Endereço
-            document.getElementById('addressForm')?.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const btn = document.getElementById('saveAddressBtn');
-                const originalText = btn.innerHTML;
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
-
-                try {
-                    const data = {
-                        cep: document.getElementById('accCep').value || null,
-                        street: document.getElementById('accStreet').value || null,
-                        number: document.getElementById('accNumber').value || null,
-                        complement: document.getElementById('accComplement').value || null,
-                        neighborhood: document.getElementById('accNeighborhood').value || null,
-                        city: document.getElementById('accCity').value || null,
-                        state: document.getElementById('accState').value || null,
-                    };
-                    const result = await API.put('/users/me', data);
-                    this.user = result.user;
-                    API.setUser(result.user);
-                    C.createToast('Endereço salvo com sucesso!', 'success');
-                } catch (error) {
-                    C.createToast(error.data?.error || 'Erro ao salvar endereço', 'error');
                 } finally {
                     btn.disabled = false;
                     btn.innerHTML = originalText;
@@ -269,52 +236,12 @@
         initMasks() {
             const cpf = document.getElementById('accCpf');
             const phone = document.getElementById('accPhone');
-            const cep = document.getElementById('accCep');
 
             cpf?.addEventListener('input', (e) => {
                 e.target.value = U.maskCpf(e.target.value);
             });
             phone?.addEventListener('input', (e) => {
                 e.target.value = U.maskPhone(e.target.value);
-            });
-            cep?.addEventListener('input', (e) => {
-                e.target.value = U.maskCep(e.target.value);
-            });
-        },
-
-        // ==================================================
-        // CEP
-        // ==================================================
-        initCepLookup() {
-            const cepInput = document.getElementById('accCep');
-            const status = document.getElementById('accCepStatus');
-            if (!cepInput) return;
-
-            let lastCep = '';
-
-            cepInput.addEventListener('blur', async () => {
-                const cep = cepInput.value.replace(/\D/g, '');
-                if (cep.length !== 8 || cep === lastCep) return;
-                lastCep = cep;
-
-                status.className = 'cep-status loading';
-
-                try {
-                    const data = await API.get(`/cep/${cep}`);
-                    document.getElementById('accStreet').value = data.street || '';
-                    document.getElementById('accNeighborhood').value = data.neighborhood || '';
-                    document.getElementById('accCity').value = data.city || '';
-                    document.getElementById('accState').value = data.state || '';
-                    document.getElementById('accComplement').value = data.complement || '';
-                    status.className = 'cep-status success';
-                    document.getElementById('accNumber')?.focus();
-                } catch (error) {
-                    status.className = 'cep-status error';
-                    ['accStreet', 'accNeighborhood', 'accCity', 'accState'].forEach((id) => {
-                        const el = document.getElementById(id);
-                        if (el) el.value = '';
-                    });
-                }
             });
         },
 
@@ -422,6 +349,269 @@
                     confirmBtn.innerHTML = '<i class="fas fa-trash-alt"></i> Excluir definitivamente';
                 }
             });
+        },
+
+        // ==================================================
+        // ENDEREÇOS
+        // ==================================================
+        initAddressSection() {
+            document.getElementById('btnNewAddress')?.addEventListener('click', () => this.openAddressModal());
+        },
+
+        async loadAddresses() {
+            const container = document.getElementById('addressListContainer');
+            if (!container) return;
+
+            container.innerHTML = `
+                <div class="loading-state">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <span>Carregando endereços...</span>
+                </div>
+            `;
+
+            try {
+                const addresses = await API.get('/addresses');
+                if (addresses.length === 0) {
+                    container.innerHTML = `
+                        <div class="orders-empty">
+                            <i class="fas fa-map-marker-alt"></i>
+                            <h3>Nenhum endereço cadastrado</h3>
+                            <p>Cadastre um endereço para agilizar suas compras.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = addresses.map(addr => this.buildAddressCard(addr)).join('');
+
+                container.querySelectorAll('[data-address-action]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const action = btn.dataset.addressAction;
+                        const id = btn.dataset.addressId;
+                        if (action === 'delete') this.deleteAddress(id);
+                        if (action === 'default') this.setDefaultAddress(id);
+                        if (action === 'edit') this.openAddressModal(addr => null, id); // Passamos o ID para editar
+                    });
+                });
+            } catch (error) {
+                container.innerHTML = '<p class="table-empty">Erro ao carregar endereços.</p>';
+            }
+        },
+
+        buildAddressCard(addr) {
+            return `
+                <div class="address-card ${addr.is_default ? 'is-default' : ''}">
+                    <div class="address-card-info">
+                        <div class="address-card-label">
+                            ${U.escapeHtml(addr.label)}
+                            ${addr.is_default ? '<span class="badge-default">Padrão</span>' : ''}
+                        </div>
+                        <div class="address-card-text">
+                            ${U.escapeHtml(addr.street)}, ${U.escapeHtml(addr.number)} ${addr.complement ? '· ' + U.escapeHtml(addr.complement) : ''}<br>
+                            ${U.escapeHtml(addr.neighborhood)} · ${U.escapeHtml(addr.city)} - ${U.escapeHtml(addr.state)}<br>
+                            CEP: ${U.escapeHtml(addr.cep)}
+                        </div>
+                    </div>
+                    <div class="address-card-actions">
+                        ${!addr.is_default ? `<button class="btn-icon" data-address-action="default" data-address-id="${addr.id}" title="Tornar padrão"><i class="fas fa-star"></i></button>` : ''}
+                        <button class="btn-icon" data-address-action="edit" data-address-id="${addr.id}" title="Editar"><i class="fas fa-edit"></i></button>
+                        <button class="btn-icon delete" data-address-action="delete" data-address-id="${addr.id}" title="Remover"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                </div>
+            `;
+        },
+
+openAddressModal(addressId = null) {
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.innerHTML = `
+        <div class="modal-content modal-address" style="max-width: 500px; padding: 2rem;">
+            <button class="close-modal" aria-label="Fechar">&times;</button>
+            <h2 style="margin-bottom: 1.5rem; text-transform: uppercase; font-size: 1.2rem; text-align: center;">
+                ${addressId ? 'Editar Endereço' : 'Novo Endereço'}
+            </h2>
+            
+            <form id="addressModalForm" class="address-form">
+                <div class="address-form-field">
+                    <label>Identificação (Ex: Casa, Trabalho) *</label>
+                    <input type="text" name="label" required maxlength="50" placeholder="Ex: Minha Casa">
+                </div>
+                
+                <div class="address-form-field">
+                    <label>CEP *</label>
+                    <input type="text" name="cep" id="modalCep" required maxlength="9" inputmode="numeric" placeholder="00000-000">
+                </div>
+                
+                <div class="address-form-field">
+                    <label>Rua *</label>
+                    <input type="text" name="street" id="modalStreet" required readonly placeholder="Preenchido pelo CEP">
+                </div>
+                
+                <div class="address-form-row">
+                    <div class="address-form-field">
+                        <label>Número *</label>
+                        <input type="text" name="number" id="modalNumber" required placeholder="123">
+                    </div>
+                    <div class="address-form-field">
+                        <label>Complemento</label>
+                        <input type="text" name="complement" id="modalComplement" placeholder="Apto, bloco...">
+                    </div>
+                </div>
+                
+                <div class="address-form-field">
+                    <label>Bairro *</label>
+                    <input type="text" name="neighborhood" id="modalNeighborhood" required readonly placeholder="Preenchido pelo CEP">
+                </div>
+                
+                <div class="address-form-row">
+                    <div class="address-form-field">
+                        <label>Cidade *</label>
+                        <input type="text" name="city" id="modalCity" required readonly placeholder="Preenchido pelo CEP">
+                    </div>
+                    <div class="address-form-field">
+                        <label>Estado *</label>
+                        <input type="text" name="state" id="modalState" required readonly maxlength="2" placeholder="UF">
+                    </div>
+                </div>
+                
+                <div class="address-form-field checkbox-field">
+                    <label class="checkbox-label">
+                        <input type="checkbox" name="is_default"> Definir como endereço padrão
+                    </label>
+                </div>
+                
+                <div class="address-form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelAddressBtn">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    document.body.style.overflow = 'hidden'; // Trava o scroll do fundo
+
+    const form = modal.querySelector('#addressModalForm');
+    const cepInput = modal.querySelector('#modalCep');
+    const closeBtn = modal.querySelector('.close-modal');
+    const cancelBtn = modal.querySelector('#cancelAddressBtn');
+
+    // ==================================================
+    // FUNÇÃO PARA FECHAR O MODAL (Limpa tudo)
+    // ==================================================
+    const closeModal = () => {
+        modal.remove();
+        document.body.style.overflow = '';
+        document.removeEventListener('keydown', handleEsc);
+    };
+
+    // ==================================================
+    // FECHAR COM ESC
+    // ==================================================
+    const handleEsc = (e) => {
+        if (e.key === 'Escape') closeModal();
+    };
+    document.addEventListener('keydown', handleEsc);
+
+    // ==================================================
+    // FECHAR COM BOTÃO X E BOTÃO CANCELAR
+    // ==================================================
+    closeBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+
+    // ==================================================
+    // FECHAR AO CLICAR FORA DO CONTEÚDO
+    // ==================================================
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+    });
+
+    // ==================================================
+    // MÁSCARA DE CEP
+    // ==================================================
+    cepInput.addEventListener('input', (e) => {
+        e.target.value = U.maskCep(e.target.value);
+    });
+
+    // ==================================================
+    // BUSCA CEP
+    // ==================================================
+    cepInput.addEventListener('blur', async () => {
+        const cep = cepInput.value.replace(/\D/g, '');
+        if (cep.length !== 8) return;
+        try {
+            const data = await API.get(`/cep/${cep}`);
+            modal.querySelector('#modalStreet').value = data.street || '';
+            modal.querySelector('#modalNeighborhood').value = data.neighborhood || '';
+            modal.querySelector('#modalCity').value = data.city || '';
+            modal.querySelector('#modalState').value = data.state || '';
+            modal.querySelector('#modalNumber').focus();
+        } catch (e) { /* ignora */ }
+    });
+
+    // ==================================================
+    // PREENCHER DADOS PARA EDIÇÃO
+    // ==================================================
+    if (addressId) {
+        API.get(`/addresses`).then(list => {
+            const addr = list.find(a => a.id == addressId);
+            if (addr) {
+                form.querySelector('[name="label"]').value = addr.label;
+                form.querySelector('[name="cep"]').value = addr.cep;
+                form.querySelector('[name="street"]').value = addr.street;
+                form.querySelector('[name="number"]').value = addr.number;
+                form.querySelector('[name="complement"]').value = addr.complement || '';
+                form.querySelector('[name="neighborhood"]').value = addr.neighborhood;
+                form.querySelector('[name="city"]').value = addr.city;
+                form.querySelector('[name="state"]').value = addr.state;
+                form.querySelector('[name="is_default"]').checked = addr.is_default;
+            }
+        });
+    }
+
+    // ==================================================
+    // SUBMIT
+    // ==================================================
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const formData = new FormData(form);
+        const data = Object.fromEntries(formData.entries());
+        data.is_default = formData.get('is_default') === 'on';
+
+        try {
+            if (addressId) {
+                await API.put(`/addresses/${addressId}`, data);
+                C.createToast('Endereço atualizado!', 'success');
+            } else {
+                await API.post('/addresses', data);
+                C.createToast('Endereço criado!', 'success');
+            }
+            closeModal();
+            this.loadAddresses();
+        } catch (error) {
+            C.createToast(error.data?.error || 'Erro ao salvar', 'error');
+        }
+    });
+},
+
+        async deleteAddress(id) {
+            if (!confirm('Remover este endereço?')) return;
+            try {
+                await API.delete(`/addresses/${id}`);
+                C.createToast('Endereço removido', 'success');
+                this.loadAddresses();
+            } catch (error) {
+                C.createToast('Erro ao remover', 'error');
+            }
+        },
+
+        async setDefaultAddress(id) {
+            try {
+                await API.patch(`/addresses/${id}/default`, {});
+                C.createToast('Endereço padrão atualizado', 'success');
+                this.loadAddresses();
+            } catch (error) {
+                C.createToast('Erro ao definir padrão', 'error');
+            }
         },
 
         // ==================================================
@@ -544,7 +734,7 @@
         },
 
         // ==================================================
-        // FAVORITOS — Toolbar (W-N1)
+        // FAVORITOS — Toolbar
         // ==================================================
         initFavoritesToolbar() {
             const sortSelect = document.getElementById('favoritesSort');
@@ -573,7 +763,6 @@
             const container = document.getElementById('favoritesContainer');
             if (!container) return;
 
-            // Skeleton
             container.innerHTML = `
                 <div class="favorites-skeleton">
                     <div class="favorites-skeleton-card"></div>
@@ -587,14 +776,10 @@
                 const data = await API.get('/wishlist');
                 this.favoritesCache = data.products || [];
 
-                // Atualiza toolbar visibility
                 const toolbar = document.getElementById('favoritesToolbar');
                 if (toolbar) toolbar.style.display = this.favoritesCache.length > 0 ? 'flex' : 'none';
 
-                // Atualiza contadores
                 this.updateFavoritesCounters(this.favoritesCache.length);
-
-                // W-N4: banner de queda de preço
                 this.updatePriceAlert(this.favoritesCache);
 
                 if (this.favoritesCache.length === 0) {
@@ -626,7 +811,7 @@
         },
 
         // ==================================================
-        // FAVORITOS — Render (com W-N1 e W-N4)
+        // FAVORITOS — Render
         // ==================================================
         renderFavoritesGrid() {
             const container = document.getElementById('favoritesContainer');
@@ -645,7 +830,6 @@
                     showWishlistButton: false,
                 });
 
-                // W-N4: badge de queda de preço
                 const priceDroppedBadge = p.wishlist?.price_dropped
                     ? `<span class="price-dropped-badge">
                            <i class="fas fa-tag"></i>
@@ -671,7 +855,6 @@
 
                 const href = `/produto/${p.slug}`;
 
-                // W-N4: injeta o badge dentro do .product-image-wrapper
                 let finalCardHtml = cardHtml;
                 if (priceDroppedBadge) {
                     finalCardHtml = finalCardHtml.replace(
@@ -692,7 +875,6 @@
                 );
             }).join('');
 
-            // Bind remover
             grid.querySelectorAll('[data-favorite-remove]').forEach((btn) => {
                 btn.addEventListener('click', async (e) => {
                     e.preventDefault();
@@ -704,7 +886,6 @@
                 });
             });
 
-            // Bind add to cart
             grid.querySelectorAll('[data-favorite-add-cart]').forEach((btn) => {
                 btn.addEventListener('click', async (e) => {
                     e.preventDefault();
@@ -722,7 +903,7 @@
         },
 
         // ==================================================
-        // FAVORITOS — Ordenação (W-N1)
+        // FAVORITOS — Ordenação
         // ==================================================
         sortFavorites(products) {
             const sort = this.favoritesSort;
@@ -758,10 +939,9 @@
         },
 
         // ==================================================
-        // FAVORITOS — Contadores (bônus)
+        // FAVORITOS — Contadores
         // ==================================================
         updateFavoritesCounters(count) {
-            // Contador no accordion (mobile)
             const tabCount = document.getElementById('favoritesTabCount');
             if (tabCount) {
                 if (count > 0) {
@@ -772,7 +952,6 @@
                 }
             }
 
-            // Contador no título do painel
             const panelCount = document.getElementById('favoritesPanelCount');
             if (panelCount) {
                 if (count > 0) {
@@ -785,7 +964,7 @@
         },
 
         // ==================================================
-        // FAVORITOS — Banner de queda de preço (W-N4)
+        // FAVORITOS — Banner de queda de preço
         // ==================================================
         updatePriceAlert(products) {
             const alertEl = document.getElementById('favoritesPriceAlert');
@@ -818,7 +997,7 @@
         },
 
         // ==================================================
-        // FAVORITOS — Adicionar todos ao carrinho (W-N2)
+        // FAVORITOS — Adicionar todos ao carrinho
         // ==================================================
         async addAllToCart() {
             if (this.addingAllInProgress) return;
@@ -846,7 +1025,6 @@
             let successCount = 0;
             const failures = [];
 
-            // Processa sequencialmente (evita race condition no carrinho)
             for (const product of this.favoritesCache) {
                 try {
                     await window.LuxuryCart.addToCart(product.id, 1);
@@ -858,7 +1036,6 @@
                     });
                 }
 
-                // Atualiza progresso no botão
                 if (btn) {
                     btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${successCount + failures.length}/${total}`;
                 }
@@ -871,13 +1048,11 @@
                 btn.innerHTML = originalHtml;
             }
 
-            // Relatório final
             if (failures.length === 0) {
                 C.createToast(`${successCount} ${successCount === 1 ? 'produto adicionado' : 'produtos adicionados'} ao carrinho!`, 'success');
             } else if (successCount === 0) {
                 C.createToast(`Nenhum produto foi adicionado. ${failures[0].reason}`, 'error');
             } else {
-                // Sucesso parcial: mostra relatório com detalhes
                 const failureSummary = failures
                     .slice(0, 3)
                     .map((f) => `• ${f.name}: ${f.reason}`)
@@ -893,7 +1068,7 @@
         },
 
         // ==================================================
-        // LOGOUT (desktop)
+        // LOGOUT
         // ==================================================
         initLogout() {
             document.getElementById('logoutBtn')?.addEventListener('click', async () => {

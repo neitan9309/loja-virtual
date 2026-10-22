@@ -1,48 +1,10 @@
 /* ======================================================
-   PÁGINA DE PRODUTOS / CATEGORIAS
+   PÁGINA DE PRODUTOS / CATEGORIAS (Refatorado)
    ====================================================== */
 .products-page {
     padding-top: 100px;
     min-height: 100vh;
     background: var(--white);
-}
-
-/* ======================================================
-   BREADCRUMB
-   ====================================================== */
-.breadcrumb {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 1.5rem 2rem 0;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 0.9rem;
-    color: var(--gray-500);
-}
-
-.breadcrumb a {
-    color: var(--gray-500);
-    text-decoration: none;
-    transition: var(--transition);
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-}
-
-.breadcrumb a:hover {
-    color: var(--accent);
-}
-
-.breadcrumb .separator {
-    color: var(--gray-300);
-    font-size: 0.75rem;
-}
-
-.breadcrumb .current {
-    color: var(--gray-900);
-    font-weight: 600;
 }
 
 /* ======================================================
@@ -70,61 +32,6 @@
 }
 
 /* ======================================================
-   CONTAINER
-   ====================================================== */
-.content-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 2rem 5rem;
-}
-
-/* ======================================================
-   LOADING STATE
-   ====================================================== */
-.loading-state {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.75rem;
-    padding: 5rem 0;
-    color: var(--gray-500);
-    font-size: 1rem;
-}
-
-.loading-state i {
-    color: var(--accent);
-    font-size: 1.4rem;
-}
-
-/* ======================================================
-   EMPTY / ERROR STATE
-   ====================================================== */
-.empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    padding: 4rem 2rem;
-    gap: 1rem;
-}
-
-.empty-state i {
-    font-size: 3.5rem;
-    color: var(--gray-300);
-    margin-bottom: 0.5rem;
-}
-
-.empty-state h3 {
-    font-size: 1.3rem;
-    color: var(--gray-800);
-}
-
-.empty-state p {
-    color: var(--gray-500);
-    max-width: 400px;
-}
-
-/* ======================================================
    GRID DE CATEGORIAS
    ====================================================== */
 .categories-grid {
@@ -133,104 +40,6 @@
     justify-content: center;
     gap: 1.5rem;
     animation: fadeIn 0.4s ease;
-}
-
-.category-card {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    padding: 2.5rem 1.5rem;
-    background: var(--white);
-    border: 1px solid var(--gray-200);
-    border-radius: 12px;
-    text-decoration: none;
-    color: var(--gray-900);
-    cursor: pointer;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    overflow: hidden;
-    min-height: 200px;
-}
-
-.category-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 4px;
-    background: var(--accent);
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.3s ease;
-}
-
-.category-card:hover::before {
-    transform: scaleX(1);
-}
-
-.category-card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.1);
-    border-color: var(--accent);
-}
-
-.category-card-icon {
-    width: 72px;
-    height: 72px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, rgba(201, 169, 110, 0.15), rgba(201, 169, 110, 0.05));
-    color: var(--accent);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.8rem;
-    margin-bottom: 1.25rem;
-    transition: transform 0.3s ease;
-}
-
-.category-card:hover .category-card-icon {
-    transform: scale(1.08);
-    background: linear-gradient(135deg, var(--accent), var(--accent-hover));
-    color: var(--white);
-}
-
-.category-card-name {
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: var(--gray-900);
-    margin-bottom: 0.35rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-.category-card-description {
-    font-size: 0.85rem;
-    color: var(--gray-500);
-    line-height: 1.4;
-}
-
-.category-card-count {
-    font-size: 0.75rem;
-    color: var(--accent);
-    font-weight: 600;
-    margin-top: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.category-card-arrow {
-    margin-top: 1rem;
-    color: var(--gray-300);
-    font-size: 0.9rem;
-    transition: all 0.3s ease;
-}
-
-.category-card:hover .category-card-arrow {
-    color: var(--accent);
-    transform: translateX(4px);
 }
 
 /* ======================================================
@@ -319,11 +128,6 @@
     border-color: var(--accent);
     box-shadow: 0 0 0 3px rgba(201, 169, 110, 0.15);
 }
-
-/* ======================================================
-   FILTROS DE PRODUTOS (L1)
-   Adicionar ao final do arquivo produtos.css
-   ====================================================== */
 
 /* ======================================================
    TOOLBAR (resultado + ordenação)
@@ -1066,14 +870,6 @@
 }
 
 /* ======================================================
-   ANIMAÇÃO
-   ====================================================== */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-/* ======================================================
    RESPONSIVO - 768px
    ====================================================== */
 @media (max-width: 768px) {
@@ -1105,26 +901,6 @@
         gap: 1rem;
     }
 
-    .category-card {
-        padding: 1.75rem 1rem;
-        min-height: 170px;
-    }
-
-    .category-card-icon {
-        width: 56px;
-        height: 56px;
-        font-size: 1.5rem;
-        margin-bottom: 1rem;
-    }
-
-    .category-card-name {
-        font-size: 1rem;
-    }
-
-    .category-card-description {
-        font-size: 0.8rem;
-    }
-
     .products-grid-page {
         grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
         gap: 1rem;
@@ -1146,26 +922,6 @@
         grid-template-columns: repeat(2, 1fr);
         max-width: 400px;
         margin: 0 auto;
-    }
-
-    .category-card {
-        padding: 1.25rem 0.75rem;
-        min-height: 150px;
-    }
-
-    .category-card-icon {
-        width: 48px;
-        height: 48px;
-        font-size: 1.3rem;
-        margin-bottom: 0.75rem;
-    }
-
-    .category-card-name {
-        font-size: 0.85rem;
-    }
-
-    .category-card-description {
-        display: none;
     }
 
     .products-grid-page {

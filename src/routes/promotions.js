@@ -5,25 +5,54 @@ const express = require('express');
 const router = express.Router();
 const { param } = require('express-validator');
 const { promotionController } = require('../controllers');
-const { authenticate, requireAdmin } = require('../middleware/auth');
+const { authenticate, requireAdmin, optionalAuth } = require('../middleware/auth');
+
+// ======================================================
+// ROTAS ADMIN (DEVEM VIR ANTES DE /:id)
+// ======================================================
+router.get('/admin/list', authenticate, requireAdmin, promotionController.adminList);
+
+router.post(
+    '/admin/:id/reset',
+    authenticate,
+    requireAdmin,
+    param('id').isInt({ min: 1 }).withMessage('ID inválido'),
+    promotionController.adminResetUsage
+);
+
+router.get(
+    '/admin/:id/usages',
+    authenticate,
+    requireAdmin,
+    param('id').isInt({ min: 1 }).withMessage('ID inválido'),
+    promotionController.adminUsages
+);
+
+router.patch(
+    '/admin/:id/toggle',
+    authenticate,
+    requireAdmin,
+    param('id').isInt({ min: 1 }).withMessage('ID inválido'),
+    promotionController.adminToggle
+);
 
 // ======================================================
 // ROTAS PÚBLICAS
 // ======================================================
 
-// GET /api/promotions/active - Promoções ativas no momento
+// GET /api/promotions/active
 router.get('/active', promotionController.active);
 
-// GET /api/promotions/code/:code - Validar cupom por código
-router.get('/code/:code', promotionController.getByCode);
+// GET /api/promotions/code/:code (com optionalAuth para checar se usuário usou)
+router.get('/code/:code', optionalAuth, promotionController.getByCode);
 
-// GET /api/promotions/available?subtotal=X - Cupons aplicáveis ao carrinho
-router.get('/available', promotionController.availableForCart);
+// GET /api/promotions/available?subtotal=X&items=[...]
+router.get('/available', optionalAuth, promotionController.availableForCart);
 
-// GET /api/promotions - Listar todas as promoções
+// GET /api/promotions
 router.get('/', promotionController.list);
 
-// GET /api/promotions/:id - Buscar promoção por ID
+// GET /api/promotions/:id
 router.get(
     '/:id',
     param('id').isInt({ min: 1 }).withMessage('ID inválido'),
@@ -31,13 +60,10 @@ router.get(
 );
 
 // ======================================================
-// ROTAS ADMINISTRATIVAS
+// ROTAS ADMIN (CRUD)
 // ======================================================
-
-// POST /api/promotions - Criar nova promoção
 router.post('/', authenticate, requireAdmin, promotionController.create);
 
-// PUT /api/promotions/:id - Atualizar promoção
 router.put(
     '/:id',
     authenticate,
@@ -46,7 +72,6 @@ router.put(
     promotionController.update
 );
 
-// DELETE /api/promotions/:id - Remover promoção
 router.delete(
     '/:id',
     authenticate,

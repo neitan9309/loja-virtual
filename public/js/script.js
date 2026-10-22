@@ -1507,43 +1507,56 @@ const MobileMenu = {
         },
     };
 
-    // ======================================================
-    // INICIALIZAÇÃO
-    // ======================================================
-    document.addEventListener('DOMContentLoaded', async () => {
-        observeAnimateOnScroll();
+// ======================================================
+// INICIALIZAÇÃO
+// ======================================================
+document.addEventListener('DOMContentLoaded', async () => {
+    // ==================================================
+    // CORREÇÃO: FORÇAR SCROLL PARA O TOPO AO CARREGAR A PÁGINA
+    // ==================================================
+    // Impede que o navegador restaure a posição de rolagem anterior
+    // ou que o vídeo/foco puxe a tela para baixo.
+    if ('scrollRestoration' in history) {
+        history.scrollRestoration = 'manual';
+    }
+    
+    // Rola para o topo imediatamente
+    window.scrollTo(0, 0);
 
-        Header.init();
-        MobileMenu.init();
-        Dropdowns.init();
-        HeroCarousel.init();
-        PromoCarousel.init();
-        CouponModal.init();
-        InfoModal.init();
-        LocationModal.init();
-        Newsletter.init();
-        CustomerService.init();
+    // ==================================================
+    // RESTO DA INICIALIZAÇÃO
+    // ==================================================
+    observeAnimateOnScroll();
 
-        await Promise.all([
-            FeaturedProducts.load(),
-            MegaMenu.init(),
-        ]);
+    Header.init();
+    MobileMenu.init();
+    Dropdowns.init();
+    HeroCarousel.init();
+    PromoCarousel.init();
+    CouponModal.init();
+    InfoModal.init();
+    LocationModal.init();
+    Newsletter.init();
+    CustomerService.init();
 
-        await HomeCategories.init();
+    await Promise.all([
+        FeaturedProducts.load(),
+        MegaMenu.init(),
+    ]);
 
-        SearchModal.init();
+    await HomeCategories.init();
 
-                // ============================================
-        // Sincroniza wishlist após login
-        // ============================================
-        if (sessionStorage.getItem('luxury_just_logged_in') === 'true') {
-            sessionStorage.removeItem('luxury_just_logged_in');
-            if (window.LuxuryWishlist) {
-                window.LuxuryWishlist.loadIds().then(() => {
-                    window.LuxuryWishlist.syncAllVisible();
-                });
-            }
+    SearchModal.init();
+
+    // Sincroniza wishlist após login
+    if (sessionStorage.getItem('luxury_just_logged_in') === 'true') {
+        sessionStorage.removeItem('luxury_just_logged_in');
+        if (window.LuxuryWishlist) {
+            window.LuxuryWishlist.loadIds().then(() => {
+                window.LuxuryWishlist.syncAllVisible();
+            });
         }
-        console.log('✅ Luxury Store - Sistema carregado com sucesso!');
-    });
+    }
+    console.log('✅ Luxury Store - Sistema carregado com sucesso!');
+});
 })();

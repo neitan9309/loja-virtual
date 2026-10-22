@@ -16,7 +16,8 @@ const cartRoutes = require('./cart');
 const uploadRoutes = require('./upload');
 const orderRoutes = require('./orders');
 const metricsRoutes = require('./metrics');
-const wishlistRoutes = require('./wishlist');   // ← ADICIONADO
+const wishlistRoutes = require('./wishlist');
+const addressRoutes = require('./addresses');   // ← ADICIONADO
 
 router.use('/products', productRoutes);
 router.use('/categories', categoryRoutes);
@@ -30,6 +31,7 @@ router.use('/cart', cartRoutes);
 router.use('/upload', uploadRoutes);
 router.use('/orders', orderRoutes);
 router.use('/metrics', metricsRoutes);
-router.use('/wishlist', wishlistRoutes);   // ← ADICIONADO
+router.use('/wishlist', wishlistRoutes);
+router.use('/addresses', addressRoutes);   // ← ADICIONADO
 
 module.exports = router;

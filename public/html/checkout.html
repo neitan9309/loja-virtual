@@ -62,53 +62,67 @@
             <!-- COLUNA ESQUERDA: FORMULÁRIO -->
             <div class="checkout-form-col">
 
-                <!-- ENDEREÇO -->
-                <section class="checkout-section">
-                    <h2 class="checkout-section-title">
-                        <i class="fas fa-map-marker-alt"></i>
-                        Endereço de entrega
-                    </h2>
+<!-- ENDEREÇO -->
+<section class="checkout-section">
+    <h2 class="checkout-section-title">
+        <i class="fas fa-map-marker-alt"></i>
+        Endereço de entrega
+    </h2>
 
-                    <form class="checkout-form" id="addressForm">
-                        <div class="checkout-field checkout-field-full">
-                            <label for="coCep">CEP *</label>
-                            <div class="cep-wrapper">
-                                <input type="text" id="coCep" name="cep" required maxlength="9" inputmode="numeric" placeholder="00000-000">
-                                <span class="cep-status" id="coCepStatus"></span>
-                            </div>
-                        </div>
+    <!-- Lista de endereços salvos -->
+    <div id="savedAddressesList" style="margin-bottom: 1.5rem; display: none;">
+        <p style="font-size: 0.85rem; color: var(--gray-500); margin-bottom: 0.75rem;">Escolha um endereço salvo:</p>
+        <!-- Os cards de endereço serão injetados aqui pelo JS -->
+    </div>
 
-                        <div class="checkout-field checkout-field-full">
-                            <label for="coStreet">Rua / Logradouro *</label>
-                            <input type="text" id="coStreet" name="street" required readonly>
-                        </div>
+    <!-- Botão para alternar entre lista e formulário -->
+    <button type="button" class="btn btn-secondary" id="btnToggleNewAddress" style="width: 100%; margin-bottom: 1rem;">
+        <i class="fas fa-plus"></i> Cadastrar novo endereço
+    </button>
 
-                        <div class="checkout-field">
-                            <label for="coNumber">Número *</label>
-                            <input type="text" id="coNumber" name="number" required maxlength="20">
-                        </div>
+    <!-- Formulário de endereço (oculto por padrão se houver endereços salvos) -->
+    <div id="newAddressFormContainer" style="display: none;">
+        <form class="checkout-form" id="addressForm">
+            <div class="checkout-field checkout-field-full">
+                <label for="coCep">CEP *</label>
+                <div class="cep-wrapper">
+                    <input type="text" id="coCep" name="cep" required maxlength="9" inputmode="numeric" placeholder="00000-000">
+                    <span class="cep-status" id="coCepStatus"></span>
+                </div>
+            </div>
 
-                        <div class="checkout-field">
-                            <label for="coComplement">Complemento</label>
-                            <input type="text" id="coComplement" name="complement" maxlength="100">
-                        </div>
+            <div class="checkout-field checkout-field-full">
+                <label for="coStreet">Rua / Logradouro *</label>
+                <input type="text" id="coStreet" name="street" required readonly>
+            </div>
 
-                        <div class="checkout-field checkout-field-full">
-                            <label for="coNeighborhood">Bairro *</label>
-                            <input type="text" id="coNeighborhood" name="neighborhood" required readonly>
-                        </div>
+            <div class="checkout-field">
+                <label for="coNumber">Número *</label>
+                <input type="text" id="coNumber" name="number" required maxlength="20">
+            </div>
 
-                        <div class="checkout-field">
-                            <label for="coCity">Cidade *</label>
-                            <input type="text" id="coCity" name="city" required readonly>
-                        </div>
+            <div class="checkout-field">
+                <label for="coComplement">Complemento</label>
+                <input type="text" id="coComplement" name="complement" maxlength="100">
+            </div>
 
-                        <div class="checkout-field">
-                            <label for="coState">Estado *</label>
-                            <input type="text" id="coState" name="state" required readonly maxlength="2">
-                        </div>
-                    </form>
-                </section>
+            <div class="checkout-field checkout-field-full">
+                <label for="coNeighborhood">Bairro *</label>
+                <input type="text" id="coNeighborhood" name="neighborhood" required readonly>
+            </div>
+
+            <div class="checkout-field">
+                <label for="coCity">Cidade *</label>
+                <input type="text" id="coCity" name="city" required readonly>
+            </div>
+
+            <div class="checkout-field">
+                <label for="coState">Estado *</label>
+                <input type="text" id="coState" name="state" required readonly maxlength="2">
+            </div>
+        </form>
+    </div>
+</section>
 
                 <!-- PAGAMENTO -->
                 <section class="checkout-section">

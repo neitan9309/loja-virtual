@@ -38,7 +38,8 @@ function execPsql(command) {
 
 function execPsqlFile(file) {
     const env = { ...process.env, PGPASSWORD: DB_PASS };
-    return execSync(`psql -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER} -d ${DB_NAME} -f "${file}"`, {
+    // -v ON_ERROR_STOP=1 faz o psql parar se houver erro no SQL
+    return execSync(`psql -h ${DB_HOST} -p ${DB_PORT} -U ${DB_USER} -d ${DB_NAME} -v ON_ERROR_STOP=1 -f "${file}"`, {
         env,
         stdio: ['pipe', 'pipe', 'pipe'],
     });
@@ -50,6 +51,8 @@ function execPsqlFile(file) {
 async function dropAndCreate() {
     log(`Dropando banco "${DB_NAME}"...`);
     try {
+        // Força a desconexão de outros usuários
+        execPsql(`SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '${DB_NAME}' AND pid <> pg_backend_pid();`);
         execPsql(`DROP DATABASE IF EXISTS ${DB_NAME}`);
         log('Banco dropado.', 'success');
     } catch (err) {
@@ -71,8 +74,10 @@ function runSchema() {
         process.exit(1);
     }
     try {
-        execPsqlFile(SCHEMA_PATH);
+        const output = execPsqlFile(SCHEMA_PATH);
         log('Schema aplicado.', 'success');
+        // Opcional: logar o output do psql para ver se criou as tabelas
+        // console.log(output.toString());
     } catch (err) {
         log('Erro ao aplicar schema.', 'error');
         console.error(err.stderr?.toString() || err.message);
@@ -90,8 +95,10 @@ function runSeeds() {
         process.exit(1);
     }
     try {
-        execPsqlFile(SEEDS_PATH);
+        const output = execPsqlFile(SEEDS_PATH);
         log('Seeds aplicados.', 'success');
+        // Opcional: logar o output do psql para ver se populou
+        // console.log(output.toString());
     } catch (err) {
         log('Erro ao aplicar seeds.', 'error');
         console.error(err.stderr?.toString() || err.message);
@@ -134,6 +141,45 @@ async function fixPasswords() {
 }
 
 // ======================================================
+// PASSO 5: Validar criação da tabela promotion_usage
+// ======================================================
+async function validateTables() {
+    log('Validando tabelas criadas...');
+    const pool = new Pool({
+        host: DB_HOST,
+        port: DB_PORT,
+        user: DB_USER,
+        password: DB_PASS,
+        database: DB_NAME,
+    });
+
+    try {
+        const result = await pool.query(`
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            AND table_name IN ('promotion_usage', 'promotions', 'orders', 'products', 'users')
+            ORDER BY table_name;
+        `);
+        
+        const tables = result.rows.map(r => r.table_name);
+        console.log('Tabelas encontradas:', tables);
+
+        if (tables.includes('promotion_usage')) {
+            log('Tabela "promotion_usage" criada com sucesso!', 'success');
+        } else {
+            log('ERRO: Tabela "promotion_usage" NÃO foi criada!', 'error');
+            log('Verifique se o schema.sql contém a definição dela.', 'warn');
+            process.exit(1);
+        }
+    } catch (err) {
+        log(`Erro ao validar tabelas: ${err.message}`, 'error');
+    } finally {
+        await pool.end();
+    }
+}
+
+// ======================================================
 // MAIN
 // ======================================================
 async function main() {
@@ -149,6 +195,8 @@ async function main() {
         runSeeds();
         console.log('');
         await fixPasswords();
+        console.log('');
+        await validateTables(); // Valida a criação da tabela
 
         console.log('\n═══════════════════════════════════════════════');
         log('🎉 Banco resetado com sucesso!', 'success');

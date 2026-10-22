@@ -14,6 +14,7 @@
 </head>
 <body>
 
+    <!-- ============ GUARD DE AUTENTICAÇÃO ============ -->
     <script>
         (function () {
             const token = localStorage.getItem('luxury_admin_token');
@@ -41,13 +42,18 @@
                 <span>Pedidos</span>
             </button>
 
+            <button class="nav-item" data-target="section-coupons">
+                <i class="fas fa-ticket-alt"></i>
+                <span>Cupons</span>
+            </button>
+
             <button class="nav-item" data-target="section-metrics">
                 <i class="fas fa-chart-pie"></i>
                 <span>Métricas</span>
             </button>
 
             <div class="nav-group open" id="navGroupRegistro">
-                <button class="nav-item nav-item-parent" data-toggle="registro">
+                <button class="nav-item nav-item-parent" data-toggle="registro" aria-expanded="true">
                     <i class="fas fa-plus-circle"></i>
                     <span>Registro</span>
                     <i class="fas fa-chevron-down nav-arrow"></i>
@@ -176,11 +182,9 @@
                 </button>
             </header>
 
-                        <div class="orders-kpi-grid">
+            <div class="orders-kpi-grid">
                 <button type="button" class="orders-kpi-card active" data-order-filter="all">
-                    <div class="orders-kpi-icon orders-kpi-icon-all">
-                        <i class="fas fa-receipt"></i>
-                    </div>
+                    <div class="orders-kpi-icon orders-kpi-icon-all"><i class="fas fa-receipt"></i></div>
                     <div class="orders-kpi-info">
                         <span class="orders-kpi-label">Total</span>
                         <span class="orders-kpi-value" id="ordersKpiTotal">—</span>
@@ -188,9 +192,7 @@
                 </button>
 
                 <button type="button" class="orders-kpi-card" data-order-filter="pending">
-                    <div class="orders-kpi-icon orders-kpi-icon-warning">
-                        <i class="fas fa-hourglass-half"></i>
-                    </div>
+                    <div class="orders-kpi-icon orders-kpi-icon-warning"><i class="fas fa-hourglass-half"></i></div>
                     <div class="orders-kpi-info">
                         <span class="orders-kpi-label">Pendentes</span>
                         <span class="orders-kpi-value" id="ordersKpiPending">—</span>
@@ -198,9 +200,7 @@
                 </button>
 
                 <button type="button" class="orders-kpi-card" data-order-filter="paid">
-                    <div class="orders-kpi-icon orders-kpi-icon-orange">
-                        <i class="fas fa-box"></i>
-                    </div>
+                    <div class="orders-kpi-icon orders-kpi-icon-orange"><i class="fas fa-box"></i></div>
                     <div class="orders-kpi-info">
                         <span class="orders-kpi-label">Aguardando envio</span>
                         <span class="orders-kpi-value" id="ordersKpiPaid">—</span>
@@ -208,9 +208,7 @@
                 </button>
 
                 <button type="button" class="orders-kpi-card" data-order-filter="shipped">
-                    <div class="orders-kpi-icon orders-kpi-icon-info">
-                        <i class="fas fa-truck"></i>
-                    </div>
+                    <div class="orders-kpi-icon orders-kpi-icon-info"><i class="fas fa-truck"></i></div>
                     <div class="orders-kpi-info">
                         <span class="orders-kpi-label">Enviados</span>
                         <span class="orders-kpi-value" id="ordersKpiShipped">—</span>
@@ -218,9 +216,7 @@
                 </button>
 
                 <button type="button" class="orders-kpi-card" data-order-filter="delivered">
-                    <div class="orders-kpi-icon orders-kpi-icon-success">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
+                    <div class="orders-kpi-icon orders-kpi-icon-success"><i class="fas fa-check-circle"></i></div>
                     <div class="orders-kpi-info">
                         <span class="orders-kpi-label">Entregues</span>
                         <span class="orders-kpi-value" id="ordersKpiDelivered">—</span>
@@ -228,9 +224,7 @@
                 </button>
 
                 <button type="button" class="orders-kpi-card" data-order-filter="cancelled">
-                    <div class="orders-kpi-icon orders-kpi-icon-danger">
-                        <i class="fas fa-times-circle"></i>
-                    </div>
+                    <div class="orders-kpi-icon orders-kpi-icon-danger"><i class="fas fa-times-circle"></i></div>
                     <div class="orders-kpi-info">
                         <span class="orders-kpi-label">Cancelados</span>
                         <span class="orders-kpi-value" id="ordersKpiCancelled">—</span>
@@ -238,7 +232,6 @@
                 </button>
             </div>
 
-            <!-- Tabela + filtros -->
             <div class="card">
                 <div class="card-header">
                     <h2><i class="fas fa-list"></i> Lista de Pedidos</h2>
@@ -248,24 +241,82 @@
                 <div class="card-body">
                     <div class="table-wrapper">
                         <table class="data-table" id="ordersTable">
-<thead>
-    <tr>
-        <th data-sort="id" data-type="number">Pedido</th>
-        <th data-sort="created_at" data-type="date" class="col-center">Data</th>
-        <th data-sort="user_name" data-type="string">Cliente</th>
-        <th data-sort="items_count" data-type="number" class="col-center">Itens</th>
-        <th data-sort="status" data-type="string" class="col-center">Status</th>
-        <th data-sort="shipping_status" data-type="string" class="col-center">Envio</th>
-        <th data-sort="payment_method" data-type="string" class="col-center">Pagamento</th>
-        <th data-sort="total" data-type="number" class="col-money">Total</th>
-    </tr>
-</thead>
+                            <thead>
+                                <tr>
+                                    <th data-sort="id" data-type="number">Pedido</th>
+                                    <th data-sort="created_at" data-type="date" class="col-center">Data</th>
+                                    <th data-sort="user_name" data-type="string">Cliente</th>
+                                    <th data-sort="items_count" data-type="number" class="col-center">Itens</th>
+                                    <th data-sort="status" data-type="string" class="col-center">Status</th>
+                                    <th data-sort="shipping_status" data-type="string" class="col-center">Envio</th>
+                                    <th data-sort="payment_method" data-type="string" class="col-center">Pagamento</th>
+                                    <th data-sort="total" data-type="number" class="col-money">Total</th>
+                                </tr>
+                            </thead>
                             <tbody>
-                                <tr><td colspan="7" class="table-empty">Carregando...</td></tr>
+                                <tr><td colspan="8" class="table-empty">Carregando...</td></tr>
                             </tbody>
                         </table>
                     </div>
                     <div id="ordersPagination" class="pagination"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== CUPONS ==================== -->
+        <section class="section" id="section-coupons">
+            <header class="section-header">
+                <div>
+                    <h1>Cupons</h1>
+                    <p class="section-subtitle">Gerencie os cupons de desconto da loja</p>
+                </div>
+                <div class="coupons-header-actions">
+                    <button class="btn btn-primary" id="btnNewCoupon">
+                        <i class="fas fa-plus"></i>
+                        Novo Cupom
+                    </button>
+                    <button class="btn-refresh" id="refreshCoupons">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>Atualizar</span>
+                    </button>
+                </div>
+            </header>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-ticket-alt"></i> Lista de Cupons</h2>
+                    <span class="coupons-count-hint" id="couponsCountHint"></span>
+                </div>
+
+                <div class="card-body">
+                    <div class="table-filters">
+                        <input
+                            type="text"
+                            class="table-filter-input table-filter-input--md"
+                            id="couponsSearch"
+                            placeholder="Buscar por código ou nome..."
+                        >
+                        <select class="table-filter-select" id="couponsStatusFilter">
+                            <option value="all">Todos</option>
+                            <option value="active">Ativos</option>
+                            <option value="inactive">Inativos</option>
+                            <option value="scheduled">Agendados</option>
+                            <option value="expired">Expirados</option>
+                        </select>
+                        <select class="table-filter-select" id="couponsSort">
+                            <option value="created_at">Data de criação</option>
+                            <option value="name">Nome</option>
+                            <option value="usage_count">Mais usados</option>
+                            <option value="end_date">Data de validade</option>
+                        </select>
+                        <button class="table-filter-btn table-filter-btn--clear" id="clearCouponsFilters">
+                            <i class="fas fa-times"></i> Limpar
+                        </button>
+                    </div>
+
+                    <div id="couponsList" class="coupons-list">
+                        <div class="loading"><i class="fas fa-spinner fa-spin"></i><span>Carregando...</span></div>
+                    </div>
                 </div>
             </div>
         </section>
@@ -293,9 +344,7 @@
 
             <div class="metrics-kpi-grid">
                 <div class="metrics-kpi-card">
-                    <div class="metrics-kpi-icon metrics-kpi-icon-accent">
-                        <i class="fas fa-dollar-sign"></i>
-                    </div>
+                    <div class="metrics-kpi-icon metrics-kpi-icon-accent"><i class="fas fa-dollar-sign"></i></div>
                     <div class="metrics-kpi-info">
                         <span class="metrics-kpi-label">Receita</span>
                         <span class="metrics-kpi-value" id="metricsRevenue">—</span>
@@ -304,9 +353,7 @@
                 </div>
 
                 <div class="metrics-kpi-card">
-                    <div class="metrics-kpi-icon metrics-kpi-icon-blue">
-                        <i class="fas fa-shopping-bag"></i>
-                    </div>
+                    <div class="metrics-kpi-icon metrics-kpi-icon-blue"><i class="fas fa-shopping-bag"></i></div>
                     <div class="metrics-kpi-info">
                         <span class="metrics-kpi-label">Pedidos</span>
                         <span class="metrics-kpi-value" id="metricsOrders">—</span>
@@ -315,9 +362,7 @@
                 </div>
 
                 <div class="metrics-kpi-card">
-                    <div class="metrics-kpi-icon metrics-kpi-icon-green">
-                        <i class="fas fa-receipt"></i>
-                    </div>
+                    <div class="metrics-kpi-icon metrics-kpi-icon-green"><i class="fas fa-receipt"></i></div>
                     <div class="metrics-kpi-info">
                         <span class="metrics-kpi-label">Ticket Médio</span>
                         <span class="metrics-kpi-value" id="metricsTicketAvg">—</span>
@@ -326,9 +371,7 @@
                 </div>
 
                 <div class="metrics-kpi-card">
-                    <div class="metrics-kpi-icon metrics-kpi-icon-purple">
-                        <i class="fas fa-user-plus"></i>
-                    </div>
+                    <div class="metrics-kpi-icon metrics-kpi-icon-purple"><i class="fas fa-user-plus"></i></div>
                     <div class="metrics-kpi-info">
                         <span class="metrics-kpi-label">Novos Clientes</span>
                         <span class="metrics-kpi-value" id="metricsCustomers">—</span>
@@ -343,9 +386,7 @@
                         <h2><i class="fas fa-chart-line"></i> Receita ao longo do tempo</h2>
                     </div>
                     <div class="card-body">
-                        <div class="chart-container">
-                            <canvas id="chartRevenue"></canvas>
-                        </div>
+                        <div class="chart-container"><canvas id="chartRevenue"></canvas></div>
                     </div>
                 </div>
 
@@ -354,9 +395,7 @@
                         <h2><i class="fas fa-chart-pie"></i> Pedidos por status</h2>
                     </div>
                     <div class="card-body">
-                        <div class="chart-container chart-container-donut">
-                            <canvas id="chartOrdersStatus"></canvas>
-                        </div>
+                        <div class="chart-container chart-container-donut"><canvas id="chartOrdersStatus"></canvas></div>
                     </div>
                 </div>
 
@@ -365,9 +404,7 @@
                         <h2><i class="fas fa-credit-card"></i> Formas de pagamento</h2>
                     </div>
                     <div class="card-body">
-                        <div class="chart-container chart-container-donut">
-                            <canvas id="chartPaymentMethods"></canvas>
-                        </div>
+                        <div class="chart-container chart-container-donut"><canvas id="chartPaymentMethods"></canvas></div>
                     </div>
                 </div>
 
@@ -376,9 +413,7 @@
                         <h2><i class="fas fa-layer-group"></i> Top categorias por receita</h2>
                     </div>
                     <div class="card-body">
-                        <div class="chart-container">
-                            <canvas id="chartTopCategories"></canvas>
-                        </div>
+                        <div class="chart-container"><canvas id="chartTopCategories"></canvas></div>
                     </div>
                 </div>
 
@@ -387,9 +422,7 @@
                         <h2><i class="fas fa-exchange-alt"></i> Movimentações de estoque</h2>
                     </div>
                     <div class="card-body">
-                        <div class="chart-container">
-                            <canvas id="chartStockMovements"></canvas>
-                        </div>
+                        <div class="chart-container"><canvas id="chartStockMovements"></canvas></div>
                     </div>
                 </div>
 
@@ -398,9 +431,7 @@
                         <h2><i class="fas fa-user-plus"></i> Novos clientes</h2>
                     </div>
                     <div class="card-body">
-                        <div class="chart-container">
-                            <canvas id="chartNewCustomers"></canvas>
-                        </div>
+                        <div class="chart-container"><canvas id="chartNewCustomers"></canvas></div>
                     </div>
                 </div>
 
@@ -409,9 +440,7 @@
                         <h2><i class="fas fa-tags"></i> Distribuição de preços</h2>
                     </div>
                     <div class="card-body">
-                        <div class="chart-container">
-                            <canvas id="chartPriceDistribution"></canvas>
-                        </div>
+                        <div class="chart-container"><canvas id="chartPriceDistribution"></canvas></div>
                     </div>
                 </div>
             </div>
@@ -952,10 +981,7 @@
         <div class="modal-content modal-dashboard-detail">
             <button class="close-modal" id="closeDashboardDetail" aria-label="Fechar modal">&times;</button>
             <div id="dashboardDetailBody">
-                <div class="loading">
-                    <i class="fas fa-spinner fa-spin"></i>
-                    <span>Carregando...</span>
-                </div>
+                <div class="loading"><i class="fas fa-spinner fa-spin"></i><span>Carregando...</span></div>
             </div>
         </div>
     </div>
@@ -965,10 +991,7 @@
         <div class="modal-content modal-dashboard-detail">
             <button class="close-modal" id="closeTopSellers" aria-label="Fechar modal">&times;</button>
             <div id="topSellersBody">
-                <div class="loading">
-                    <i class="fas fa-spinner fa-spin"></i>
-                    <span>Carregando...</span>
-                </div>
+                <div class="loading"><i class="fas fa-spinner fa-spin"></i><span>Carregando...</span></div>
             </div>
         </div>
     </div>
@@ -978,10 +1001,7 @@
         <div class="modal-content modal-dashboard-detail">
             <button class="close-modal" id="closeMovements" aria-label="Fechar modal">&times;</button>
             <div id="movementsBody">
-                <div class="loading">
-                    <i class="fas fa-spinner fa-spin"></i>
-                    <span>Carregando...</span>
-                </div>
+                <div class="loading"><i class="fas fa-spinner fa-spin"></i><span>Carregando...</span></div>
             </div>
         </div>
     </div>
@@ -991,10 +1011,7 @@
         <div class="modal-content modal-dashboard-detail">
             <button class="close-modal" id="closeMetricsDetail" aria-label="Fechar modal">&times;</button>
             <div id="metricsDetailBody">
-                <div class="loading">
-                    <i class="fas fa-spinner fa-spin"></i>
-                    <span>Carregando...</span>
-                </div>
+                <div class="loading"><i class="fas fa-spinner fa-spin"></i><span>Carregando...</span></div>
             </div>
         </div>
     </div>
@@ -1004,10 +1021,27 @@
         <div class="modal-content modal-dashboard-detail">
             <button class="close-modal" id="closeOrderDetail" aria-label="Fechar modal">&times;</button>
             <div id="orderDetailBody">
-                <div class="loading">
-                    <i class="fas fa-spinner fa-spin"></i>
-                    <span>Carregando...</span>
-                </div>
+                <div class="loading"><i class="fas fa-spinner fa-spin"></i><span>Carregando...</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ MODAL DE CRIAR/EDITAR CUPOM ============ -->
+    <div class="modal" id="couponModal" role="dialog" aria-modal="true">
+        <div class="modal-content modal-coupon">
+            <button class="close-modal" id="closeCouponModal" aria-label="Fechar modal">&times;</button>
+            <div id="couponModalBody">
+                <div class="loading"><i class="fas fa-spinner fa-spin"></i><span>Carregando...</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============ MODAL DE USOS DO CUPOM ============ -->
+    <div class="modal" id="couponUsagesModal" role="dialog" aria-modal="true">
+        <div class="modal-content modal-dashboard-detail">
+            <button class="close-modal" id="closeCouponUsages" aria-label="Fechar modal">&times;</button>
+            <div id="couponUsagesBody">
+                <div class="loading"><i class="fas fa-spinner fa-spin"></i><span>Carregando...</span></div>
             </div>
         </div>
     </div>

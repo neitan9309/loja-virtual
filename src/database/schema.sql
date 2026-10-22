@@ -5,9 +5,6 @@
 --   psql -U postgres -d luxury_store -f src/database/schema.sql
 -- Ou:
 --   node db-reset.js
---
--- ⚠️ Este arquivo substitui o antigo migration-orders.sql.
---    As tabelas orders/order_items/payments agora vivem aqui.
 -- ======================================================
 
 SET client_encoding = 'UTF8';
@@ -24,7 +21,7 @@ END;
 $$ language 'plpgsql';
 
 -- ======================================================
--- CATEGORIAS (3 NÍVEIS)
+-- CATEGORIAS
 -- ======================================================
 CREATE TABLE categories (
     id SERIAL PRIMARY KEY,
@@ -81,8 +78,6 @@ CREATE TABLE users (
     gender VARCHAR(20) CHECK (gender IN ('masculino', 'feminino', 'outro', 'prefiro_nao_dizer')),
     phone VARCHAR(20),
     cpf VARCHAR(14) UNIQUE,
-
-    -- Endereço
     cep VARCHAR(9),
     street VARCHAR(150),
     number VARCHAR(20),
@@ -90,8 +85,6 @@ CREATE TABLE users (
     neighborhood VARCHAR(100),
     city VARCHAR(100),
     state VARCHAR(2),
-
-    -- Controle
     role VARCHAR(20) NOT NULL DEFAULT 'customer'
         CHECK (role IN ('customer', 'admin', 'moderator')),
     is_active BOOLEAN DEFAULT TRUE,
@@ -113,6 +106,27 @@ CREATE TABLE user_sessions (
     expires_at TIMESTAMP NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- ======================================================
+-- ENDEREÇOS DOS USUÁRIOS
+-- ======================================================
+CREATE TABLE user_addresses (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    label VARCHAR(50) NOT NULL, -- Ex: "Casa", "Trabalho"
+    cep VARCHAR(9) NOT NULL,
+    street VARCHAR(150) NOT NULL,
+    number VARCHAR(20) NOT NULL,
+    complement VARCHAR(100),
+    neighborhood VARCHAR(100) NOT NULL,
+    city VARCHAR(100) NOT NULL,
+    state VARCHAR(2) NOT NULL,
+    is_default BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_user_addresses_user_id ON user_addresses(user_id);
 
 -- ======================================================
 -- PRODUTOS
@@ -152,9 +166,6 @@ CREATE TABLE products (
     deleted_at TIMESTAMP
 );
 
--- ======================================================
--- IMAGENS DOS PRODUTOS
--- ======================================================
 CREATE TABLE product_images (
     id SERIAL PRIMARY KEY,
     product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
@@ -165,9 +176,6 @@ CREATE TABLE product_images (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- ======================================================
--- VARIAÇÕES DOS PRODUTOS
--- ======================================================
 CREATE TABLE product_variations (
     id SERIAL PRIMARY KEY,
     product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
@@ -202,9 +210,6 @@ CREATE TABLE product_reviews (
     UNIQUE (user_id, product_id)
 );
 
--- ======================================================
--- TAGS
--- ======================================================
 CREATE TABLE product_tags (
     id SERIAL PRIMARY KEY,
     product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
@@ -229,9 +234,6 @@ CREATE TABLE inventory (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- ======================================================
--- MOVIMENTAÇÕES
--- ======================================================
 CREATE TABLE inventory_movements (
     id SERIAL PRIMARY KEY,
     product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
@@ -263,7 +265,7 @@ CREATE TABLE prices (
 );
 
 -- ======================================================
--- PROMOÇÕES
+-- PROMOÇÕES (com restrição de categoria)
 -- ======================================================
 CREATE TABLE promotions (
     id SERIAL PRIMARY KEY,
@@ -281,6 +283,8 @@ CREATE TABLE promotions (
     end_date TIMESTAMP NOT NULL,
     is_active BOOLEAN DEFAULT TRUE,
     applies_to_all BOOLEAN DEFAULT TRUE,
+    restricted_category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
+    is_first_purchase_only BOOLEAN DEFAULT FALSE, 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -355,18 +359,6 @@ CREATE TABLE product_answers (
 );
 
 -- ======================================================
--- WISHLIST (Favoritos)
--- ======================================================
-CREATE TABLE wishlists (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-    price_when_added DECIMAL(10,2) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (user_id, product_id)
-);
-
--- ======================================================
 -- CARRINHO
 -- ======================================================
 CREATE TABLE carts (
@@ -387,25 +379,32 @@ CREATE TABLE cart_items (
 );
 
 -- ======================================================
--- PEDIDOS (unificado — antes em migration-orders.sql)
+-- WISHLIST
+-- ======================================================
+CREATE TABLE wishlists (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+    price_when_added DECIMAL(10,2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (user_id, product_id)
+);
+
+-- ======================================================
+-- PEDIDOS
 -- ======================================================
 CREATE TABLE orders (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-
     status VARCHAR(20) NOT NULL DEFAULT 'pending'
         CHECK (status IN ('pending', 'paid', 'shipped', 'delivered', 'cancelled')),
-
     subtotal DECIMAL(10,2) NOT NULL DEFAULT 0 CHECK (subtotal >= 0),
     shipping_cost DECIMAL(10,2) NOT NULL DEFAULT 0 CHECK (shipping_cost >= 0),
     discount DECIMAL(10,2) NOT NULL DEFAULT 0 CHECK (discount >= 0),
     total DECIMAL(10,2) NOT NULL DEFAULT 0 CHECK (total >= 0),
-
     payment_method VARCHAR(20) CHECK (payment_method IN ('pix', 'credit_card', 'boleto')),
     payment_status VARCHAR(20) NOT NULL DEFAULT 'pending'
         CHECK (payment_status IN ('pending', 'paid', 'failed', 'refunded')),
-
-    -- Snapshot do endereço
     shipping_cep VARCHAR(9),
     shipping_street VARCHAR(150),
     shipping_number VARCHAR(20),
@@ -413,45 +412,45 @@ CREATE TABLE orders (
     shipping_neighborhood VARCHAR(100),
     shipping_city VARCHAR(100),
     shipping_state VARCHAR(2),
-
     notes TEXT,
-
     cancelled_at TIMESTAMP,
     cancel_reason VARCHAR(255),
-
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Rastreia uso por usuário (1 uso por user por promo)
+CREATE TABLE promotion_usage (
+    id SERIAL PRIMARY KEY,
+    promotion_id INTEGER NOT NULL REFERENCES promotions(id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    order_id INTEGER REFERENCES orders(id) ON DELETE SET NULL,
+    used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_reset BOOLEAN DEFAULT FALSE -- NOVO: Indica se este uso foi "resetado" pelo admin
 );
 
 CREATE TABLE order_items (
     id SERIAL PRIMARY KEY,
     order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
     product_id INTEGER REFERENCES products(id) ON DELETE SET NULL,
-
-    -- Snapshot do produto
     product_name VARCHAR(150) NOT NULL,
     product_slug VARCHAR(150),
     product_image VARCHAR(255),
-
     quantity INTEGER NOT NULL CHECK (quantity > 0),
     unit_price DECIMAL(10,2) NOT NULL CHECK (unit_price >= 0),
     subtotal DECIMAL(10,2) NOT NULL CHECK (subtotal >= 0),
-
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE payments (
     id SERIAL PRIMARY KEY,
     order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-
     method VARCHAR(20) NOT NULL CHECK (method IN ('pix', 'credit_card', 'boleto')),
     status VARCHAR(20) NOT NULL DEFAULT 'pending'
         CHECK (status IN ('pending', 'paid', 'failed', 'refunded')),
-
     amount DECIMAL(10,2) NOT NULL CHECK (amount >= 0),
     transaction_id VARCHAR(100),
     gateway_response JSONB,
-
     paid_at TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -500,8 +499,12 @@ CREATE INDEX idx_prices_created_at ON prices(created_at);
 CREATE INDEX idx_promotions_is_active ON promotions(is_active);
 CREATE INDEX idx_promotions_start_date ON promotions(start_date);
 CREATE INDEX idx_promotions_end_date ON promotions(end_date);
+CREATE INDEX idx_promotions_restricted_category_id ON promotions(restricted_category_id);
 CREATE INDEX idx_promotion_products_promotion_id ON promotion_products(promotion_id);
 CREATE INDEX idx_promotion_products_product_id ON promotion_products(product_id);
+CREATE INDEX idx_promotion_usage_promotion_id ON promotion_usage(promotion_id);
+CREATE INDEX idx_promotion_usage_user_id ON promotion_usage(user_id);
+CREATE INDEX idx_promotion_usage_order_id ON promotion_usage(order_id);
 
 -- Relacionados / Bundles
 CREATE INDEX idx_product_related_product_id ON product_related(product_id);
@@ -557,8 +560,6 @@ CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECU
 CREATE TRIGGER update_carts_updated_at BEFORE UPDATE ON carts FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 CREATE TRIGGER update_cart_items_updated_at BEFORE UPDATE ON cart_items FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 CREATE TRIGGER update_product_reviews_updated_at BEFORE UPDATE ON product_reviews FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
-
--- Pedidos
 CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON orders FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 CREATE TRIGGER update_payments_updated_at BEFORE UPDATE ON payments FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 

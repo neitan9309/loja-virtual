@@ -22,6 +22,7 @@
         couponCode: null,
         total: 0,
         user: null,
+        selectedAddressId: null,
     };
 
     // ==================================================
@@ -29,15 +30,18 @@
     // ==================================================
     const CheckoutPage = {
         async init() {
-            // Exige login
             if (!API.isLoggedIn()) {
                 sessionStorage.setItem('luxury_redirect', '/checkout');
                 window.location.href = '/login';
                 return;
             }
 
+            // Carrega dados essenciais
             await this.loadUser();
             await this.loadCart();
+            
+            // Carrega endereços salvos e configura formulários
+            await this.loadSavedAddresses();
             this.setupAddressForm();
             this.setupCepLookup();
             this.setupPaymentMethods();
@@ -52,25 +56,11 @@
             try {
                 const user = await API.get('/auth/me');
                 state.user = user;
-                this.prefillAddress(user);
+                // Não preenche mais automaticamente o endereço do perfil aqui,
+                // pois vamos usar a lista de endereços salvos.
             } catch (error) {
                 console.error('Erro ao carregar usuário:', error);
             }
-        },
-
-        prefillAddress(user) {
-            const set = (id, value) => {
-                const el = document.getElementById(id);
-                if (el && value) el.value = value;
-            };
-
-            set('coCep', user.cep || '');
-            set('coStreet', user.street || '');
-            set('coNumber', user.number || '');
-            set('coComplement', user.complement || '');
-            set('coNeighborhood', user.neighborhood || '');
-            set('coCity', user.city || '');
-            set('coState', user.state || '');
         },
 
         // ==================================================
@@ -83,9 +73,13 @@
                 state.subtotal = parseFloat(cart.total) || 0;
 
                 if (!cart.items || cart.items.length === 0) {
-                    document.getElementById('checkoutLoading').style.display = 'none';
-                    document.getElementById('checkoutContent').style.display = 'none';
-                    document.getElementById('checkoutEmpty').style.display = 'flex';
+                    const loadingEl = document.getElementById('checkoutLoading');
+                    const contentEl = document.getElementById('checkoutContent');
+                    const emptyEl = document.getElementById('checkoutEmpty');
+
+                    if (loadingEl) loadingEl.style.display = 'none';
+                    if (contentEl) contentEl.style.display = 'none';
+                    if (emptyEl) emptyEl.style.display = 'flex';
                     return;
                 }
 
@@ -93,8 +87,10 @@
                 this.renderSummary();
                 await this.loadAvailableCoupons();
 
-                document.getElementById('checkoutLoading').style.display = 'none';
-                document.getElementById('checkoutContent').style.display = 'grid';
+                const loadingEl = document.getElementById('checkoutLoading');
+                const contentEl = document.getElementById('checkoutContent');
+                if (loadingEl) loadingEl.style.display = 'none';
+                if (contentEl) contentEl.style.display = 'grid';
             } catch (error) {
                 console.error('Erro ao carregar carrinho:', error);
                 C.createToast('Erro ao carregar carrinho', 'error');
@@ -102,10 +98,13 @@
         },
 
         // ==================================================
-        // CÁLCULO DE FRETE
+        // CÁLCULO DE FRETE (BLINDADO)
         // ==================================================
         async calculateShipping() {
-            const cep = document.getElementById('coCep').value.replace(/\D/g, '');
+            const cepInput = document.getElementById('coCep');
+            if (!cepInput) return; // Se o input não existe, aborta silenciosamente
+
+            const cep = cepInput.value.replace(/\D/g, '');
 
             if (cep.length !== 8) {
                 state.shippingCost = state.subtotal >= 99.9 ? 0 : 19.9;
@@ -188,7 +187,107 @@
         },
 
         // ==================================================
-        // ENDEREÇO
+        // ENDEREÇOS SALVOS
+        // ==================================================
+        async loadSavedAddresses() {
+            try {
+                const addresses = await API.get('/addresses');
+                const container = document.getElementById('savedAddressesList');
+                const formContainer = document.getElementById('newAddressFormContainer');
+                
+                if (!container || !formContainer) return;
+
+                if (addresses.length === 0) {
+                    container.style.display = 'none';
+                    formContainer.style.display = 'block';
+                    return;
+                }
+
+                container.style.display = 'block';
+                formContainer.style.display = 'none';
+
+                container.innerHTML = `
+                    <div class="checkout-address-list">
+                        ${addresses.map(addr => `
+                            <label class="checkout-address-option">
+                                <input type="radio" name="saved_address" value="${addr.id}" ${addr.is_default ? 'checked' : ''}>
+                                <div class="checkout-address-box">
+                                    <strong>${U.escapeHtml(addr.label)}</strong>
+                                    <span>${U.escapeHtml(addr.street)}, ${U.escapeHtml(addr.number)} ${addr.complement ? '· ' + U.escapeHtml(addr.complement) : ''}</span>
+                                    <span>${U.escapeHtml(addr.neighborhood)} · ${U.escapeHtml(addr.city)} - ${U.escapeHtml(addr.state)}</span>
+                                    <span>CEP: ${U.escapeHtml(addr.cep)}</span>
+                                </div>
+                            </label>
+                        `).join('')}
+                    </div>
+                `;
+
+                // Se tem padrão, já preenche o form
+                const defaultAddress = addresses.find(a => a.is_default);
+                if (defaultAddress) {
+                    state.selectedAddressId = defaultAddress.id;
+                    this.fillAddressFields(defaultAddress);
+                }
+
+                // Listener para selecionar endereço
+                container.querySelectorAll('input[name="saved_address"]').forEach(radio => {
+                    radio.addEventListener('change', () => {
+                        const selectedId = radio.value;
+                        state.selectedAddressId = selectedId;
+                        const addr = addresses.find(a => a.id == selectedId);
+                        if (addr) this.fillAddressFields(addr);
+                    });
+                });
+
+                // Toggle para novo endereço
+                const toggleBtn = document.getElementById('btnToggleNewAddress');
+                if (toggleBtn && !toggleBtn.dataset.bound) {
+                    toggleBtn.dataset.bound = 'true';
+                    toggleBtn.addEventListener('click', () => {
+                        const isHidden = formContainer.style.display === 'none';
+                        formContainer.style.display = isHidden ? 'block' : 'none';
+                        container.style.display = isHidden ? 'none' : 'block';
+                        
+                        if (isHidden) {
+                            state.selectedAddressId = null;
+                            container.querySelectorAll('input[name="saved_address"]').forEach(r => r.checked = false);
+                            this.fillAddressFields({ cep: '', street: '', number: '', complement: '', neighborhood: '', city: '', state: '' });
+                        } else {
+                            if (defaultAddress) {
+                                state.selectedAddressId = defaultAddress.id;
+                                this.fillAddressFields(defaultAddress);
+                                const radio = container.querySelector(`input[value="${defaultAddress.id}"]`);
+                                if (radio) radio.checked = true;
+                            }
+                        }
+                    });
+                }
+
+            } catch (error) {
+                console.error('Erro ao carregar endereços salvos:', error);
+            }
+        },
+
+        fillAddressFields(addr) {
+            const setVal = (id, value) => {
+                const el = document.getElementById(id);
+                if (el) el.value = value;
+            };
+
+            setVal('coCep', addr.cep || '');
+            setVal('coStreet', addr.street || '');
+            setVal('coNumber', addr.number || '');
+            setVal('coComplement', addr.complement || '');
+            setVal('coNeighborhood', addr.neighborhood || '');
+            setVal('coCity', addr.city || '');
+            setVal('coState', addr.state || '');
+            
+            // Recalcula o frete ao trocar de endereço
+            this.calculateShipping();
+        },
+
+        // ==================================================
+        // FORMULÁRIO DE ENDEREÇO
         // ==================================================
         setupAddressForm() {
             const fields = ['coCep', 'coNumber', 'coComplement'];
@@ -204,7 +303,7 @@
         setupCepLookup() {
             const cepInput = document.getElementById('coCep');
             const status = document.getElementById('coCepStatus');
-            if (!cepInput) return;
+            if (!cepInput || !status) return;
 
             cepInput.addEventListener('input', (e) => {
                 e.target.value = U.maskCep(e.target.value);
@@ -244,11 +343,11 @@
         // PAGAMENTO
         // ==================================================
         setupPaymentMethods() {
-            // CSS já lida com o visual, só precisamos garantir que está OK
+            // CSS já lida com o visual
         },
 
         // ==================================================
-        // CUPONS DISPONÍVEIS (automático)
+        // CUPONS DISPONÍVEIS
         // ==================================================
         async loadAvailableCoupons() {
             const container = document.getElementById('availableCoupons');
@@ -256,7 +355,10 @@
             if (!container || !list) return;
 
             try {
-                const data = await API.get(`/promotions/available?subtotal=${state.subtotal}`);
+                const cartItems = state.cart.items || [];
+                const itemsParam = encodeURIComponent(JSON.stringify(cartItems));
+                
+                const data = await API.get(`/promotions/available?subtotal=${state.subtotal}&items=${itemsParam}`);
                 const coupons = data.coupons || [];
 
                 if (coupons.length === 0) {
@@ -264,7 +366,6 @@
                     return;
                 }
 
-                // Oculta cupons que já foram aplicados
                 const filtered = coupons.filter((c) => c.code !== state.couponCode);
 
                 if (filtered.length === 0) {
@@ -305,7 +406,6 @@
                     `;
                 }).join('');
 
-                // Bind "Aplicar" em cada cupom
                 list.querySelectorAll('[data-apply-coupon]').forEach((btn) => {
                     btn.addEventListener('click', () => {
                         const code = btn.dataset.applyCoupon;
@@ -326,7 +426,7 @@
             const input = document.getElementById('couponInput');
             const feedback = document.getElementById('couponFeedback');
 
-            if (!btn) return;
+            if (!btn || !input || !feedback) return;
 
             btn.addEventListener('click', async () => {
                 const code = input.value.trim().toUpperCase();
@@ -344,7 +444,7 @@
         },
 
         // ==================================================
-        // APLICA CUPOM (usado por manual e auto)
+        // APLICA CUPOM
         // ==================================================
         async applyCouponByCode(code, opts = {}) {
             const { source = 'auto', feedbackEl, btnEl } = opts;
@@ -357,27 +457,45 @@
                 btnEl.textContent = '...';
             }
 
-            feedback.className = 'checkout-coupon-feedback';
-            feedback.textContent = '';
+            if (feedback) {
+                feedback.className = 'checkout-coupon-feedback';
+                feedback.textContent = '';
+            }
 
             try {
                 const promo = await API.get(`/promotions/code/${encodeURIComponent(code)}`);
 
-                // Valida min_purchase
-                if (promo.min_purchase && state.subtotal < parseFloat(promo.min_purchase)) {
-                    throw {
-                        data: {
-                            error: `Este cupom exige compra mínima de ${U.formatPrice(promo.min_purchase)}`,
-                        },
-                    };
+                // Validação de categoria
+                if (promo.restricted_category_id && !promo.applies_to_all) {
+                    const cartItems = state.cart.items || [];
+                    const itemsParam = encodeURIComponent(JSON.stringify(cartItems));
+                    const availableData = await API.get(`/promotions/available?subtotal=${state.subtotal}&items=${itemsParam}`);
+                    const availableCoupons = availableData.coupons || [];
+                    const isAvailable = availableCoupons.some(c => c.code === code);
+
+                    if (!isAvailable) {
+                        throw {
+                            data: {
+                                error: 'Este cupom não se aplica aos produtos do seu carrinho',
+                            },
+                        };
+                    }
                 }
 
                 // Calcula desconto
                 let discount = 0;
                 if (promo.discount_type === 'percentage') {
-                    discount = (state.subtotal * parseFloat(promo.discount_value)) / 100;
-                    if (promo.max_discount) {
-                        discount = Math.min(discount, parseFloat(promo.max_discount));
+                    const cartItems = state.cart.items || [];
+                    const itemsParam = encodeURIComponent(JSON.stringify(cartItems));
+                    const availableData = await API.get(`/promotions/available?subtotal=${state.subtotal}&items=${itemsParam}`);
+                    const couponData = (availableData.coupons || []).find(c => c.code === code);
+                    if (couponData) {
+                        discount = couponData.savings;
+                    } else {
+                        discount = (state.subtotal * parseFloat(promo.discount_value)) / 100;
+                        if (promo.max_discount) {
+                            discount = Math.min(discount, parseFloat(promo.max_discount));
+                        }
                     }
                 } else if (promo.discount_type === 'fixed') {
                     discount = parseFloat(promo.discount_value);
@@ -387,19 +505,26 @@
                 state.couponCode = code;
                 this.updateTotals();
 
-                // Preenche o input manual (para consistência visual)
                 if (input) input.value = code;
 
-                feedback.className = 'checkout-coupon-feedback success';
-                feedback.textContent = `Cupom "${code}" aplicado! Desconto: ${U.formatPrice(state.discount)}`;
+                if (feedback) {
+                    feedback.className = 'checkout-coupon-feedback success';
+                    feedback.textContent = `Cupom "${code}" aplicado! Desconto: ${U.formatPrice(state.discount)}`;
+                }
 
                 C.createToast(`Cupom aplicado: ${U.formatPrice(state.discount)} de desconto`, 'success');
 
-                // Recarrega a lista de cupons disponíveis (para excluir o aplicado)
                 await this.loadAvailableCoupons();
             } catch (error) {
-                feedback.className = 'checkout-coupon-feedback error';
-                feedback.textContent = error.data?.error || 'Cupom inválido ou expirado';
+                if (feedback) {
+                    feedback.className = 'checkout-coupon-feedback error';
+                    if (error.data?.code === 'FIRST_PURCHASE_ONLY') {
+                        feedback.textContent = 'Este cupom é válido apenas para a primeira compra.';
+                    } else {
+                        feedback.textContent = error.data?.error || 'Cupom inválido ou expirado';
+                    }
+                }
+                
                 state.discount = 0;
                 state.couponCode = null;
                 this.updateTotals();
@@ -419,54 +544,75 @@
         // SUBMIT
         // ==================================================
         setupSubmit() {
-            const btn = document.getElementById('checkoutSubmitBtn');
-            if (!btn) return;
-
-            btn.addEventListener('click', () => this.submitOrder());
+            document.addEventListener('click', (e) => {
+                const btn = e.target.closest('#checkoutSubmitBtn');
+                if (btn) {
+                    e.preventDefault();
+                    this.submitOrder();
+                }
+            });
         },
 
         async submitOrder() {
             const btn = document.getElementById('checkoutSubmitBtn');
+            if (!btn) return;
+            if (btn.disabled) return;
+
             const originalHtml = btn.innerHTML;
 
-            // Valida endereço
-            const cep = document.getElementById('coCep').value.replace(/\D/g, '');
-            const street = document.getElementById('coStreet').value.trim();
-            const number = document.getElementById('coNumber').value.trim();
-            const neighborhood = document.getElementById('coNeighborhood').value.trim();
-            const city = document.getElementById('coCity').value.trim();
-            const state = document.getElementById('coState').value.trim();
+            // Lê o cupom do input
+            const couponCodeInput = document.getElementById('couponInput');
+            const currentCoupon = couponCodeInput ? couponCodeInput.value.trim().toUpperCase() : null;
+
+            // Validações de endereço
+            const cepEl = document.getElementById('coCep');
+            const streetEl = document.getElementById('coStreet');
+            const numberEl = document.getElementById('coNumber');
+            const neighborhoodEl = document.getElementById('coNeighborhood');
+            const cityEl = document.getElementById('coCity');
+            const stateEl = document.getElementById('coState');
+
+            if (!cepEl || !streetEl || !numberEl || !neighborhoodEl || !cityEl || !stateEl) {
+                C.createToast('Erro no formulário de endereço', 'error');
+                return;
+            }
+
+            const cep = cepEl.value.replace(/\D/g, '');
+            const street = streetEl.value.trim();
+            const number = numberEl.value.trim();
+            const neighborhood = neighborhoodEl.value.trim();
+            const city = cityEl.value.trim();
+            const stateVal = stateEl.value.trim();
 
             if (!cep || cep.length !== 8) {
                 C.createToast('Informe um CEP válido', 'error');
-                document.getElementById('coCep').focus();
+                cepEl.focus();
                 return;
             }
             if (!street) {
                 C.createToast('Informe a rua', 'error');
-                document.getElementById('coStreet').focus();
+                streetEl.focus();
                 return;
             }
             if (!number) {
                 C.createToast('Informe o número', 'error');
-                document.getElementById('coNumber').focus();
+                numberEl.focus();
                 return;
             }
-            if (!neighborhood || !city || !state) {
+            if (!neighborhood || !city || !stateVal) {
                 C.createToast('Preencha o CEP para buscar o endereço', 'error');
-                document.getElementById('coCep').focus();
+                cepEl.focus();
                 return;
             }
 
-            // Método de pagamento
             const paymentMethod = document.querySelector('input[name="payment_method"]:checked')?.value;
             if (!paymentMethod) {
                 C.createToast('Selecione uma forma de pagamento', 'error');
                 return;
             }
 
-            // Notas
-            const notes = document.getElementById('checkoutNotes').value.trim();
+            const notesEl = document.getElementById('checkoutNotes');
+            const notes = notesEl ? notesEl.value.trim() : '';
 
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processando...';
@@ -478,16 +624,15 @@
                         cep,
                         street,
                         number,
-                        complement: document.getElementById('coComplement').value.trim() || null,
+                        complement: document.getElementById('coComplement')?.value.trim() || null,
                         neighborhood,
                         city,
-                        state,
+                        state: stateVal,
                     },
                     notes: notes || null,
-                    coupon_code: state.couponCode,   // 👈 enviado ao backend
+                    coupon_code: currentCoupon,
                 });
 
-                // Atualiza badge do carrinho
                 if (window.LuxuryCart) {
                     window.LuxuryCart.updateBadge(0);
                 }
@@ -498,7 +643,7 @@
                     window.location.href = `/pedido/${response.order.id}`;
                 }, 800);
             } catch (error) {
-                console.error('Erro ao criar pedido:', error);
+                console.error('❌ Erro ao criar pedido:', error);
                 C.createToast(error.data?.error || 'Erro ao finalizar pedido', 'error');
                 btn.disabled = false;
                 btn.innerHTML = originalHtml;

@@ -565,6 +565,90 @@
     display: none;
 }
 
+/* ======================================================
+   MEUS ENDEREÇOS
+   ====================================================== */
+.address-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.address-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    transition: var(--transition);
+}
+
+.address-card.is-default {
+    border-color: var(--accent);
+    background: rgba(201, 169, 110, 0.05);
+}
+
+.address-card-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.address-card-label {
+    display: inline-block;
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.35rem;
+}
+
+.address-card-label .badge-default {
+    background: var(--accent);
+    color: var(--white);
+    font-size: 0.65rem;
+    padding: 0.15rem 0.5rem;
+    border-radius: 10px;
+    margin-left: 0.5rem;
+}
+
+.address-card-text {
+    font-size: 0.9rem;
+    color: var(--gray-700);
+    line-height: 1.5;
+}
+
+.address-card-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.address-card-actions .btn-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 6px;
+    background: var(--gray-100);
+    border: none;
+    color: var(--gray-700);
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.address-card-actions .btn-icon:hover {
+    background: var(--accent);
+    color: var(--white);
+}
+
+.address-card-actions .btn-icon.delete:hover {
+    background: #dc2626;
+}
+
 /* ---------- DESKTOP: mantém layout atual ---------- */
 @media (min-width: 901px) {
     .account-sidebar {
@@ -1085,4 +1169,192 @@
         border-top: 1px solid var(--gray-200);
         margin-top: 0.25rem;
     }
+}
+
+/* ======================================================
+   NOVO: SEÇÃO DE ENDEREÇOS (Alinhamento e Estilo)
+   ====================================================== */
+
+/* Centraliza o header da aba "Endereço" */
+.account-panel[data-panel="address"] .panel-header {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.account-panel[data-panel="address"] .panel-header h1 {
+    text-align: center;
+    margin: 0;
+}
+
+.account-panel[data-panel="address"] .panel-header p {
+    text-align: center;
+    margin: 0;
+}
+
+.account-panel[data-panel="address"] .panel-header .btn {
+    margin-top: 1rem;
+    align-self: center;
+}
+
+/* Remove a borda dupla do painel de endereço no desktop */
+.account-panel[data-panel="address"] {
+    background: transparent;
+    border: none;
+    padding: 0;
+}
+
+/* ======================================================
+   MODAL DE ENDEREÇO (Formulário Vertical)
+   ====================================================== */
+.modal-content.modal-address {
+    padding: 2rem;
+}
+
+.address-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.address-form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.address-form-field label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--gray-700);
+}
+
+.address-form-field input {
+    padding: 0.7rem 0.9rem;
+    border: 1px solid var(--gray-300);
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    color: var(--gray-900);
+    transition: var(--transition);
+    width: 100%;
+}
+
+.address-form-field input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(201, 169, 110, 0.15);
+}
+
+.address-form-field input:read-only {
+    background: var(--gray-100);
+    color: var(--gray-600);
+    cursor: not-allowed;
+}
+
+.address-form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.address-form .checkbox-field {
+    flex-direction: row;
+    align-items: center;
+    margin: 0.5rem 0;
+}
+
+.address-form .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--gray-700);
+    cursor: pointer;
+    font-weight: 400;
+}
+
+.address-form .checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--accent);
+    cursor: pointer;
+}
+
+.address-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--gray-200);
+}
+
+.address-form-actions .btn {
+    flex: 1;
+    justify-content: center;
+}
+
+/* Responsivo do modal */
+@media (max-width: 600px) {
+    .modal-content.modal-address {
+        padding: 1.5rem;
+        max-width: 95%;
+    }
+
+    .address-form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .address-form-actions {
+        flex-direction: column-reverse;
+    }
+
+    .address-form-actions .btn {
+        width: 100%;
+    }
+}
+
+/* ======================================================
+   CORREÇÃO: MODAL DE ENDEREÇO (Z-INDEX E POSICIONAMENTO)
+   ====================================================== */
+
+/* Garante que o modal fique acima do header e de qualquer outro elemento */
+.modal {
+    z-index: 100000 !important; /* Valor muito alto para sobrepor o header */
+}
+
+.modal-content.modal-address {
+    position: relative;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding-top: 3.5rem; /* Espaço para o botão X não sobrepor o título */
+}
+
+/* Ajuste fino no botão de fechar (X) */
+.modal-content.modal-address .close-modal {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 36px;
+    height: 36px;
+    background: var(--gray-100);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: var(--gray-600);
+    cursor: pointer;
+    transition: var(--transition);
+    z-index: 10;
+    border: none;
+    line-height: 1;
+}
+
+.modal-content.modal-address .close-modal:hover {
+    background: var(--gray-200);
+    color: var(--gray-900);
 }

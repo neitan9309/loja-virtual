@@ -2,6 +2,7 @@
 // src/controllers/orderController.js
 // ======================================================
 const { Order, Payment, Cart, Product, Promotion } = require('../models');
+const { pool } = require('../config/database');
 
 // ======================================================
 // CONFIGURAÇÕES DE FRETE
@@ -18,7 +19,6 @@ const orderController = {
             const userId = req.userId;
             const { payment_method, shipping_address, notes, coupon_code } = req.body;
 
-            // Valida método de pagamento
             const validMethods = ['pix', 'credit_card', 'boleto'];
             if (!validMethods.includes(payment_method)) {
                 return res.status(400).json({
@@ -27,7 +27,6 @@ const orderController = {
                 });
             }
 
-            // Valida endereço
             const requiredAddress = ['cep', 'street', 'number', 'neighborhood', 'city', 'state'];
             const missing = requiredAddress.filter((field) => !shipping_address?.[field]);
             if (missing.length > 0) {
@@ -37,22 +36,16 @@ const orderController = {
                 });
             }
 
-            // Busca o carrinho atual
             const cart = await Cart.getItems(userId);
-
             if (!cart.items || cart.items.length === 0) {
-                return res.status(400).json({
-                    error: 'Carrinho vazio',
-                    code: 'EMPTY_CART',
-                });
+                return res.status(400).json({ error: 'Carrinho vazio', code: 'EMPTY_CART' });
             }
 
-            // Calcula valores base
             const subtotal = cart.total;
             const shippingCost = subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_COST;
 
             // ==================================================
-            // PROCESSA CUPOM (se enviado)
+            // PROCESSA CUPOM
             // ==================================================
             let discount = 0;
             let couponApplied = null;
@@ -61,49 +54,91 @@ const orderController = {
                 const promo = await Promotion.findByCode(coupon_code);
 
                 if (!promo) {
-                    return res.status(400).json({
-                        error: 'Cupom inválido ou expirado',
-                        code: 'INVALID_COUPON',
-                    });
+                    return res.status(400).json({ error: 'Cupom inválido ou expirado', code: 'INVALID_COUPON' });
                 }
 
-                // Verifica limite de uso
                 if (promo.usage_limit && promo.usage_count >= promo.usage_limit) {
+                    return res.status(400).json({ error: 'Cupom atingiu o limite de uso', code: 'COUPON_USAGE_LIMIT' });
+                }
+
+                // ==================================================
+                // NOVO: VALIDAÇÃO DE PRIMEIRA COMPRA (Usa a coluna booleana)
+                // ==================================================
+                if (promo.is_first_purchase_only) {
+                    const orderCheck = await pool.query(
+                        "SELECT 1 FROM orders WHERE user_id = $1 AND status != 'cancelled' LIMIT 1",
+                        [userId]
+                    );
+                    if (orderCheck.rows.length > 0) {
+                        return res.status(400).json({
+                            error: 'Este cupom é válido apenas para a primeira compra',
+                            code: 'FIRST_PURCHASE_ONLY',
+                        });
+                    }
+                }
+
+                // ==================================================
+                // 1. FILTRA ITENS ELEGÍVEIS POR CATEGORIA
+                // ==================================================
+                let eligibleItems = cart.items;
+
+                if (promo.restricted_category_id && !promo.applies_to_all) {
+                    const categoryProducts = await Promotion.getCategoryProducts(promo.restricted_category_id);
+                    const eligibleIds = new Set(categoryProducts.map((p) => p.id));
+                    eligibleItems = cart.items.filter((item) => eligibleIds.has(item.product_id));
+                }
+
+                if (eligibleItems.length === 0) {
                     return res.status(400).json({
-                        error: 'Cupom atingiu o limite de uso',
-                        code: 'COUPON_USAGE_LIMIT',
+                        error: 'Este cupom não se aplica aos produtos do seu carrinho',
+                        code: 'NO_ELIGIBLE_ITEMS',
                     });
                 }
 
-                // Verifica valor mínimo
-                if (promo.min_purchase && subtotal < parseFloat(promo.min_purchase)) {
+                // ==================================================
+                // 2. CALCULA O SUBTOTAL APENAS DOS ITENS ELEGÍVEIS
+                // ==================================================
+                const eligibleSubtotal = eligibleItems.reduce((sum, item) => sum + item.subtotal, 0);
+
+                // ==================================================
+                // 3. VERIFICA O VALOR MÍNIMO (MIN_PURCHASE)
+                // ==================================================
+                if (promo.min_purchase && eligibleSubtotal < parseFloat(promo.min_purchase)) {
                     return res.status(400).json({
-                        error: `Este cupom exige compra mínima de R$ ${parseFloat(promo.min_purchase).toFixed(2).replace('.', ',')}`,
+                        error: `Este cupom exige compra mínima de R$ ${parseFloat(promo.min_purchase).toFixed(2).replace('.', ',')} em itens elegíveis`,
                         code: 'COUPON_MIN_PURCHASE',
                     });
                 }
 
-                // Calcula desconto
+                // ==================================================
+                // 4. VERIFICA SE O USUÁRIO JÁ USOU
+                // ==================================================
+                const alreadyUsed = await Promotion.hasUserUsed(userId, promo.id);
+                if (alreadyUsed) {
+                    return res.status(400).json({
+                        error: 'Você já utilizou este cupom',
+                        code: 'ALREADY_USED',
+                    });
+                }
+
+                // ==================================================
+                // 5. CALCULA DESCONTO
+                // ==================================================
                 if (promo.discount_type === 'percentage') {
-                    discount = (subtotal * parseFloat(promo.discount_value)) / 100;
+                    discount = (eligibleSubtotal * parseFloat(promo.discount_value)) / 100;
                     if (promo.max_discount) {
                         discount = Math.min(discount, parseFloat(promo.max_discount));
                     }
                 } else if (promo.discount_type === 'fixed') {
-                    discount = parseFloat(promo.discount_value);
+                    discount = Math.min(parseFloat(promo.discount_value), eligibleSubtotal);
                 }
-                // buy_x_get_y: desconto = 0 (não implementado)
 
-                // Garante que não ultrapasse o subtotal
-                discount = Math.min(discount, subtotal);
-                discount = Math.round(discount * 100) / 100; // arredonda para 2 casas
-
+                discount = Math.round(discount * 100) / 100;
                 couponApplied = promo;
             }
 
             const total = subtotal + shippingCost - discount;
 
-            // Prepara itens (com snapshot)
             const items = cart.items.map((item) => ({
                 product_id: item.product_id,
                 name: item.name,
@@ -114,7 +149,6 @@ const orderController = {
                 subtotal: item.subtotal,
             }));
 
-            // Cria o pedido (com transação no model)
             const order = await Order.create({
                 userId,
                 items,
@@ -127,7 +161,6 @@ const orderController = {
                 notes: notes || null,
             });
 
-            // Cria o registro de pagamento (pending inicialmente)
             const payment = await Payment.create({
                 order_id: order.id,
                 method: payment_method,
@@ -135,15 +168,16 @@ const orderController = {
                 status: 'pending',
             });
 
-            // ==================================================
-            // INCREMENTA USO DO CUPOM (após sucesso)
-            // ==================================================
             if (couponApplied) {
                 try {
                     await Promotion.incrementUsage(couponApplied.id);
+                    await Promotion.registerUsage({
+                        userId,
+                        promotionId: couponApplied.id,
+                        orderId: order.id,
+                    });
                 } catch (err) {
-                    // Não bloqueia a resposta se falhar (pedido já foi criado)
-                    console.error('Erro ao incrementar uso do cupom:', err);
+                    console.error('Erro ao registrar uso do cupom:', err);
                 }
             }
 
@@ -157,18 +191,13 @@ const orderController = {
                     status: payment.status,
                     amount: payment.amount,
                 },
-                coupon: couponApplied ? {
-                    code: couponApplied.code,
-                    discount,
-                } : null,
+                coupon: couponApplied ? { code: couponApplied.code, discount } : null,
             });
         } catch (error) {
             console.error('Erro ao criar pedido:', error);
-
             if (error.status === 400) {
                 return res.status(400).json({ error: error.message });
             }
-
             res.status(500).json({ error: 'Erro ao criar pedido' });
         }
     },
@@ -261,7 +290,6 @@ const orderController = {
                 });
             }
 
-            // ✅ Pega APENAS o pagamento pendente (sem fallback)
             const payments = await Payment.findByOrder(id);
             const payment = payments.find((p) => p.status === 'pending');
 
@@ -354,6 +382,12 @@ const orderController = {
             }
 
             const updated = await Order.cancel(id, reason || 'Cancelado pelo cliente');
+
+            try {
+                await Promotion.releaseUsage(id);
+            } catch (err) {
+                console.error('Erro ao liberar cupom:', err);
+            }
 
             res.json({
                 message: 'Pedido cancelado com sucesso',

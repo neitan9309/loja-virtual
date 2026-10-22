@@ -1,5 +1,5 @@
 /* ======================================================
-   STYLES.CSS — Luxury Store (parte 1/2)
+   STYLES.CSS — Luxury Store (Refatorado)
    ======================================================
    Depende de:
      - variables.css   (design tokens)
@@ -8,7 +8,7 @@
    ====================================================== */
 
 /* ======================================================
-   RESET E UTILITÁRIOS
+   1. RESET E UTILITÁRIOS GLOBAIS
    ====================================================== */
 * {
     margin: 0;
@@ -16,11 +16,18 @@
     box-sizing: border-box;
 }
 
+html, body {
+    overflow-x: hidden;
+    max-width: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
 body {
     font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     line-height: 1.6;
     color: var(--gray-900);
-    overflow-x: hidden;
     background: var(--white);
 }
 
@@ -83,7 +90,7 @@ body {
 }
 
 /* ======================================================
-   HEADER (desktop)
+   2. HEADER
    ====================================================== */
 .header {
     position: absolute;
@@ -145,7 +152,7 @@ body {
 }
 
 /* ======================================================
-   NAVEGAÇÃO (desktop)
+   3. NAVEGAÇÃO
    ====================================================== */
 .nav-menu {
     display: flex;
@@ -243,7 +250,7 @@ body {
 }
 
 /* ======================================================
-   HEADER ICONS
+   4. HEADER ICONS
    ====================================================== */
 .header-icons {
     display: flex;
@@ -284,22 +291,25 @@ body {
     color: var(--white);
 }
 
+/* Esconde elementos do menu mobile no desktop */
 .mobile-menu-header,
-.close-menu,
-.menu-overlay {
+.close-menu {
     display: none;
 }
 
 /* ======================================================
-   HERO CAROUSEL
+   5. HERO CAROUSEL
    ====================================================== */
 .hero-carousel {
     position: relative;
-    height: 100vh;
-    min-height: 600px;
-    max-height: 1000px;
+    height: 100vh; /* Fallback para desktop */
+    min-height: 100vh;
+    max-height: none;
     overflow: hidden;
     background: var(--gray-900);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .carousel-container {
@@ -378,7 +388,7 @@ body {
 }
 
 /* ======================================================
-   BOTÕES
+   6. BOTÕES
    ====================================================== */
 .btn {
     display: inline-block;
@@ -433,7 +443,7 @@ body {
 }
 
 /* ======================================================
-   CAROUSEL CONTROLS
+   7. CAROUSEL CONTROLS
    ====================================================== */
 .carousel-controls {
     position: absolute;
@@ -492,7 +502,7 @@ body {
 }
 
 /* ======================================================
-   PROMOÇÕES
+   8. PROMOÇÕES
    ====================================================== */
 .promo-section {
     padding: 4rem 0;
@@ -625,7 +635,7 @@ body {
 }
 
 /* ======================================================
-   MODAIS
+   9. MODAIS (Genéricos)
    ====================================================== */
 .modal {
     display: none;
@@ -699,6 +709,7 @@ body {
     margin-bottom: 1.5rem;
 }
 
+/* Modais Específicos */
 .coupon-code {
     background: var(--gray-100);
     padding: 1rem;
@@ -932,7 +943,7 @@ body {
 }
 
 /* ======================================================
-   SEÇÃO DE VÍDEO
+   10. SEÇÃO DE VÍDEO
    ====================================================== */
 .promo-video-section {
     position: relative;
@@ -952,6 +963,7 @@ body {
     height: 100%;
     z-index: 0;
     pointer-events: none;
+    overflow: hidden;
 }
 
 .promo-video-overlay {
@@ -1034,7 +1046,7 @@ body {
 }
 
 /* ======================================================
-   PRODUTOS EM DESTAQUE (HOME)
+   11. PRODUTOS EM DESTAQUE (HOME)
    ====================================================== */
 .featured-products {
     padding: 5rem 0;
@@ -1193,7 +1205,7 @@ body {
 }
 
 /* ======================================================
-   PRODUCT CARD
+   12. PRODUCT CARD
    ====================================================== */
 .product-card {
     background: var(--white);
@@ -1342,7 +1354,7 @@ body {
 }
 
 /* ======================================================
-   CATEGORY CARD (usado na home e/ou produtos)
+   13. CATEGORY CARD
    ====================================================== */
 .category-card {
     display: flex;
@@ -1443,7 +1455,7 @@ body {
 }
 
 /* ======================================================
-   HOME CATEGORIES (carrossel mobile / grid desktop)
+   14. HOME CATEGORIES
    ====================================================== */
 .home-categories {
     padding: 5rem 0;
@@ -1604,7 +1616,7 @@ body {
 }
 
 /* ======================================================
-   LOCALIZAÇÃO
+   15. LOCALIZAÇÃO
    ====================================================== */
 .location-section {
     padding: 5rem 2rem;
@@ -1636,16 +1648,19 @@ body {
 }
 
 /* ======================================================
-   FOOTER
+   16. FOOTER
    ====================================================== */
 .footer {
     background: var(--gray-900);
     color: var(--white);
     padding: 4rem 2rem 0;
+    max-width: 100%;
+    overflow-x: hidden;
 }
 
 .footer-container {
     max-width: 1200px;
+    width: 100%;
     margin: 0 auto;
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -1781,6 +1796,7 @@ body {
 
 .footer-bottom {
     max-width: 1200px;
+    width: 100%;
     margin: 0 auto;
     padding: 2rem 0;
 }
@@ -1789,6 +1805,8 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    max-width: 100%;
+    width: 100%;
 }
 
 .footer-bottom p {
@@ -1821,7 +1839,7 @@ body {
 }
 
 /* ======================================================
-   MEGA MENU (desktop)
+   17. MEGA MENU
    ====================================================== */
 .dropdown[data-category] .dropdown-content {
     min-width: 620px;
@@ -1925,7 +1943,7 @@ body {
 }
 
 /* ======================================================
-   MODAL DE BUSCA
+   18. MODAL DE BUSCA
    ====================================================== */
 .search-modal {
     display: none;
@@ -2272,7 +2290,7 @@ body {
 }
 
 /* ======================================================
-   BUSCA — Histórico (chips)
+   19. HISTÓRICO DE BUSCA
    ====================================================== */
 .search-history {
     padding: 0.5rem 0;
@@ -2392,62 +2410,13 @@ body {
 }
 
 /* ======================================================
-   BUSCA — Responsivo
-   ====================================================== */
-@media (max-width: 600px) {
-    .search-history-chip {
-        font-size: 0.8rem;
-        padding: 0.4rem 0.65rem;
-    }
-
-    .search-history-hint {
-        display: none;
-    }
-}
-
-/* ======================================================
-   RESPONSIVO — 1200px
-   ====================================================== */
-@media (max-width: 1200px) {
-    .featured-track .product-card {
-        flex: 0 0 calc((100% - 3 * 1.5rem) / 4);
-    }
-}
-
-/* ======================================================
-   RESPONSIVO — 1024px
-   ====================================================== */
-@media (max-width: 1024px) and (min-width: 769px) {
-    .dropdown[data-category] .dropdown-content {
-        min-width: 480px;
-    }
-
-    .mega-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .featured-carousel {
-        padding: 0 3rem;
-    }
-
-    .featured-track .product-card {
-        flex: 0 0 calc((100% - 2 * 1.5rem) / 3);
-    }
-
-    .featured-btn {
-        width: 42px;
-        height: 42px;
-    }
-}
-
-/* ======================================================
-   CARD DE PRODUTO CLICÁVEL
+   20. CARD DE PRODUTO CLICÁVEL & CARROSSEL GENÉRICO
    ====================================================== */
 .product-card-link {
     text-decoration: none;
     color: inherit;
     cursor: pointer;
-    display: flex;           /* mantém o layout flex do card */
+    display: flex;
     flex-direction: column;
 }
 
@@ -2461,21 +2430,16 @@ body {
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
 }
 
-/* Botão interno é só visual (o card inteiro é o link) */
 .product-card-link .product-btn {
     pointer-events: none;
     cursor: inherit;
 }
 
-/* Garante que as imagens e títulos não interfiram */
 .product-card-link * {
     text-decoration: none;
 }
 
-/* ======================================================
-   CARROSSEL GENÉRICO (grid em desktop, carrossel em mobile)
-   Usado em /produtos, /categoria, /busca, etc.
-   ====================================================== */
+/* Carrossel Genérico */
 .carousel-wrapper-generic {
     position: relative;
     width: 100%;
@@ -2488,7 +2452,6 @@ body {
     margin: -8px -4px 0 -4px;
 }
 
-/* Botões */
 .carousel-btn-generic {
     position: absolute;
     top: 50%;
@@ -2536,7 +2499,6 @@ body {
     right: 0;
 }
 
-/* Dots */
 .carousel-dots-generic {
     display: flex;
     justify-content: center;
@@ -2573,69 +2535,54 @@ body {
 }
 
 /* ======================================================
-   MODO CARROSSEL (aplicado via JS em mobile)
+   21. RESPONSIVIDADE
    ====================================================== */
-@media (max-width: 768px) {
-    /* Grid de produtos vira flex horizontal */
-    .products-grid-page.is-carousel {
-        display: flex;
-        flex-wrap: nowrap;
-        justify-content: flex-start;
-        gap: 1rem;
-        padding: 0.5rem 0;
-        width: 100%;
-        transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    }
 
-    .products-grid-page.is-carousel .product-card {
-        flex: 0 0 100%;
-        width: 100%;
-        min-width: 100%;
-        max-width: 100%;
-        box-sizing: border-box;
-    }
-
-    /* Grid de categorias vira flex horizontal */
-    .categories-grid.is-carousel {
-        display: flex;
-        flex-wrap: nowrap;
-        justify-content: flex-start;
-        gap: 1rem;
-        padding: 0.5rem 0;
-        width: 100%;
-        transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    }
-
-    .categories-grid.is-carousel .category-card {
-        flex: 0 0 100%;
-        width: 100%;
-        min-width: 100%;
-        max-width: 100%;
-        box-sizing: border-box;
-    }
-
-    /* Botões do carrossel */
-    .carousel-btn-generic {
-        width: 38px;
-        height: 38px;
-        font-size: 0.85rem;
-    }
-
-    .carousel-prev-generic {
-        left: -8px;
-    }
-
-    .carousel-next-generic {
-        right: -8px;
+/* ---------- 1400px+ ---------- */
+@media (min-width: 1400px) {
+    .header-container,
+    .promo-wrapper,
+    .footer-container {
+        max-width: 1320px;
+        margin: 0 auto;
     }
 }
 
-/* ======================================================
-   RESPONSIVO — 768px (MOBILE)
-   ====================================================== */
+/* ---------- 1200px ---------- */
+@media (max-width: 1200px) {
+    .featured-track .product-card {
+        flex: 0 0 calc((100% - 3 * 1.5rem) / 4);
+    }
+}
+
+/* ---------- 1024px ---------- */
+@media (max-width: 1024px) and (min-width: 769px) {
+    .dropdown[data-category] .dropdown-content {
+        min-width: 480px;
+    }
+
+    .mega-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .featured-carousel {
+        padding: 0 3rem;
+    }
+
+    .featured-track .product-card {
+        flex: 0 0 calc((100% - 2 * 1.5rem) / 3);
+    }
+
+    .featured-btn {
+        width: 42px;
+        height: 42px;
+    }
+}
+
+/* ---------- 768px (MOBILE) ---------- */
 @media (max-width: 768px) {
 
-    /* ---------- HEADER ---------- */
+    /* Header */
     .header {
         top: 1rem;
         left: 1rem;
@@ -2686,22 +2633,20 @@ body {
         justify-content: flex-end;
     }
 
-    /* ---------- OVERLAY ---------- */
+    /* Overlay do Menu */
     .menu-overlay {
         display: none;
         position: fixed;
         inset: 0;
         background: rgba(0, 0, 0, 0.5);
         z-index: 9998;
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
     }
 
     .menu-overlay.active {
         display: block;
     }
 
-    /* ---------- MENU ---------- */
+    /* Menu Lateral */
     .nav-menu {
         position: fixed;
         top: 0;
@@ -2718,8 +2663,6 @@ body {
         overflow-y: auto;
         -webkit-overflow-scrolling: touch;
         gap: 0;
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
         isolation: isolate;
     }
 
@@ -2769,7 +2712,7 @@ body {
         color: var(--gray-700);
     }
 
-    /* ---------- DROPDOWNS ---------- */
+    /* Dropdowns Mobile */
     .dropdown {
         width: 100%;
         position: relative;
@@ -2808,8 +2751,6 @@ body {
         max-height: 0;
         overflow: hidden;
         transition: max-height 0.4s ease;
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
     }
 
     .dropdown.active .dropdown-content {
@@ -2902,29 +2843,11 @@ body {
         padding: 0.5rem 0.75rem;
     }
 
-    /* ---------- HERO ---------- */
-    .hero-carousel {
-        height: 100vh;
-        min-height: 500px;
-    }
-
-    .carousel-content {
-        padding: 0 1rem;
-    }
-
-    .carousel-controls {
-        gap: 1rem;
-    }
-
-    .carousel-btn {
-        width: 40px;
-        height: 40px;
-    }
-
-    /* ---------- PROMOÇÕES ---------- */
+    /* Promoções */
     .promo-section {
         padding: 3rem 0;
         border-bottom: none;
+        margin-top: 0 !important; /* Garante que não haja margem extra */
     }
 
     .promo-wrapper {
@@ -2959,7 +2882,7 @@ body {
         border-bottom: 1px solid var(--gray-200);
     }
 
-    /* ---------- VÍDEO ---------- */
+    /* Vídeo */
     .promo-video-section {
         height: auto;
         min-height: 500px;
@@ -2981,7 +2904,7 @@ body {
         align-items: center;
     }
 
-    /* ---------- MODAIS ---------- */
+    /* Modais */
     .modal-content {
         padding: 2rem 1.5rem;
     }
@@ -3017,7 +2940,7 @@ body {
         height: 250px;
     }
 
-    /* ---------- PRODUTOS DESTAQUE ---------- */
+    /* Produtos Destaque */
     .featured-products {
         padding: 3rem 0;
     }
@@ -3057,7 +2980,7 @@ body {
         margin-top: 1.75rem;
     }
 
-    /* ---------- CATEGORIAS HOME ---------- */
+    /* Categorias Home */
     .home-categories {
         padding: 3rem 0;
     }
@@ -3067,25 +2990,53 @@ body {
         padding: 0 1rem;
     }
 
+    /* Container principal: define a área onde os botões vão "flutuar" */
     .home-categories-wrapper {
         padding: 0 1rem;
+        position: relative;
+        /* Impede que o carrossel estoure a tela */
+        overflow: hidden;
     }
 
+    /* O viewport (área que mostra os cards) precisa de espaço nas laterais para os botões */
+    .home-categories-viewport {
+        overflow: hidden;
+        width: 100%;
+        padding: 8px 0 24px 0; /* Remove o padding lateral que causava a faixa branca */
+        margin: -8px 0 0 0;
+    }
+
+    /* Botões: posicionados dentro do wrapper, com margem de segurança */
     .home-categories-btn {
-        width: 38px;
-        height: 38px;
+        width: 36px;
+        height: 36px;
         font-size: 0.85rem;
+        /* Centraliza verticalmente */
+        top: 50%;
+        transform: translateY(-50%);
+        /* Garante que fiquem acima do card */
+        z-index: 20;
+        /* Sombra mais suave para mobile */
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     }
 
     .home-categories-prev {
-        left: -8px;
+        left: 0.5rem; /* 8px da borda esquerda do wrapper */
     }
 
     .home-categories-next {
-        right: -8px;
+        right: 0.5rem; /* 8px da borda direita do wrapper */
     }
 
-    /* ---------- CATEGORY CARD ---------- */
+    /* Ajuste no card para não ficar escondido atrás dos botões */
+    .home-categories-grid.is-carousel .category-card {
+        /* O card ocupa 100% do viewport, mas o viewport tem padding 0 */
+        /* O espaçamento é feito pelo wrapper */
+        flex: 0 0 100%;
+        width: 100%;
+    }
+
+    /* Category Card */
     .category-card {
         padding: 1.75rem 1rem;
         min-height: 170px;
@@ -3106,12 +3057,12 @@ body {
         font-size: 0.8rem;
     }
 
-    /* ---------- LOCALIZAÇÃO ---------- */
+    /* Localização */
     .location-section {
         padding: 3rem 1rem;
     }
 
-    /* ---------- FOOTER ---------- */
+    /* Footer */
     .footer {
         padding: 3rem 1rem 0;
     }
@@ -3150,11 +3101,82 @@ body {
     .newsletter-modal-content {
         padding: 1.5rem;
     }
+
+    /* Modo Carrossel Genérico */
+    .products-grid-page.is-carousel {
+        display: flex;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        gap: 1rem;
+        padding: 0.5rem 0;
+        width: 100%;
+        transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    .products-grid-page.is-carousel .product-card {
+        flex: 0 0 100%;
+        width: 100%;
+        min-width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .categories-grid.is-carousel {
+        display: flex;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        gap: 1rem;
+        padding: 0.5rem 0;
+        width: 100%;
+        transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+
+    .categories-grid.is-carousel .category-card {
+        flex: 0 0 100%;
+        width: 100%;
+        min-width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+
+    .carousel-btn-generic {
+        width: 38px;
+        height: 38px;
+        font-size: 0.85rem;
+    }
+
+    .carousel-prev-generic {
+        left: -8px;
+    }
+
+    .carousel-next-generic {
+        right: -8px;
+    }
+
+    /* ==================================================
+       FIX PARA MOBILE: GARANTIR QUE A IMAGEM COLE NA BASE
+       ================================================== */
+    body {
+        margin: 0;
+        padding: 0;
+    }
+    
+    .hero-carousel {
+        height: 100svh !important;
+        min-height: 100svh !important;
+        max-height: none !important;
+    }
+
+    .promo-section {
+        margin-top: 0 !important;
+    }
+
+    body, html {
+        scroll-behavior: auto !important;
+    }
 }
 
-/* ======================================================
-   RESPONSIVO — 600px
-   ====================================================== */
+/* ---------- 600px ---------- */
 @media (max-width: 600px) {
     .search-modal {
         padding: 2rem 0.5rem 1rem;
@@ -3199,11 +3221,18 @@ body {
     .search-result-category {
         font-size: 0.75rem;
     }
+
+    .search-history-chip {
+        font-size: 0.8rem;
+        padding: 0.4rem 0.65rem;
+    }
+
+    .search-history-hint {
+        display: none;
+    }
 }
 
-/* ======================================================
-   RESPONSIVO — 480px
-   ====================================================== */
+/* ---------- 480px ---------- */
 @media (max-width: 480px) {
     .header {
         top: 0.8rem;
@@ -3269,39 +3298,7 @@ body {
     }
 }
 
-/* ======================================================
-   PREFERS-REDUCED-MOTION
-   ====================================================== */
-@media (prefers-reduced-motion: reduce) {
-    *,
-    .animate-on-scroll,
-    .carousel-slide,
-    .promo-card,
-    .modal-content,
-    .modal-icon i,
-    .featured-track,
-    .search-modal-content {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-    }
-}
-
-/* ======================================================
-   TELAS GRANDES — 1400px+
-   ====================================================== */
-@media (min-width: 1400px) {
-    .header-container,
-    .promo-wrapper,
-    .footer-container {
-        max-width: 1320px;
-        margin: 0 auto;
-    }
-}
-
-/* ======================================================
-   LANDSCAPE MOBILE
-   ====================================================== */
+/* ---------- Landscape Mobile ---------- */
 @media (max-height: 500px) and (orientation: landscape) {
     .hero-carousel {
         height: 100vh;
@@ -3323,35 +3320,18 @@ body {
     }
 }
 
-/* ======================================================
-   FIX — eliminar scroll horizontal global
-   ====================================================== */
-html,
-body {
-    overflow-x: hidden;
-    max-width: 100%;
-    width: 100%;
-}
-
-/* Previne estouro de qualquer elemento que use 100vw */
-.hero-carousel,
-.promo-video-section,
-.promo-video-bg,
-footer.footer {
-    max-width: 100%;
-    overflow-x: hidden;
-}
-
-/* Footer: impede que os filhos cresçam além do container */
-.footer-container,
-.footer-bottom,
-.footer-bottom-content {
-    max-width: 100%;
-    width: 100%;
-}
-
-/* Vídeo Vimeo (100vw causa estouro) */
-.promo-video-bg iframe {
-    max-width: 100vw;
-    overflow: hidden;
+/* ---------- Acessibilidade ---------- */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    .animate-on-scroll,
+    .carousel-slide,
+    .promo-card,
+    .modal-content,
+    .modal-icon i,
+    .featured-track,
+    .search-modal-content {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }
