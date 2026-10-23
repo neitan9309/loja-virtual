@@ -1,5 +1,5 @@
 // ======================================================
-// ADMIN.JS - Painel administrativo (Parte 1/2)
+// ADMIN.JS - Painel administrativo (COMPLETO E CORRIGIDO)
 // ======================================================
 (function () {
     'use strict';
@@ -1689,7 +1689,3001 @@
         },
     };
 
-        // ======================================================
+    // ======================================================
+    // PRODUCT FORM (cadastro)
+    // ======================================================
+    const ProductForm = {
+        treeData: [],
+        sortState: { sort: 'created_at', order: 'desc' },
+
+        async init() {
+            const form = document.getElementById('productForm');
+            if (!form) return;
+
+            await Promise.all([this.loadCategoriesTree(), this.loadBrands()]);
+
+            const nameInput = document.getElementById('prodName');
+            const slugInput = document.getElementById('prodSlug');
+            nameInput?.addEventListener('input', () => {
+                if (!slugInput.dataset.manual) slugInput.value = this.slugify(nameInput.value);
+            });
+            slugInput?.addEventListener('input', () => { slugInput.dataset.manual = 'true'; });
+
+            const rootSelect = document.getElementById('prodCategoryRoot');
+            const genderSelect = document.getElementById('prodCategoryGender');
+            const typeSelect = document.getElementById('prodCategoryType');
+
+            rootSelect?.addEventListener('change', () => {
+                const rootId = parseInt(rootSelect.value);
+                const root = this.treeData.find((c) => c.id === rootId);
+                genderSelect.innerHTML = '<option value="">Selecione o gênero</option>';
+                typeSelect.innerHTML = '<option value="">Selecione o gênero primeiro</option>';
+                typeSelect.disabled = true;
+
+                if (root && root.children?.length) {
+                    root.children.forEach((g) => {
+                        const opt = document.createElement('option');
+                        opt.value = g.id; opt.textContent = g.name;
+                        genderSelect.appendChild(opt);
+                    });
+                    genderSelect.disabled = false;
+                } else {
+                    genderSelect.disabled = true;
+                }
+            });
+
+            genderSelect?.addEventListener('change', () => {
+                const rootId = parseInt(rootSelect.value);
+                const genderId = parseInt(genderSelect.value);
+                const root = this.treeData.find((c) => c.id === rootId);
+                const gender = root?.children?.find((g) => g.id === genderId);
+
+                typeSelect.innerHTML = '<option value="">Selecione o tipo</option>';
+                if (gender && gender.children?.length) {
+                    gender.children.forEach((t) => {
+                        const opt = document.createElement('option');
+                        opt.value = t.id; opt.textContent = t.name;
+                        typeSelect.appendChild(opt);
+                    });
+                    typeSelect.disabled = false;
+                } else {
+                    typeSelect.disabled = true;
+                }
+            });
+
+            this.setupImageInputs();
+            form.addEventListener('submit', (e) => this.handleSubmit(e));
+            document.getElementById('refreshRecentProducts')?.addEventListener('click', () => this.loadRecentProducts());
+        },
+
+        slugify(text) {
+            return text.toString().toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^a-z0-9\s-]/g, '').trim()
+                .replace(/\s+/g, '-').replace(/-+/g, '-');
+        },
+
+        setupImageInputs() {
+            const urlInput = document.getElementById('prodImageUrl');
+            const fileInput = document.getElementById('prodImageFile');
+            const previewBtn = document.getElementById('btnPreviewUrl');
+            const uploadBtn = document.getElementById('btnUploadImage');
+            const clearBtn = document.getElementById('btnClearImage');
+            const hidden = document.getElementById('prodImageFinal');
+            const preview = document.getElementById('newProductPreview');
+            const status = document.getElementById('uploadStatus');
+
+            const setPreview = (url) => {
+                if (url) {
+                    preview.classList.add('has-image');
+                    preview.innerHTML = `<img src="${url}" alt="Preview">`;
+                    hidden.value = url;
+                } else {
+                    preview.classList.remove('has-image');
+                    preview.innerHTML = '<i class="fas fa-image"></i><span>Sem imagem</span>';
+                    hidden.value = '';
+                }
+            };
+
+            previewBtn?.addEventListener('click', () => {
+                const url = urlInput.value.trim();
+                if (url) setPreview(url);
+            });
+
+            uploadBtn?.addEventListener('click', async () => {
+                const file = fileInput.files?.[0];
+                if (!file) {
+                    status.textContent = 'Selecione um arquivo primeiro.';
+                    status.style.color = '#dc2626';
+                    return;
+                }
+                status.textContent = 'Enviando...';
+                status.style.color = '#737373';
+                try {
+                    const url = await Uploader.upload(file);
+                    setPreview(url);
+                    status.textContent = 'Upload concluído!';
+                    status.style.color = '#22c55e';
+                } catch (err) {
+                    status.textContent = err.message;
+                    status.style.color = '#dc2626';
+                }
+            });
+
+            clearBtn?.addEventListener('click', () => {
+                setPreview('');
+                urlInput.value = '';
+                fileInput.value = '';
+                status.textContent = '';
+            });
+        },
+
+        async loadCategoriesTree() {
+            const rootSelect = document.getElementById('prodCategoryRoot');
+            if (!rootSelect) return;
+            try {
+                const tree = await API.get('/categories/tree-full');
+                this.treeData = tree;
+                rootSelect.innerHTML = '<option value="">Selecione...</option>';
+                tree.forEach((c) => {
+                    const opt = document.createElement('option');
+                    opt.value = c.id; opt.textContent = c.name;
+                    rootSelect.appendChild(opt);
+                });
+            } catch (error) { console.error(error); }
+        },
+
+        async loadBrands() {
+            const select = document.getElementById('prodBrand');
+            if (!select) return;
+            try {
+                const brands = await API.get('/brands');
+                select.innerHTML = '<option value="">Sem marca</option>' +
+                    brands.map((b) => `<option value="${b.id}">${Utils.escapeHtml(b.name)}</option>`).join('');
+            } catch (error) { console.error(error); }
+        },
+
+        async handleSubmit(e) {
+            e.preventDefault();
+            const form = e.target;
+            const btn = document.getElementById('submitProduct');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Cadastrando...';
+
+            try {
+                const formData = new FormData(form);
+                const imageUrl = formData.get('uploaded_image_url') || formData.get('image_url');
+
+                const data = {
+                    name: formData.get('name'),
+                    slug: formData.get('slug'),
+                    sku: formData.get('sku'),
+                    description: formData.get('description'),
+                    short_description: formData.get('short_description') || null,
+                    category_id: parseInt(formData.get('category_id')),
+                    brand_id: formData.get('brand_id') ? parseInt(formData.get('brand_id')) : null,
+                    price: parseFloat(formData.get('price')),
+                    cost_price: formData.get('cost_price') ? parseFloat(formData.get('cost_price')) : null,
+                    stock_quantity: parseInt(formData.get('stock_quantity')) || 0,
+                    weight: formData.get('weight') ? parseFloat(formData.get('weight')) : null,
+                    dimensions: formData.get('dimensions') || null,
+                    is_featured: formData.get('is_featured') === 'on',
+                    is_new: formData.get('is_new') === 'on',
+                    is_best_seller: formData.get('is_best_seller') === 'on',
+                    is_active: formData.get('is_active') === 'on',
+                    image_url: imageUrl || null,
+                };
+
+                const product = await API.post('/products', data);
+
+                if (data.stock_quantity > 0) {
+                    try {
+                        await API.post('/inventory', {
+                            product_id: product.id,
+                            quantity: data.stock_quantity,
+                            min_quantity: 5,
+                        });
+                    } catch (err) { console.warn(err); }
+                }
+
+                Toast.success(`Produto "${product.name}" cadastrado!`);
+                form.reset();
+                document.getElementById('prodSlug').dataset.manual = '';
+                document.getElementById('newProductPreview').innerHTML = '<i class="fas fa-image"></i><span>Sem imagem</span>';
+                document.getElementById('newProductPreview').classList.remove('has-image');
+                document.getElementById('prodImageFinal').value = '';
+                document.getElementById('prodCategoryGender').disabled = true;
+                document.getElementById('prodCategoryType').disabled = true;
+
+                await this.loadRecentProducts();
+            } catch (error) {
+                Toast.error(error.data?.error || 'Erro ao cadastrar produto');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        },
+
+        async loadRecentProducts() {
+            const tbody = document.querySelector('#recentProductsTable tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="7" class="table-empty">Carregando...</td></tr>';
+            try {
+                const data = await API.get('/products?sort=created_at&order=DESC&limit=10');
+                const products = data.products || [];
+                if (products.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="table-empty">Nenhum produto cadastrado ainda.</td></tr>';
+                    return;
+                }
+                tbody.innerHTML = products.map((p) => {
+                    let stockClass = 'ok', stockIcon = 'fa-check-circle';
+                    if (p.stock_quantity === 0) { stockClass = 'out'; stockIcon = 'fa-times-circle'; }
+                    else if (p.stock_quantity <= CONFIG.lowStockThreshold) { stockClass = 'low'; stockIcon = 'fa-exclamation-triangle'; }
+                    return `
+                        <tr data-product-id="${p.id}">
+                            <td>#${p.id}</td>
+                            <td>${Utils.escapeHtml(p.name)}</td>
+                            <td><code>${Utils.escapeHtml(p.sku)}</code></td>
+                            <td>${Utils.formatPrice(p.price)}</td>
+                            <td><span class="stock-indicator ${stockClass}"><i class="fas ${stockIcon}"></i> ${p.stock_quantity}</span></td>
+                            <td class="category-cell">${Utils.buildCategoryBreadcrumb(p)}</td>
+                            <td>${Utils.formatDate(p.created_at)}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+                tbody.querySelectorAll('tr[data-product-id]').forEach((row) => {
+                    row.addEventListener('click', async () => {
+                        const id = row.dataset.productId;
+                        try {
+                            const product = await API.get(`/products/admin/${id}`);
+                            DetailModal.showProduct(product);
+                        } catch (err) {
+                            Toast.error('Erro ao carregar produto');
+                        }
+                    });
+                });
+            } catch (error) {
+                console.error(error);
+                tbody.innerHTML = '<tr><td colspan="7" class="table-empty">Erro ao carregar produtos.</td></tr>';
+            }
+        },
+    };
+
+    // ======================================================
+    // MOVEMENT FORM
+    // ======================================================
+    const MovementForm = {
+        sortState: { sort: 'created_at', order: 'desc' },
+
+        async init() {
+            const form = document.getElementById('movementForm');
+            if (!form) return;
+
+            const display = document.getElementById('movProductDisplay');
+            if (display) {
+                display.addEventListener('click', (e) => {
+                    if (e.target.closest('.product-picker-btn')) return;
+                    this.openProductPicker();
+                });
+
+                display.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        if (e.target.closest('.product-picker-btn')) return;
+                        this.openProductPicker();
+                    }
+                });
+            }
+
+            const selectBtn = document.getElementById('movSelectProductBtn');
+            if (selectBtn) {
+                selectBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.openProductPicker();
+                });
+            }
+
+            form.addEventListener('submit', (e) => this.handleSubmit(e));
+            document.getElementById('refreshRecentMovements')?.addEventListener('click', () => this.loadRecentMovements());
+        },
+
+        openProductPicker() {
+            ProductPicker.openSelectMode((product) => {
+                document.getElementById('movProduct').value = product.id;
+                document.getElementById('movProductName').textContent = product.name;
+                document.getElementById('movProductDisplay').classList.add('selected');
+                document.getElementById('movProductStock').innerHTML =
+                    `Estoque atual: <strong>${product.stock_quantity}</strong> unidade(s)`;
+            });
+        },
+
+        async handleSubmit(e) {
+            e.preventDefault();
+            const form = e.target;
+            const btn = document.getElementById('submitMovement');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registrando...';
+
+            try {
+                const formData = new FormData(form);
+                const productId = parseInt(formData.get('product_id'));
+
+                if (!productId) {
+                    Toast.error('Selecione um produto primeiro');
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                    return;
+                }
+
+                const inventoryList = await API.get(`/inventory/product/${productId}`);
+
+                if (!inventoryList || inventoryList.length === 0) {
+                    await API.post('/inventory', { product_id: productId, quantity: 0, min_quantity: 5 });
+                    const newList = await API.get(`/inventory/product/${productId}`);
+                    if (!newList || newList.length === 0) throw new Error('Não foi possível criar estoque');
+                    return this.registerMovement(newList[0].id, formData, btn, originalText);
+                }
+                await this.registerMovement(inventoryList[0].id, formData, btn, originalText);
+            } catch (error) {
+                Toast.error(error.message || 'Erro ao registrar movimentação');
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        },
+
+        async registerMovement(inventoryId, formData, btn, originalText) {
+            try {
+                const data = {
+                    movement_type: formData.get('movement_type'),
+                    quantity: parseInt(formData.get('quantity')),
+                    reason: formData.get('reason') || null,
+                    reference_type: formData.get('reference_type') || null,
+                    reference_id: formData.get('reference_id') ? parseInt(formData.get('reference_id')) : null,
+                    notes: formData.get('notes') || null,
+                };
+
+                await API.post(`/inventory/${inventoryId}/movement`, data);
+                const typeLabel = { in: 'Entrada', out: 'Saída', adjustment: 'Ajuste', return: 'Devolução' }[data.movement_type];
+                Toast.success(`${typeLabel} de ${data.quantity} unidade(s) registrada!`);
+
+                document.getElementById('movementForm').reset();
+                document.getElementById('movProduct').value = '';
+                document.getElementById('movProductName').textContent = 'Nenhum produto selecionado';
+                document.getElementById('movProductDisplay').classList.remove('selected');
+                document.getElementById('movProductStock').textContent = '';
+
+                await this.loadRecentMovements();
+            } catch (error) {
+                Toast.error(error.message || 'Erro ao registrar movimentação');
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        },
+
+        async loadRecentMovements() {
+            const tbody = document.querySelector('#recentMovementsTable tbody');
+            if (!tbody) return;
+            tbody.innerHTML = '<tr><td colspan="7" class="table-empty">Carregando...</td></tr>';
+
+            try {
+                const params = new URLSearchParams({
+                    page: 1,
+                    limit: 15,
+                    sort: 'created_at',
+                    order: 'desc',
+                });
+
+                const data = await API.get(`/inventory/movements?${params.toString()}`);
+                const movements = data.movements || [];
+
+                if (movements.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" class="table-empty">Nenhuma movimentação registrada.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = movements.map((m) => {
+                    const typeLabel = { in: 'Entrada', out: 'Saída', adjustment: 'Ajuste', return: 'Devolução' }[m.movement_type] || m.movement_type;
+                    return `
+                        <tr data-movement-id="${m.id}">
+                            <td>${Utils.formatDate(m.created_at)}</td>
+                            <td>${Utils.escapeHtml(m.product_name)}</td>
+                            <td><span class="badge badge-${m.movement_type}">${typeLabel}</span></td>
+                            <td>${m.quantity}</td>
+                            <td>${m.previous_quantity}</td>
+                            <td><strong>${m.new_quantity}</strong></td>
+                            <td>${Utils.escapeHtml(m.reason || '—')}</td>
+                        </tr>
+                    `;
+                }).join('');
+
+                tbody.querySelectorAll('tr[data-movement-id]').forEach((row) => {
+                    row.addEventListener('click', () => {
+                        MovementsModal.openDetail(row.dataset.movementId);
+                    });
+                });
+            } catch (error) {
+                console.error(error);
+                tbody.innerHTML = '<tr><td colspan="7" class="table-empty">Erro ao carregar movimentações.</td></tr>';
+            }
+        },
+    };
+
+    // ======================================================
+    // EDIT PRODUTO
+    // ======================================================
+    const EditProduct = {
+        currentProduct: null,
+        searchPage: 1,
+        searchQuery: '',
+
+        onEnter() {
+            this.resetView();
+            this.setupSearchHandlers();
+            this.setupBackButton();
+            this.setupDeleteButton();
+            this.setupViewAllButton();
+        },
+
+        setupViewAllButton() {
+            const viewAllBtn = document.getElementById('editViewAllBtn');
+            if (viewAllBtn && !viewAllBtn.dataset.bound) {
+                viewAllBtn.addEventListener('click', () => {
+                    ProductPicker.openEditMode();
+                });
+                viewAllBtn.dataset.bound = 'true';
+            }
+        },
+
+        resetView() {
+            document.getElementById('editSearchView').style.display = 'block';
+            document.getElementById('editProductView').style.display = 'none';
+            document.getElementById('editSearchInput').value = '';
+            document.getElementById('editSearchResults').innerHTML = `
+                <p class="search-hint">
+                    <i class="fas fa-info-circle"></i>
+                    Digite o nome, SKU ou ID de um produto e clique em buscar, ou clique em "Ver Todos"
+                </p>
+            `;
+            document.getElementById('editPagination').innerHTML = '';
+        },
+
+        setupSearchHandlers() {
+            const input = document.getElementById('editSearchInput');
+            const btn = document.getElementById('editSearchBtn');
+
+            if (input && !input.dataset.bound) {
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); this.search(1); }
+                });
+                input.dataset.bound = 'true';
+            }
+            if (btn && !btn.dataset.bound) {
+                btn.addEventListener('click', () => this.search(1));
+                btn.dataset.bound = 'true';
+            }
+        },
+
+        setupBackButton() {
+            const btn = document.getElementById('backToSearchBtn');
+            if (btn && !btn.dataset.bound) {
+                btn.addEventListener('click', () => {
+                    document.getElementById('editSearchView').style.display = 'block';
+                    document.getElementById('editProductView').style.display = 'none';
+                });
+                btn.dataset.bound = 'true';
+            }
+        },
+
+        setupDeleteButton() {
+            const btn = document.getElementById('editDeleteProductBtn');
+            if (btn && !btn.dataset.bound) {
+                btn.addEventListener('click', () => this.confirmDelete());
+                btn.dataset.bound = 'true';
+            }
+        },
+
+        async search(page = 1) {
+            const input = document.getElementById('editSearchInput');
+            const query = input.value.trim();
+            if (!query) { Toast.warning('Digite algo para buscar'); return; }
+
+            this.searchQuery = query;
+            this.searchPage = page;
+
+            const results = document.getElementById('editSearchResults');
+            results.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><span>Buscando...</span></div>';
+            document.getElementById('editPagination').innerHTML = '';
+
+            try {
+                const data = await API.get(`/products/search?q=${encodeURIComponent(query)}&page=${page}&limit=${CONFIG.searchLimit}`);
+                this.renderSearchResults(data);
+            } catch (error) {
+                console.error(error);
+                results.innerHTML = '<p class="table-empty">Erro ao buscar produtos</p>';
+            }
+        },
+
+        renderSearchResults(data) {
+            const results = document.getElementById('editSearchResults');
+            const { products, pagination } = data;
+            if (!products || products.length === 0) {
+                results.innerHTML = '<p class="table-empty">Nenhum produto encontrado.</p>';
+                return;
+            }
+            results.innerHTML = products.map((p) => `
+                <div class="search-result-item" data-product-id="${p.id}">
+                    <div class="search-result-info">
+                        <div class="search-result-name">
+                            <span class="search-result-id">#${p.id}</span>
+                            ${Utils.escapeHtml(p.name)}
+                        </div>
+                        <div class="search-result-meta">
+                            SKU: ${Utils.escapeHtml(p.sku)} · Estoque: ${p.stock_quantity} · ${Utils.escapeHtml(p.category_name || '—')}
+                        </div>
+                    </div>
+                    <div class="search-result-price">${Utils.formatPrice(p.price)}</div>
+                    <i class="fas fa-arrow-right search-result-arrow"></i>
+                </div>
+            `).join('');
+
+            results.querySelectorAll('.search-result-item').forEach((item) => {
+                item.addEventListener('click', () => this.openProduct(parseInt(item.dataset.productId)));
+            });
+
+            this.renderPagination(pagination);
+        },
+
+        renderPagination(pagination) {
+            const container = document.getElementById('editPagination');
+            if (!pagination || pagination.pages <= 1) {
+                container.innerHTML = '';
+                return;
+            }
+            const { page, pages } = pagination;
+            const buttons = [];
+            buttons.push(`<button ${page === 1 ? 'disabled' : ''} data-page="${page - 1}">« Anterior</button>`);
+            const start = Math.max(1, page - 2);
+            const end = Math.min(pages, page + 2);
+            if (start > 1) {
+                buttons.push(`<button data-page="1">1</button>`);
+                if (start > 2) buttons.push(`<span style="padding: 0 .5rem; color: var(--gray-400);">...</span>`);
+            }
+            for (let i = start; i <= end; i++) {
+                buttons.push(`<button class="${i === page ? 'active' : ''}" data-page="${i}">${i}</button>`);
+            }
+            if (end < pages) {
+                if (end < pages - 1) buttons.push(`<span style="padding: 0 .5rem; color: var(--gray-400);">...</span>`);
+                buttons.push(`<button data-page="${pages}">${pages}</button>`);
+            }
+            buttons.push(`<button ${page === pages ? 'disabled' : ''} data-page="${page + 1}">Próxima »</button>`);
+            container.innerHTML = buttons.join('');
+            container.querySelectorAll('button[data-page]').forEach((btn) => {
+                btn.addEventListener('click', () => this.search(parseInt(btn.dataset.page)));
+            });
+        },
+
+        async openProduct(productId) {
+            try {
+                const product = await API.get(`/products/admin/${productId}`);
+                this.currentProduct = product;
+
+                document.getElementById('editSearchView').style.display = 'none';
+                document.getElementById('editProductView').style.display = 'block';
+                document.getElementById('editProductName').textContent = product.name;
+
+                this.renderImages(product);
+                this.renderFieldEditors(product);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            } catch (error) {
+                Toast.error('Erro ao carregar produto');
+                console.error(error);
+            }
+        },
+
+        renderImages(product) {
+            const gallery = document.getElementById('editImageGallery');
+            const images = product.images || [];
+
+            if (images.length === 0) {
+                gallery.innerHTML = `
+                    <div class="image-gallery-empty">
+                        <i class="fas fa-image"></i>
+                        <p>Nenhuma imagem cadastrada</p>
+                    </div>
+                `;
+                this.setupAddImageHandlers();
+                return;
+            }
+
+            gallery.innerHTML = images.map((img) => `
+                <div class="image-gallery-item ${img.primary ? 'primary' : ''}" data-image-id="${img.id}">
+                    ${img.primary ? '<span class="image-gallery-badge">Principal</span>' : ''}
+                    <img src="${img.url}" alt="${Utils.escapeHtml(img.alt || product.name)}">
+                    <div class="image-gallery-actions">
+                        ${!img.primary ? `<button data-action="primary" data-image-id="${img.id}" title="Definir como principal"><i class="fas fa-star"></i></button>` : ''}
+                        <button class="delete" data-action="delete" data-image-id="${img.id}" title="Remover"><i class="fas fa-trash-alt"></i></button>
+                    </div>
+                </div>
+            `).join('');
+
+            gallery.querySelectorAll('button[data-action]').forEach((btn) => {
+                btn.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+                    const action = btn.dataset.action;
+                    const imageId = btn.dataset.imageId;
+
+                    if (action === 'delete') {
+                        if (!confirm('Remover esta imagem?')) return;
+                        try {
+                            await API.delete(`/products/${product.id}/images/${imageId}`);
+                            Toast.success('Imagem removida');
+                            this.openProduct(product.id);
+                        } catch (err) { Toast.error('Erro ao remover imagem'); }
+                    } else if (action === 'primary') {
+                        try {
+                            await API.put(`/products/${product.id}/images/${imageId}/primary`, {});
+                            Toast.success('Imagem principal atualizada');
+                            this.openProduct(product.id);
+                        } catch (err) { Toast.error('Erro ao atualizar imagem'); }
+                    }
+                });
+            });
+
+            this.setupAddImageHandlers();
+        },
+
+        setupAddImageHandlers() {
+            const addBtn = document.getElementById('editAddImageBtn');
+            const uploadBtn = document.getElementById('editUploadImageBtn');
+            const fileInput = document.getElementById('editNewImageFile');
+            const urlInput = document.getElementById('editNewImageUrl');
+            const status = document.getElementById('editUploadStatus');
+
+            if (addBtn && !addBtn.dataset.bound) {
+                addBtn.addEventListener('click', async () => {
+                    const url = urlInput.value.trim();
+                    if (!url) { Toast.warning('Informe a URL ou envie um arquivo'); return; }
+                    try {
+                        await API.post(`/products/${this.currentProduct.id}/images`, {
+                            image_url: url,
+                            alt_text: this.currentProduct.name,
+                        });
+                        Toast.success('Imagem adicionada');
+                        urlInput.value = '';
+                        this.openProduct(this.currentProduct.id);
+                    } catch (err) { Toast.error('Erro ao adicionar imagem'); }
+                });
+                addBtn.dataset.bound = 'true';
+            }
+
+            if (uploadBtn && !uploadBtn.dataset.bound) {
+                uploadBtn.addEventListener('click', async () => {
+                    const file = fileInput.files?.[0];
+                    if (!file) {
+                        status.textContent = 'Selecione um arquivo';
+                        status.style.color = '#dc2626';
+                        return;
+                    }
+                    status.textContent = 'Enviando...';
+                    status.style.color = '#737373';
+                    try {
+                        const url = await Uploader.upload(file);
+                        urlInput.value = url;
+                        status.textContent = 'Upload concluído! Clique em "Adicionar imagem"';
+                        status.style.color = '#22c55e';
+                    } catch (err) {
+                        status.textContent = err.message;
+                        status.style.color = '#dc2626';
+                    }
+                });
+                uploadBtn.dataset.bound = 'true';
+            }
+        },
+
+        renderFieldEditors(product) {
+            const container = document.getElementById('fieldEditorList');
+            const fields = [
+                { key: 'name', label: 'Nome', type: 'text', value: product.name },
+                { key: 'slug', label: 'Slug', type: 'text', value: product.slug },
+                { key: 'sku', label: 'SKU', type: 'text', value: product.sku },
+                { key: 'short_description', label: 'Descrição Curta', type: 'text', value: product.short_description || '' },
+                { key: 'description', label: 'Descrição Completa', type: 'textarea', value: product.description || '' },
+                { key: 'price', label: 'Preço (R$)', type: 'number', step: '0.01', value: product.price },
+                { key: 'cost_price', label: 'Preço de Custo (R$)', type: 'number', step: '0.01', value: product.cost_price || '' },
+                { key: 'discount_percent', label: 'Desconto (%)', type: 'number', step: '0.01', value: product.discount_percent || 0 },
+                { key: 'stock_quantity', label: 'Estoque', type: 'number', value: product.stock_quantity },
+                { key: 'weight', label: 'Peso (kg)', type: 'number', step: '0.01', value: product.weight || '' },
+                { key: 'dimensions', label: 'Dimensões', type: 'text', value: product.dimensions || '' },
+                { key: 'is_active', label: 'Produto Ativo', type: 'checkbox', value: product.is_active },
+                { key: 'is_featured', label: 'Em Destaque', type: 'checkbox', value: product.is_featured },
+                { key: 'is_new', label: 'Novo', type: 'checkbox', value: product.is_new },
+                { key: 'is_best_seller', label: 'Mais Vendido', type: 'checkbox', value: product.is_best_seller },
+            ];
+
+            container.innerHTML = fields.map((f) => this.buildFieldEditor(f)).join('');
+
+            container.querySelectorAll('.btn-save-field').forEach((btn) => {
+                btn.addEventListener('click', () => this.saveField(btn.dataset.field));
+            });
+
+            container.querySelectorAll('input[type="text"], input[type="number"]').forEach((input) => {
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); this.saveField(input.dataset.field); }
+                });
+            });
+        },
+
+        buildFieldEditor(field) {
+            const id = `edit-field-${field.key}`;
+            let inputHtml = '';
+            if (field.type === 'checkbox') {
+                inputHtml = `<input type="checkbox" id="${id}" data-field="${field.key}" ${field.value ? 'checked' : ''}>`;
+            } else if (field.type === 'textarea') {
+                inputHtml = `<textarea id="${id}" data-field="${field.key}" rows="3">${Utils.escapeHtml(field.value)}</textarea>`;
+            } else if (field.type === 'number') {
+                inputHtml = `<input type="number" id="${id}" data-field="${field.key}" step="${field.step || '1'}" value="${field.value}">`;
+            } else {
+                inputHtml = `<input type="text" id="${id}" data-field="${field.key}" value="${Utils.escapeHtml(field.value)}">`;
+            }
+            return `
+                <div class="field-editor" data-field-container="${field.key}">
+                    <div class="field-editor-label">
+                        ${field.label}
+                        <small>ID do campo: ${field.key}</small>
+                    </div>
+                    <div class="field-editor-input">${inputHtml}</div>
+                    <button class="btn-save-field" data-field="${field.key}">
+                        <i class="fas fa-save"></i> Salvar
+                    </button>
+                </div>
+            `;
+        },
+
+        async saveField(field) {
+            const input = document.querySelector(`[data-field="${field}"]`);
+            if (!input) return;
+
+            let value;
+            if (input.type === 'checkbox') value = input.checked;
+            else if (input.type === 'number') value = input.value === '' ? null : parseFloat(input.value);
+            else value = input.value;
+
+            const btn = document.querySelector(`.btn-save-field[data-field="${field}"]`);
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.classList.add('saving');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+            const container = document.querySelector(`[data-field-container="${field}"]`);
+
+            try {
+                await API.patch(`/products/${this.currentProduct.id}`, { field, value });
+                Toast.success(`Campo "${field}" atualizado`);
+                container.classList.add('saved');
+                setTimeout(() => container.classList.remove('saved'), 1500);
+                await this.openProduct(this.currentProduct.id);
+            } catch (error) {
+                console.error(error);
+                Toast.error(error.data?.error || `Erro ao salvar "${field}"`);
+                container.classList.add('error');
+                setTimeout(() => container.classList.remove('error'), 2000);
+            } finally {
+                btn.disabled = false;
+                btn.classList.remove('saving');
+                btn.innerHTML = originalText;
+            }
+        },
+
+        async confirmDelete() {
+            if (!this.currentProduct) return;
+            const confirmed = confirm(
+                `Tem certeza que deseja deletar o produto "${this.currentProduct.name}"?\n\nEsta ação remove o produto da loja (soft delete).`
+            );
+            if (!confirmed) return;
+            try {
+                await API.delete(`/products/${this.currentProduct.id}`);
+                Toast.success('Produto deletado com sucesso');
+                this.resetView();
+            } catch (error) {
+                Toast.error('Erro ao deletar produto');
+            }
+        },
+    };
+
+    // ======================================================
+    // PRODUCT PICKER
+    // ======================================================
+    const ProductPicker = {
+        modal: null,
+        mode: 'select',
+        onSelect: null,
+        filters: { q: '', min_price: '', max_price: '', stock: 'all', sort: 'date_desc', page: 1 },
+        limit: 20,
+
+        init() {
+            this.modal = document.getElementById('productPickerModal');
+            if (!this.modal) return;
+
+            document.getElementById('closeProductPicker')?.addEventListener('click', () => this.close());
+            this.modal.addEventListener('click', (e) => {
+                if (e.target === this.modal) this.close();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && this.modal.classList.contains('active')) this.close();
+            });
+
+            const toggleBtn = document.getElementById('pickerToggleFilters');
+            const filtersPanel = document.getElementById('pickerFilters');
+            toggleBtn?.addEventListener('click', () => {
+                const isOpen = toggleBtn.classList.contains('open');
+                toggleBtn.classList.toggle('open', !isOpen);
+                filtersPanel.style.display = isOpen ? 'none' : 'flex';
+            });
+
+            document.getElementById('pickerApplyFilters')?.addEventListener('click', () => {
+                this.readFilters();
+                this.filters.page = 1;
+                this.load();
+                this.updateFiltersBadge();
+            });
+
+            document.getElementById('pickerClearFilters')?.addEventListener('click', () => {
+                this.clearFilters();
+                this.updateFiltersBadge();
+                this.load();
+            });
+
+            document.getElementById('pickerSearch')?.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.readFilters();
+                    this.filters.page = 1;
+                    this.load();
+                    this.updateFiltersBadge();
+                }
+            });
+
+            document.getElementById('pickerStock')?.addEventListener('change', () => {
+                this.readFilters();
+                this.filters.page = 1;
+                this.load();
+                this.updateFiltersBadge();
+            });
+
+            document.getElementById('pickerSort')?.addEventListener('change', () => {
+                this.readFilters();
+                this.filters.page = 1;
+                this.load();
+                this.updateFiltersBadge();
+            });
+        },
+
+        readFilters() {
+            this.filters.q = document.getElementById('pickerSearch').value.trim();
+            this.filters.min_price = document.getElementById('pickerMinPrice').value;
+            this.filters.max_price = document.getElementById('pickerMaxPrice').value;
+            this.filters.stock = document.getElementById('pickerStock').value;
+            this.filters.sort = document.getElementById('pickerSort').value;
+        },
+
+        clearFilters() {
+            document.getElementById('pickerSearch').value = '';
+            document.getElementById('pickerMinPrice').value = '';
+            document.getElementById('pickerMaxPrice').value = '';
+            document.getElementById('pickerStock').value = 'all';
+            document.getElementById('pickerSort').value = 'date_desc';
+            this.filters = { q: '', min_price: '', max_price: '', stock: 'all', sort: 'date_desc', page: 1 };
+        },
+
+        updateFiltersBadge() {
+            let count = 0;
+            if (this.filters.q) count++;
+            if (this.filters.min_price) count++;
+            if (this.filters.max_price) count++;
+            if (this.filters.stock && this.filters.stock !== 'all') count++;
+            if (this.filters.sort && this.filters.sort !== 'date_desc') count++;
+
+            const badge = document.getElementById('pickerFiltersBadge');
+            if (badge) {
+                if (count > 0) {
+                    badge.textContent = count;
+                    badge.style.display = 'inline-block';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        },
+
+        openSelectMode(callback) {
+            this.mode = 'select';
+            this.onSelect = callback;
+            document.getElementById('pickerTitle').textContent = 'Selecionar Produto';
+            document.getElementById('pickerSubtitle').textContent = 'Clique em um produto para selecioná-lo';
+            this.filters.page = 1;
+            this.open();
+        },
+
+        openEditMode() {
+            this.mode = 'edit';
+            this.onSelect = null;
+            document.getElementById('pickerTitle').textContent = 'Todos os Produtos';
+            document.getElementById('pickerSubtitle').textContent = 'Clique em um produto para editá-lo';
+            this.filters.page = 1;
+            this.open();
+        },
+
+        open() {
+            this.modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            this.readFilters();
+            this.load();
+            this.updateFiltersBadge();
+
+            const toggleBtn = document.getElementById('pickerToggleFilters');
+            const filtersPanel = document.getElementById('pickerFilters');
+            if (toggleBtn && filtersPanel) {
+                toggleBtn.classList.remove('open');
+                filtersPanel.style.display = 'none';
+            }
+        },
+
+        close() {
+            this.modal.classList.remove('active');
+            document.body.style.overflow = '';
+        },
+
+        async load() {
+            const list = document.getElementById('pickerList');
+            list.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><span>Carregando...</span></div>';
+            document.getElementById('pickerPagination').innerHTML = '';
+
+            try {
+                const params = new URLSearchParams({
+                    q: this.filters.q,
+                    min_price: this.filters.min_price,
+                    max_price: this.filters.max_price,
+                    stock: this.filters.stock,
+                    sort: this.filters.sort,
+                    page: this.filters.page,
+                    limit: this.limit,
+                });
+                const data = await API.get(`/products/admin/list?${params.toString()}`);
+                this.render(data);
+            } catch (error) {
+                console.error(error);
+                list.innerHTML = '<div class="picker-empty"><i class="fas fa-exclamation-triangle"></i>Erro ao carregar produtos</div>';
+            }
+        },
+
+        render(data) {
+            const list = document.getElementById('pickerList');
+            const { products, pagination } = data;
+
+            if (!products || products.length === 0) {
+                list.innerHTML = '<div class="picker-empty"><i class="fas fa-box-open"></i>Nenhum produto encontrado</div>';
+                document.getElementById('pickerPagination').innerHTML = '';
+                return;
+            }
+
+            list.innerHTML = products.map((p) => {
+                let stockClass = 'ok';
+                let stockLabel = 'Em estoque';
+                if (p.stock_quantity === 0) { stockClass = 'out'; stockLabel = 'Sem estoque'; }
+                else if (p.stock_quantity <= CONFIG.lowStockThreshold) { stockClass = 'low'; stockLabel = 'Estoque baixo'; }
+
+                return `
+                    <div class="picker-item" data-product-id="${p.id}">
+                        <span class="picker-item-id">#${p.id}</span>
+                        <div class="picker-item-info">
+                            <div class="picker-item-name">${Utils.escapeHtml(p.name)}</div>
+                            <div class="picker-item-meta">
+                                SKU: ${Utils.escapeHtml(p.sku)} · ${Utils.formatPrice(p.price)}
+                                ${p.category_name ? ' · ' + Utils.escapeHtml(p.category_name) : ''}
+                            </div>
+                        </div>
+                        <span class="picker-item-stock ${stockClass}">${stockLabel}: ${p.stock_quantity}</span>
+                        <i class="fas fa-arrow-right picker-item-action"></i>
+                    </div>
+                `;
+            }).join('');
+
+            list.querySelectorAll('.picker-item').forEach((item) => {
+                item.addEventListener('click', () => {
+                    const id = parseInt(item.dataset.productId);
+                    const product = products.find((p) => p.id === id);
+                    this.handleSelect(product);
+                });
+            });
+
+            this.renderPagination(pagination);
+        },
+
+        renderPagination(pagination) {
+            const container = document.getElementById('pickerPagination');
+            const { page, pages } = pagination;
+            if (pages <= 1) { container.innerHTML = ''; return; }
+
+            const buttons = [];
+            buttons.push(`<button ${page === 1 ? 'disabled' : ''} data-page="${page - 1}">«</button>`);
+
+            const start = Math.max(1, page - 2);
+            const end = Math.min(pages, page + 2);
+
+            if (start > 1) {
+                buttons.push(`<button data-page="1">1</button>`);
+                if (start > 2) buttons.push('<span style="padding: 0 .3rem; color: var(--gray-400); align-self: center;">...</span>');
+            }
+            for (let i = start; i <= end; i++) {
+                buttons.push(`<button class="${i === page ? 'active' : ''}" data-page="${i}">${i}</button>`);
+            }
+            if (end < pages) {
+                if (end < pages - 1) buttons.push('<span style="padding: 0 .3rem; color: var(--gray-400); align-self: center;">...</span>');
+                buttons.push(`<button data-page="${pages}">${pages}</button>`);
+            }
+            buttons.push(`<button ${page === pages ? 'disabled' : ''} data-page="${page + 1}">»</button>`);
+
+            container.innerHTML = buttons.join('');
+            container.querySelectorAll('button[data-page]').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    this.filters.page = parseInt(btn.dataset.page);
+                    this.load();
+                    document.getElementById('pickerList').scrollTop = 0;
+                });
+            });
+        },
+
+        handleSelect(product) {
+            if (this.mode === 'select') {
+                if (typeof this.onSelect === 'function') this.onSelect(product);
+                this.close();
+            } else {
+                this.close();
+                document.getElementById('editSearchView').style.display = 'none';
+                document.getElementById('editProductView').style.display = 'block';
+                EditProduct.openProduct(product.id);
+            }
+        },
+    };
+
+    // ======================================================
+    // DASHBOARD DETAIL MODAL (KPIs)
+    // ======================================================
+    const DashboardDetailModal = {
+        ctrl: null,
+        currentType: 'total',
+        currentPage: 1,
+        sortState: { sort: null, order: 'asc' },
+        filters: { q: '', category: '', stock: 'all', min_price: '', max_price: '' },
+        filterKeys: ['q', 'category', 'stock', 'min_price', 'max_price'],
+        filterDefaults: { stock: 'all' },
+        filtersOpen: false,
+        limit: 20,
+
+        KPI_CONFIG: {
+            totalProducts: { type: 'total',        title: 'Total de Produtos',  icon: 'fa-box',                  color: 'blue' },
+            totalStock:    { type: 'in_stock',     title: 'Itens em Estoque',   icon: 'fa-warehouse',            color: 'green' },
+            lowStock:      { type: 'low_stock',    title: 'Estoque Baixo',      icon: 'fa-exclamation-triangle', color: 'orange' },
+            outOfStock:    { type: 'out_of_stock', title: 'Sem Estoque',        icon: 'fa-times-circle',         color: 'red' },
+        },
+
+        init() {
+            this.ctrl = {
+                modal: document.getElementById('dashboardDetailModal'),
+                body: document.getElementById('dashboardDetailBody'),
+                closeBtn: document.getElementById('closeDashboardDetail'),
+            };
+
+            const { modal, closeBtn } = this.ctrl;
+
+            closeBtn?.addEventListener('click', () => this.close());
+            modal?.addEventListener('click', (e) => {
+                if (e.target === modal) this.close();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && modal?.classList.contains('active')) this.close();
+            });
+
+            document.querySelectorAll('.kpi-card[data-kpi]').forEach((card) => {
+                card.addEventListener('click', () => this.open(card.dataset.kpi));
+            });
+
+            document.addEventListener('modalstack:change', () => this.updateBackVisibility());
+        },
+
+        updateBackVisibility() {
+            const { modal, body } = this.ctrl;
+            if (!modal || !modal.classList.contains('active')) return;
+
+            const isTop = ModalStack.isTop('dashboardDetail');
+            const hasParent = ModalStack.size() > 1;
+            const backBtn = body?.querySelector('.back-modal');
+            if (backBtn) {
+                backBtn.classList.toggle('visible', isTop && hasParent);
+            }
+        },
+
+        async open(kpiKey) {
+            const cfg = this.KPI_CONFIG[kpiKey];
+            if (!cfg) return;
+
+            this.currentType = cfg.type;
+            this.currentPage = 1;
+            this.sortState = { sort: null, order: 'asc' };
+            this.filters = { q: '', category: '', stock: 'all', min_price: '', max_price: '' };
+
+            const { modal } = this.ctrl;
+
+            ModalStack.push('dashboardDetail', modal);
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            this.updateBackVisibility();
+
+            await this.load();
+        },
+
+        async load() {
+            const { body } = this.ctrl;
+            if (!body) return;
+
+            TableLoader.start(body);
+
+            try {
+                const cfg = Object.values(this.KPI_CONFIG).find(c => c.type === this.currentType);
+                const params = new URLSearchParams({
+                    type: this.currentType,
+                    page: this.currentPage,
+                    limit: this.limit,
+                });
+                if (this.sortState.sort) {
+                    params.set('sort', this.sortState.sort);
+                    params.set('order', this.sortState.order);
+                }
+                if (this.filters.q) params.set('q', this.filters.q);
+                if (this.filters.category) params.set('category', this.filters.category);
+                if (this.filters.stock && this.filters.stock !== 'all') params.set('stock', this.filters.stock);
+                if (this.filters.min_price) params.set('min_price', this.filters.min_price);
+                if (this.filters.max_price) params.set('max_price', this.filters.max_price);
+
+                const data = await API.get(`/products/admin/stats?${params.toString()}`);
+                this.render(cfg, data);
+            } catch (error) {
+                console.error(error);
+                body.innerHTML = '<div class="table-empty">Erro ao carregar detalhes</div>';
+            } finally {
+                TableLoader.stop(body);
+            }
+        },
+
+        render(cfg, data) {
+            const { body } = this.ctrl;
+            const { products, pagination, summary } = data;
+
+            let summaryHtml = '';
+            if (this.currentType === 'total') {
+                summaryHtml = `
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-item-label">Total</span>
+                            <span class="detail-item-value accent">${summary.total}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-item-label">Ativos</span>
+                            <span class="detail-item-value">${summary.active}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-item-label">Inativos</span>
+                            <span class="detail-item-value">${summary.inactive}</span>
+                        </div>
+                    </div>
+                `;
+            } else if (this.currentType === 'in_stock') {
+                summaryHtml = `
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-item-label">Total em Estoque</span>
+                            <span class="detail-item-value accent">${(summary.total_items || 0).toLocaleString('pt-BR')}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-item-label">Produtos com Estoque</span>
+                            <span class="detail-item-value">${summary.products_with_stock || 0}</span>
+                        </div>
+                    </div>
+                `;
+            } else if (this.currentType === 'low_stock') {
+                summaryHtml = `
+                    <p class="detail-hint">
+                        <i class="fas fa-info-circle"></i>
+                        Produtos com estoque entre 1 e ${summary.threshold} unidades.
+                    </p>
+                `;
+            } else if (this.currentType === 'out_of_stock') {
+                summaryHtml = `
+                    <p class="detail-hint">
+                        <i class="fas fa-info-circle"></i>
+                        Produtos sem unidades disponíveis.
+                    </p>
+                `;
+            }
+
+            let listHtml = '';
+            if (products.length === 0) {
+                listHtml = `
+                    <div class="table-empty">
+                        <i class="fas fa-check-circle" style="color: var(--success); font-size: 2rem; display: block; margin-bottom: 0.5rem;"></i>
+                        ${this.currentType === 'out_of_stock'
+                            ? 'Nenhum produto sem estoque. Ótimo!'
+                            : 'Nenhum produto encontrado.'}
+                    </div>
+                `;
+            } else {
+                listHtml = `
+                    <div class="table-wrapper">
+                        <table class="data-table" id="dashboardDetailTable">
+                            <thead>
+                                <tr>
+                                    <th data-sort="id">ID</th>
+                                    <th data-sort="name">Nome</th>
+                                    <th data-sort="sku">SKU</th>
+                                    <th data-sort="price">Preço</th>
+                                    <th data-sort="stock_quantity">Estoque</th>
+                                    <th data-sort="category_name">Categoria</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${products.map((p) => `
+                                    <tr data-product-id="${p.id}">
+                                        <td>#${p.id}</td>
+                                        <td>${Utils.escapeHtml(p.name)}</td>
+                                        <td><code>${Utils.escapeHtml(p.sku)}</code></td>
+                                        <td>${Utils.formatPrice(p.price)}</td>
+                                        <td>
+                                            <span class="stock-indicator ${
+                                                p.stock_quantity === 0 ? 'out'
+                                                : p.stock_quantity <= CONFIG.lowStockThreshold ? 'low'
+                                                : 'ok'
+                                            }">
+                                                ${p.stock_quantity}
+                                            </span>
+                                        </td>
+                                        <td class="category-cell">${Utils.escapeHtml(p.category_name || '—')}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
+
+            let paginationHtml = '';
+            if (pagination.pages > 1) {
+                paginationHtml = '<div class="pagination">';
+                paginationHtml += `<button ${pagination.page === 1 ? 'disabled' : ''} data-page="${pagination.page - 1}">« Anterior</button>`;
+                for (let i = 1; i <= pagination.pages; i++) {
+                    paginationHtml += `<button class="${i === pagination.page ? 'active' : ''}" data-page="${i}">${i}</button>`;
+                }
+                paginationHtml += `<button ${pagination.page === pagination.pages ? 'disabled' : ''} data-page="${pagination.page + 1}">Próxima »</button>`;
+                paginationHtml += '</div>';
+            }
+
+            const filterBody = `
+                <div class="table-filters-row">
+                    <input type="text" class="table-filter-input table-filter-input--md"
+                        data-filter="q" placeholder="Buscar nome/SKU..." value="${Utils.escapeHtml(this.filters.q)}">
+                    <input type="text" class="table-filter-input table-filter-input--md"
+                        data-filter="category" placeholder="Categoria..." value="${Utils.escapeHtml(this.filters.category)}">
+                </div>
+                <div class="table-filters-row">
+                    <select class="table-filter-select" data-filter="stock">
+                        <option value="all" ${this.filters.stock === 'all' ? 'selected' : ''}>Estoque: Todos</option>
+                        <option value="in" ${this.filters.stock === 'in' ? 'selected' : ''}>Em estoque</option>
+                        <option value="low" ${this.filters.stock === 'low' ? 'selected' : ''}>Baixo</option>
+                        <option value="out" ${this.filters.stock === 'out' ? 'selected' : ''}>Sem estoque</option>
+                    </select>
+                    <input type="number" class="table-filter-input table-filter-input--sm"
+                        data-filter="min_price" placeholder="Min R$" value="${Utils.escapeHtml(this.filters.min_price)}">
+                    <input type="number" class="table-filter-input table-filter-input--sm"
+                        data-filter="max_price" placeholder="Max R$" value="${Utils.escapeHtml(this.filters.max_price)}">
+                </div>
+                <div class="table-filters-row">
+                    <div class="table-filter-actions">
+                        <button class="table-filter-btn table-filter-btn--apply" data-action="apply">
+                            <i class="fas fa-search"></i> Aplicar
+                        </button>
+                        <button class="table-filter-btn table-filter-btn--clear" data-action="clear">
+                            <i class="fas fa-times"></i> Limpar
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            const activeCount = FilterBar.countActive(this.filters, this.filterKeys, this.filterDefaults);
+            const filtersHtml = FilterBar.render({
+                id: 'dashboardDetail',
+                activeCount,
+                isOpen: this.filtersOpen,
+                body: filterBody,
+            });
+
+            body.innerHTML = `
+                <div class="detail-header">
+                    <button class="back-modal" aria-label="Voltar" data-action="back">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <div class="detail-header-icon kpi-icon-${cfg.color}">
+                        <i class="fas ${cfg.icon}"></i>
+                    </div>
+                    <div class="detail-header-info">
+                        <h2>${cfg.title}</h2>
+                        <p>${pagination.total} ${pagination.total === 1 ? 'registro' : 'registros'}</p>
+                    </div>
+                </div>
+
+                ${summaryHtml}
+                ${filtersHtml}
+                ${listHtml}
+                ${paginationHtml}
+            `;
+
+            FilterBar.bind(
+                body,
+                'dashboardDetail',
+                this.filters,
+                this.filterKeys,
+                this.filterDefaults
+            );
+
+            if (this.filtersOpen) {
+                body.querySelector('[data-filters-toggle="dashboardDetail"]')?.classList.add('open');
+                body.querySelector('[data-filters-panel="dashboardDetail"]')?.classList.add('open');
+            }
+
+            const table = body.querySelector('#dashboardDetailTable');
+            if (table) {
+                SortableTable.apply(table, this.sortState, () => {
+                    this.currentPage = 1;
+                    this.load();
+                });
+            }
+
+            body.querySelectorAll('[data-action="apply"]').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    this.readFiltersFromBody(body);
+                    this.currentPage = 1;
+                    this.load();
+                });
+            });
+
+            body.querySelectorAll('[data-action="clear"]').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    this.filters = { q: '', category: '', stock: 'all', min_price: '', max_price: '' };
+                    this.currentPage = 1;
+                    this.load();
+                });
+            });
+
+            body.querySelectorAll('.table-filter-input').forEach((input) => {
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.readFiltersFromBody(body);
+                        this.currentPage = 1;
+                        this.load();
+                    }
+                });
+            });
+
+            body.querySelectorAll('.table-filter-select').forEach((sel) => {
+                sel.addEventListener('change', () => {
+                    this.readFiltersFromBody(body);
+                    this.currentPage = 1;
+                    this.load();
+                });
+            });
+
+            const toggle = body.querySelector('[data-filters-toggle="dashboardDetail"]');
+            toggle?.addEventListener('click', () => {
+                this.filtersOpen = !this.filtersOpen;
+            });
+
+            body.querySelector('[data-action="back"]')?.addEventListener('click', () => {
+                this.handleBack();
+            });
+
+            body.querySelectorAll('tr[data-product-id]').forEach((row) => {
+                row.addEventListener('click', async () => {
+                    const id = row.dataset.productId;
+                    try {
+                        const product = await API.get(`/products/admin/${id}`);
+                        DetailModal.showProduct(product);
+                    } catch (err) {
+                        Toast.error('Erro ao carregar produto');
+                    }
+                });
+            });
+
+            body.querySelectorAll('button[data-page]').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    this.currentPage = parseInt(btn.dataset.page);
+                    this.load();
+                });
+            });
+
+            this.updateBackVisibility();
+        },
+
+        readFiltersFromBody(body) {
+            const getVal = (name) => {
+                const el = body.querySelector(`[data-filter="${name}"]`);
+                return el ? el.value : '';
+            };
+            this.filters.q = getVal('q').trim();
+            this.filters.category = getVal('category').trim();
+            this.filters.stock = getVal('stock') || 'all';
+            this.filters.min_price = getVal('min_price');
+            this.filters.max_price = getVal('max_price');
+        },
+
+        handleBack() {
+            ModalStack.back();
+            this._deactivate();
+        },
+
+        _deactivate() {
+            const { modal } = this.ctrl;
+            if (!modal) return;
+            modal.classList.remove('active');
+            if (ModalStack.size() > 0) {
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = '';
+            }
+        },
+
+        close() {
+            const { modal } = this.ctrl;
+            ModalStack.closeFrom('dashboardDetail');
+            if (modal) modal.classList.remove('active');
+            document.body.style.overflow = '';
+        },
+    };
+
+    // ======================================================
+    // TOP SELLERS MODAL
+    // ======================================================
+    const TopSellersModal = {
+        ctrl: null,
+        mode: 'list',
+        currentProductId: null,
+        currentPage: 1,
+        limit: 20,
+        filters: { q: '' },
+        filterKeys: ['q'],
+        filtersOpen: false,
+
+        init() {
+            this.ctrl = {
+                modal: document.getElementById('topSellersModal'),
+                body: document.getElementById('topSellersBody'),
+                closeBtn: document.getElementById('closeTopSellers'),
+            };
+
+            const { modal, closeBtn } = this.ctrl;
+
+            closeBtn?.addEventListener('click', () => this.close());
+            modal?.addEventListener('click', (e) => {
+                if (e.target === modal) this.close();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && modal?.classList.contains('active')) this.close();
+            });
+
+            document.getElementById('viewAllTopSellers')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.openFullList();
+            });
+
+            document.getElementById('topProductsList')?.addEventListener('click', (e) => {
+                const item = e.target.closest('.ranking-item');
+                if (!item) return;
+                const productId = item.dataset.productId;
+                if (productId) this.openDetail(productId);
+            });
+
+            document.addEventListener('modalstack:change', () => this.updateBackVisibility());
+        },
+
+        updateBackVisibility() {
+            const { modal, body } = this.ctrl;
+            if (!modal || !modal.classList.contains('active')) return;
+
+            const isTop = ModalStack.isTop('topSellers');
+            const backBtn = body?.querySelector('.back-modal');
+            if (backBtn) {
+                backBtn.classList.toggle('visible', isTop && this.mode === 'detail');
+            }
+        },
+
+        async openDetail(productId) {
+            this.mode = 'detail';
+            this.currentProductId = productId;
+
+            const { modal } = this.ctrl;
+
+            if (!ModalStack.items.some((it) => it.name === 'topSellers')) {
+                ModalStack.push('topSellers', modal);
+            } else {
+                ModalStack.items = ModalStack.items.filter((it) => it.name !== 'topSellers');
+                ModalStack.push('topSellers', modal);
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            this.updateBackVisibility();
+
+            const { body } = this.ctrl;
+            body.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><span>Carregando...</span></div>';
+
+            try {
+                const stats = await API.get(`/products/admin/top-sellers/${productId}/stats`);
+                this.renderDetail(stats);
+            } catch (error) {
+                console.error(error);
+                body.innerHTML = '<div class="table-empty">Erro ao carregar detalhes</div>';
+            }
+        },
+
+        async openFullList(page = 1) {
+            this.mode = 'list';
+            this.currentPage = page;
+
+            const { modal } = this.ctrl;
+
+            if (!ModalStack.items.some((it) => it.name === 'topSellers')) {
+                ModalStack.push('topSellers', modal);
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            this.updateBackVisibility();
+
+            const { body } = this.ctrl;
+            body.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><span>Carregando...</span></div>';
+
+            try {
+                const offset = (page - 1) * this.limit;
+                const params = new URLSearchParams({
+                    limit: this.limit,
+                    offset,
+                });
+                if (this.filters.q) params.set('q', this.filters.q);
+
+                const data = await API.get(`/products/admin/top-sellers?${params.toString()}`);
+
+                const products = data.products || [];
+                const hasMore = products.length === this.limit;
+                const totalPages = hasMore ? this.currentPage + 1 : this.currentPage;
+
+                this.renderList(products, { page: this.currentPage, pages: totalPages });
+            } catch (error) {
+                console.error(error);
+                body.innerHTML = '<div class="table-empty">Erro ao carregar lista</div>';
+            }
+        },
+
+        renderDetail(p) {
+            const { body } = this.ctrl;
+            const lastSaleText = p.last_sale_at
+                ? Utils.formatDate(p.last_sale_at)
+                : 'Nenhuma venda registrada';
+
+            body.innerHTML = `
+                <div class="detail-header">
+                    <button class="back-modal" aria-label="Voltar" data-action="back">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <div class="detail-header-icon" style="background: #fef3c7; color: #f59e0b;">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <div class="detail-header-info">
+                        <h2>${Utils.escapeHtml(p.name)}</h2>
+                        <p>#${p.id} · SKU: ${Utils.escapeHtml(p.sku)}</p>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h3>📊 Vendas</h3>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-item-label">Unidades vendidas</span>
+                            <span class="detail-item-value accent">${p.sales_count}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-item-label">Receita total</span>
+                            <span class="detail-item-value accent">${Utils.formatPrice(p.revenue)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-item-label">Preço unitário</span>
+                            <span class="detail-item-value">${Utils.formatPrice(p.price)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-item-label">Estoque atual</span>
+                            <span class="detail-item-value">${p.stock_quantity}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h3>🏷️ Ranking</h3>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-item-label">Posição</span>
+                            <span class="detail-item-value accent">#${p.rank} de ${p.total_ranked}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-item-label">Última venda</span>
+                            <span class="detail-item-value">${lastSaleText}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-actions">
+                    <a href="/produto/${Utils.escapeHtml(p.slug)}" target="_blank" rel="noopener" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-external-link-alt"></i> Ver na loja
+                    </a>
+                </div>
+            `;
+
+            body.querySelector('[data-action="back"]')?.addEventListener('click', () => {
+                this.handleBack();
+            });
+
+            this.updateBackVisibility();
+        },
+
+        renderList(products, pagination) {
+            const { body } = this.ctrl;
+
+            const itemsHtml = products.length === 0
+                ? '<div class="table-empty">Nenhum produto vendido ainda.</div>'
+                : products.map((p, i) => {
+                    const position = (pagination.page - 1) * this.limit + i + 1;
+                    const positionClass = position === 1 ? 'gold' : position === 2 ? 'silver' : position === 3 ? 'bronze' : '';
+                    return `
+                        <div class="ranking-item" data-product-id="${p.id}">
+                            <div class="ranking-position ${positionClass}">${position}</div>
+                            <div class="ranking-info">
+                                <div class="ranking-name">${Utils.escapeHtml(p.name)}</div>
+                                <div class="ranking-meta">SKU: ${Utils.escapeHtml(p.sku)} · ${p.sales_count} vendas</div>
+                            </div>
+                            <div class="ranking-value">${Utils.formatPrice(p.revenue)}</div>
+                            <i class="fas fa-arrow-right" style="color: var(--gray-300); margin-left: 0.5rem;"></i>
+                        </div>
+                    `;
+                }).join('');
+
+            let paginationHtml = '';
+            if (pagination.pages > 1) {
+                paginationHtml = '<div class="pagination">';
+                paginationHtml += `<button ${pagination.page === 1 ? 'disabled' : ''} data-page="${pagination.page - 1}">«</button>`;
+                for (let i = 1; i <= pagination.pages; i++) {
+                    paginationHtml += `<button class="${i === pagination.page ? 'active' : ''}" data-page="${i}">${i}</button>`;
+                }
+                paginationHtml += `<button ${pagination.page === pagination.pages ? 'disabled' : ''} data-page="${pagination.page + 1}">»</button>`;
+                paginationHtml += '</div>';
+            }
+
+            const filterBody = `
+                <div class="table-filters-row">
+                    <input type="text" class="table-filter-input table-filter-input--md"
+                        data-filter="q" placeholder="Buscar por nome..." value="${Utils.escapeHtml(this.filters.q)}">
+                </div>
+                <div class="table-filters-row">
+                    <div class="table-filter-actions">
+                        <button class="table-filter-btn table-filter-btn--apply" data-action="apply">
+                            <i class="fas fa-search"></i> Aplicar
+                        </button>
+                        <button class="table-filter-btn table-filter-btn--clear" data-action="clear">
+                            <i class="fas fa-times"></i> Limpar
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            const activeCount = FilterBar.countActive(this.filters, this.filterKeys);
+            const filtersHtml = FilterBar.render({
+                id: 'topSellers',
+                activeCount,
+                isOpen: this.filtersOpen,
+                body: filterBody,
+            });
+
+            body.innerHTML = `
+                <div class="detail-header">
+                    <button class="back-modal" aria-label="Voltar" data-action="back">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <div class="detail-header-icon" style="background: #fef3c7; color: #f59e0b;">
+                        <i class="fas fa-trophy"></i>
+                    </div>
+                    <div class="detail-header-info">
+                        <h2>Produtos Mais Vendidos</h2>
+                        <p>Ordenados por total de vendas</p>
+                    </div>
+                </div>
+
+                ${filtersHtml}
+                <div class="ranking-list">${itemsHtml}</div>
+                ${paginationHtml}
+            `;
+
+            FilterBar.bind(body, 'topSellers', this.filters, this.filterKeys);
+            if (this.filtersOpen) {
+                body.querySelector('[data-filters-toggle="topSellers"]')?.classList.add('open');
+                body.querySelector('[data-filters-panel="topSellers"]')?.classList.add('open');
+            }
+            const toggle = body.querySelector('[data-filters-toggle="topSellers"]');
+            toggle?.addEventListener('click', () => {
+                this.filtersOpen = !this.filtersOpen;
+            });
+
+            body.querySelector('[data-action="back"]')?.addEventListener('click', () => {
+                this.handleBack();
+            });
+
+            body.querySelectorAll('.ranking-item').forEach((item) => {
+                item.addEventListener('click', () => {
+                    const id = item.dataset.productId;
+                    if (id) this.openDetail(id);
+                });
+            });
+
+            body.querySelectorAll('button[data-page]').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    this.openFullList(parseInt(btn.dataset.page));
+                });
+            });
+
+            body.querySelectorAll('[data-action="apply"]').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const inp = body.querySelector('[data-filter="q"]');
+                    this.filters.q = inp ? inp.value.trim() : '';
+                    this.openFullList(1);
+                });
+            });
+
+            body.querySelectorAll('[data-action="clear"]').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    this.filters.q = '';
+                    this.openFullList(1);
+                });
+            });
+
+            const inp = body.querySelector('[data-filter="q"]');
+            inp?.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    this.filters.q = inp.value.trim();
+                    this.openFullList(1);
+                }
+            });
+
+            this.updateBackVisibility();
+        },
+
+        handleBack() {
+            if (this.mode === 'detail') {
+                this.openFullList();
+                ModalStack.items = ModalStack.items.filter((it) => it.name !== 'topSellers');
+                ModalStack.push('topSellers', this.ctrl.modal);
+                return;
+            }
+            ModalStack.back();
+            this._deactivate();
+        },
+
+        _deactivate() {
+            const { modal } = this.ctrl;
+            if (!modal) return;
+            modal.classList.remove('active');
+            if (ModalStack.size() > 0) {
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = '';
+            }
+        },
+
+        close() {
+            const { modal } = this.ctrl;
+            ModalStack.closeFrom('topSellers');
+            if (modal) modal.classList.remove('active');
+            document.body.style.overflow = '';
+        },
+    };
+
+    // ======================================================
+    // MOVEMENTS MODAL
+    // ======================================================
+    const MovementsModal = {
+        ctrl: null,
+        mode: 'list',
+        currentMovementId: null,
+        currentPage: 1,
+        limit: 20,
+        sortState: { sort: 'created_at', order: 'desc' },
+        filters: { q: '', type: '', from: '', to: '' },
+        filterKeys: ['q', 'type', 'from', 'to'],
+        filtersOpen: false,
+
+        TYPE_LABELS: {
+            in: { label: 'Entrada', icon: 'fa-arrow-down', color: 'success' },
+            out: { label: 'Saída', icon: 'fa-arrow-up', color: 'danger' },
+            adjustment: { label: 'Ajuste', icon: 'fa-sliders-h', color: 'info' },
+            return: { label: 'Devolução', icon: 'fa-undo', color: 'warning' },
+        },
+
+        init() {
+            this.ctrl = {
+                modal: document.getElementById('movementsModal'),
+                body: document.getElementById('movementsBody'),
+                closeBtn: document.getElementById('closeMovements'),
+            };
+
+            const { modal, closeBtn } = this.ctrl;
+
+            closeBtn?.addEventListener('click', () => this.close());
+            modal?.addEventListener('click', (e) => {
+                if (e.target === modal) this.close();
+            });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && modal?.classList.contains('active')) this.close();
+            });
+
+            document.getElementById('viewAllMovements')?.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.openFullList();
+            });
+
+            document.getElementById('recentMovementsList')?.addEventListener('click', (e) => {
+                const item = e.target.closest('.movement-item');
+                if (!item) return;
+                const movementId = item.dataset.movementId;
+                if (movementId) this.openDetail(movementId);
+            });
+
+            document.addEventListener('modalstack:change', () => this.updateBackVisibility());
+        },
+
+        updateBackVisibility() {
+            const { modal, body } = this.ctrl;
+            if (!modal || !modal.classList.contains('active')) return;
+
+            const isTop = ModalStack.isTop('movements');
+            const backBtn = body?.querySelector('.back-modal');
+            if (backBtn) {
+                backBtn.classList.toggle('visible', isTop && this.mode === 'detail');
+            }
+        },
+
+        async openDetail(movementId) {
+            this.mode = 'detail';
+            this.currentMovementId = movementId;
+
+            const { modal } = this.ctrl;
+
+            if (!ModalStack.items.some((it) => it.name === 'movements')) {
+                ModalStack.push('movements', modal);
+            } else {
+                ModalStack.items = ModalStack.items.filter((it) => it.name !== 'movements');
+                ModalStack.push('movements', modal);
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            this.updateBackVisibility();
+
+            const { body } = this.ctrl;
+            body.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><span>Carregando...</span></div>';
+
+            try {
+                const m = await API.get(`/inventory/movements/${movementId}`);
+                this.renderDetail(m);
+            } catch (error) {
+                console.error(error);
+                body.innerHTML = '<div class="table-empty">Erro ao carregar detalhes</div>';
+            }
+        },
+
+        async openFullList(page = 1) {
+            this.mode = 'list';
+            this.currentPage = page;
+
+            const { modal } = this.ctrl;
+
+            if (!ModalStack.items.some((it) => it.name === 'movements')) {
+                ModalStack.push('movements', modal);
+            }
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            this.updateBackVisibility();
+
+            const { body } = this.ctrl;
+            body.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i><span>Carregando...</span></div>';
+
+            try {
+                const params = new URLSearchParams({
+                    page,
+                    limit: this.limit,
+                    sort: this.sortState.sort,
+                    order: this.sortState.order,
+                });
+                if (this.filters.q) params.set('q', this.filters.q);
+                if (this.filters.type) params.set('type', this.filters.type);
+                if (this.filters.from) params.set('from', this.filters.from);
+                if (this.filters.to) params.set('to', this.filters.to);
+
+                const data = await API.get(`/inventory/movements?${params.toString()}`);
+                this.renderList(data.movements, data.pagination);
+            } catch (error) {
+                console.error(error);
+                body.innerHTML = '<div class="table-empty">Erro ao carregar movimentações</div>';
+            }
+        },
+
+        renderDetail(m) {
+            const { body } = this.ctrl;
+            const typeInfo = this.TYPE_LABELS[m.movement_type] || this.TYPE_LABELS.adjustment;
+            const valueSign = m.movement_type === 'in' || m.movement_type === 'return'
+                ? `+${m.quantity}`
+                : m.movement_type === 'out'
+                    ? `-${m.quantity}`
+                    : m.quantity;
+
+            const refText = m.reference_type && m.reference_id
+                ? `${m.reference_type} #${m.reference_id}`
+                : '—';
+
+            body.innerHTML = `
+                <div class="detail-header">
+                    <button class="back-modal" aria-label="Voltar" data-action="back">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <div class="detail-header-icon" style="background: var(--${typeInfo.color}-bg); color: var(--${typeInfo.color});">
+                        <i class="fas ${typeInfo.icon}"></i>
+                    </div>
+                    <div class="detail-header-info">
+                        <h2>${typeInfo.label} ${valueSign} unidade(s)</h2>
+                        <p>${Utils.escapeHtml(m.product_name)}</p>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h3>📅 Data</h3>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-item-label">Quando</span>
+                            <span class="detail-item-value">${Utils.formatDate(m.created_at)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h3>📦 Estoque</h3>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-item-label">Quantidade anterior</span>
+                            <span class="detail-item-value">${m.previous_quantity}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-item-label">Quantidade atual</span>
+                            <span class="detail-item-value accent">${m.new_quantity}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-item-label">Variação</span>
+                            <span class="detail-item-value">${valueSign}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-section">
+                    <h3>📝 Detalhes</h3>
+                    <div class="detail-grid">
+                        <div class="detail-item">
+                            <span class="detail-item-label">Motivo</span>
+                            <span class="detail-item-value">${Utils.escapeHtml(m.reason || '—')}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-item-label">Referência</span>
+                            <span class="detail-item-value">${Utils.escapeHtml(refText)}</span>
+                        </div>
+                        ${m.user_name ? `
+                            <div class="detail-item">
+                                <span class="detail-item-label">Registrado por</span>
+                                <span class="detail-item-value">${Utils.escapeHtml(m.user_name)}</span>
+                            </div>
+                        ` : ''}
+                    </div>
+                    ${m.notes ? `
+                        <div class="detail-item" style="margin-top: 1rem;">
+                            <span class="detail-item-label">Observações</span>
+                            <span class="detail-item-value">${Utils.escapeHtml(m.notes)}</span>
+                        </div>
+                    ` : ''}
+                </div>
+
+                <div class="detail-actions">
+                    <button class="btn btn-secondary btn-sm" id="viewProductFromMovementBtn" type="button">
+                        <i class="fas fa-box"></i> Ver produto
+                    </button>
+                </div>
+            `;
+
+            body.querySelector('[data-action="back"]')?.addEventListener('click', () => {
+                this.handleBack();
+            });
+
+            body.querySelector('#viewProductFromMovementBtn')?.addEventListener('click', async () => {
+                try {
+                    const product = await API.get(`/products/admin/${m.product_id}`);
+                    DetailModal.showProduct(product);
+                } catch (err) {
+                    Toast.error('Erro ao carregar produto');
+                }
+            });
+
+            this.updateBackVisibility();
+        },
+
+        renderList(movements, pagination) {
+            const { body } = this.ctrl;
+
+            const itemsHtml = movements.length === 0
+                ? '<div class="table-empty">Nenhuma movimentação encontrada.</div>'
+                : movements.map((m) => {
+                    const typeInfo = this.TYPE_LABELS[m.movement_type] || this.TYPE_LABELS.adjustment;
+                    const valueSign = m.movement_type === 'in' || m.movement_type === 'return' ? '+' : '-';
+                    return `
+                        <div class="movement-item ${m.movement_type}" data-movement-id="${m.id}">
+                            <div class="movement-icon ${m.movement_type}">
+                                <i class="fas ${typeInfo.icon}"></i>
+                            </div>
+                            <div class="movement-info">
+                                <div class="movement-title">${Utils.escapeHtml(m.product_name)}</div>
+                                <div class="movement-meta">${typeInfo.label} · ${Utils.formatDate(m.created_at)}</div>
+                            </div>
+                            <div class="movement-value ${m.movement_type}">${valueSign}${m.quantity}</div>
+                        </div>
+                    `;
+                }).join('');
+
+            let paginationHtml = '';
+            if (pagination.pages > 1) {
+                paginationHtml = '<div class="pagination">';
+                paginationHtml += `<button ${pagination.page === 1 ? 'disabled' : ''} data-page="${pagination.page - 1}">«</button>`;
+                for (let i = 1; i <= pagination.pages; i++) {
+                    paginationHtml += `<button class="${i === pagination.page ? 'active' : ''}" data-page="${i}">${i}</button>`;
+                }
+                paginationHtml += `<button ${pagination.page === pagination.pages ? 'disabled' : ''} data-page="${pagination.page + 1}">»</button>`;
+                paginationHtml += '</div>';
+            }
+
+            const filterBody = `
+                <div class="table-filters-row">
+                    <input type="text" class="table-filter-input table-filter-input--md"
+                        data-filter="q" placeholder="Buscar produto/SKU..." value="${Utils.escapeHtml(this.filters.q)}">
+                    <select class="table-filter-select" data-filter="type">
+                        <option value="" ${!this.filters.type ? 'selected' : ''}>Tipo: Todos</option>
+                        <option value="in" ${this.filters.type === 'in' ? 'selected' : ''}>Entrada</option>
+                        <option value="out" ${this.filters.type === 'out' ? 'selected' : ''}>Saída</option>
+                        <option value="adjustment" ${this.filters.type === 'adjustment' ? 'selected' : ''}>Ajuste</option>
+                        <option value="return" ${this.filters.type === 'return' ? 'selected' : ''}>Devolução</option>
+                    </select>
+                </div>
+                <div class="table-filters-row">
+                    <input type="date" class="table-filter-input table-filter-input--date"
+                        data-filter="from" value="${Utils.escapeHtml(this.filters.from)}" title="A partir de">
+                    <input type="date" class="table-filter-input table-filter-input--date"
+                        data-filter="to" value="${Utils.escapeHtml(this.filters.to)}" title="Até">
+                </div>
+                <div class="table-filters-row">
+                    <div class="table-filter-actions">
+                        <button class="table-filter-btn table-filter-btn--apply" data-action="apply">
+                            <i class="fas fa-search"></i> Aplicar
+                        </button>
+                        <button class="table-filter-btn table-filter-btn--clear" data-action="clear">
+                            <i class="fas fa-times"></i> Limpar
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            const activeCount = FilterBar.countActive(this.filters, this.filterKeys);
+            const filtersHtml = FilterBar.render({
+                id: 'movements',
+                activeCount,
+                isOpen: this.filtersOpen,
+                body: filterBody,
+            });
+
+            body.innerHTML = `
+                <div class="detail-header">
+                    <button class="back-modal" aria-label="Voltar" data-action="back">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <div class="detail-header-icon" style="background: var(--info-bg); color: var(--info);">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <div class="detail-header-info">
+                        <h2>Movimentações de Estoque</h2>
+                        <p>${pagination.total} ${pagination.total === 1 ? 'registro' : 'registros'}</p>
+                    </div>
+                </div>
+
+                ${filtersHtml}
+                <div class="movement-list">${itemsHtml}</div>
+                ${paginationHtml}
+            `;
+
+            FilterBar.bind(body, 'movements', this.filters, this.filterKeys);
+            if (this.filtersOpen) {
+                body.querySelector('[data-filters-toggle="movements"]')?.classList.add('open');
+                body.querySelector('[data-filters-panel="movements"]')?.classList.add('open');
+            }
+            const toggle = body.querySelector('[data-filters-toggle="movements"]');
+            toggle?.addEventListener('click', () => {
+                this.filtersOpen = !this.filtersOpen;
+            });
+
+            body.querySelector('[data-action="back"]')?.addEventListener('click', () => {
+                this.handleBack();
+            });
+
+            body.querySelectorAll('.movement-item').forEach((item) => {
+                item.addEventListener('click', () => {
+                    const id = item.dataset.movementId;
+                    if (id) this.openDetail(id);
+                });
+            });
+
+            body.querySelectorAll('button[data-page]').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    this.openFullList(parseInt(btn.dataset.page));
+                });
+            });
+
+            body.querySelectorAll('[data-action="apply"]').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    this.readFiltersFromBody(body);
+                    this.openFullList(1);
+                });
+            });
+
+            body.querySelectorAll('[data-action="clear"]').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    this.filters = { q: '', type: '', from: '', to: '' };
+                    this.openFullList(1);
+                });
+            });
+
+            body.querySelectorAll('.table-filter-input').forEach((inp) => {
+                inp.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.readFiltersFromBody(body);
+                        this.openFullList(1);
+                    }
+                });
+            });
+
+            body.querySelectorAll('.table-filter-select').forEach((sel) => {
+                sel.addEventListener('change', () => {
+                    this.readFiltersFromBody(body);
+                    this.openFullList(1);
+                });
+            });
+
+            this.updateBackVisibility();
+        },
+
+        readFiltersFromBody(body) {
+            const getVal = (name) => {
+                const el = body.querySelector(`[data-filter="${name}"]`);
+                return el ? el.value : '';
+            };
+            this.filters.q = getVal('q').trim();
+            this.filters.type = getVal('type');
+            this.filters.from = getVal('from');
+            this.filters.to = getVal('to');
+        },
+
+        handleBack() {
+            if (this.mode === 'detail') {
+                this.openFullList();
+                ModalStack.items = ModalStack.items.filter((it) => it.name !== 'movements');
+                ModalStack.push('movements', this.ctrl.modal);
+                return;
+            }
+            ModalStack.back();
+            this._deactivate();
+        },
+
+        _deactivate() {
+            const { modal } = this.ctrl;
+            if (!modal) return;
+            modal.classList.remove('active');
+            if (ModalStack.size() > 0) {
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = '';
+            }
+        },
+
+        close() {
+            const { modal } = this.ctrl;
+            ModalStack.closeFrom('movements');
+            if (modal) modal.classList.remove('active');
+            document.body.style.overflow = '';
+        },
+    };
+
+    // ======================================================
+    // MÉTRICAS — Dashboard analítico com Chart.js
+    // ======================================================
+    const MetricsPage = {
+        period: '30d',
+        loading: false,
+        data: null,
+        charts: {},
+        renderedCharts: {},
+        expandedCards: {},
+        initialized: false,
+
+        CARD_MAP: {
+            'metrics-card-revenue':         'revenue',
+            'metrics-card-orders-status':   'ordersStatus',
+            'metrics-card-payment-methods': 'paymentMethods',
+            'metrics-card-top-categories':  'topCategories',
+            'metrics-card-stock-movements': 'stockMovements',
+            'metrics-card-new-customers':   'newCustomers',
+            'metrics-card-price-dist':      'priceDistribution',
+            'metrics-card-top-customers':   'topCustomers',
+        },
+
+        COLORS: {
+            accent: '#c9a96e',
+            accentSoft: 'rgba(201, 169, 110, 0.15)',
+            success: '#22c55e',
+            successSoft: 'rgba(34, 197, 94, 0.15)',
+            danger: '#ef4444',
+            dangerSoft: 'rgba(239, 68, 68, 0.15)',
+            info: '#3b82f6',
+            infoSoft: 'rgba(59, 130, 246, 0.15)',
+            warning: '#f59e0b',
+            warningSoft: 'rgba(245, 158, 11, 0.15)',
+            purple: '#8b5cf6',
+            purpleSoft: 'rgba(139, 92, 246, 0.15)',
+            gray: '#737373',
+            graySoft: 'rgba(115, 115, 115, 0.15)',
+        },
+
+        DONUT_PALETTE: [
+            '#c9a96e', '#3b82f6', '#22c55e', '#f59e0b',
+            '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899',
+        ],
+
+        init() {
+            this.setupAccordions();
+            this.bindPeriodSelector();
+            this.bindRefresh();
+            this.load();
+            this.initialized = true;
+        },
+
+        setupAccordions() {
+            const section = document.getElementById('section-metrics');
+            if (!section) return;
+
+            const cards = section.querySelectorAll('.metrics-card');
+
+            cards.forEach((card, index) => {
+                if (card.dataset.accordionReady === 'true') return;
+                card.dataset.accordionReady = 'true';
+
+                const id = this.inferCardId(card, index);
+                if (!id) return;
+
+                card.dataset.cardId = id;
+
+                if (id === 'metrics-card-top-customers') {
+                    card.classList.add('metrics-card-tall');
+                }
+
+                const header = card.querySelector('.card-header');
+                if (header) {
+                    header.setAttribute('role', 'button');
+                    header.setAttribute('tabindex', '0');
+                    header.setAttribute('aria-expanded', 'false');
+
+                    header.addEventListener('click', () => this.toggleCard(id));
+                    header.addEventListener('keydown', (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            this.toggleCard(id);
+                        }
+                    });
+                }
+            });
+        },
+
+        inferCardId(card, fallbackIndex) {
+            const canvas = card.querySelector('canvas');
+            if (canvas && canvas.id) {
+                const map = {
+                    chartRevenue:          'metrics-card-revenue',
+                    chartOrdersStatus:     'metrics-card-orders-status',
+                    chartPaymentMethods:   'metrics-card-payment-methods',
+                    chartTopCategories:    'metrics-card-top-categories',
+                    chartStockMovements:   'metrics-card-stock-movements',
+                    chartNewCustomers:     'metrics-card-new-customers',
+                    chartPriceDistribution:'metrics-card-price-dist',
+                };
+                if (map[canvas.id]) return map[canvas.id];
+            }
+
+            if (card.querySelector('#topCustomersTable')) {
+                return 'metrics-card-top-customers';
+            }
+
+            return `metrics-card-${fallbackIndex}`;
+        },
+
+        toggleCard(id) {
+            const card = document.querySelector(`[data-card-id="${id}"]`);
+            if (!card) return;
+
+            const header = card.querySelector('.card-header');
+            const isExpanded = card.classList.contains('expanded');
+
+            if (isExpanded) {
+                card.classList.remove('expanded');
+                header?.setAttribute('aria-expanded', 'false');
+                this.expandedCards[id] = false;
+            } else {
+                card.classList.add('expanded');
+                header?.setAttribute('aria-expanded', 'true');
+                this.expandedCards[id] = true;
+
+                const chartKey = this.CARD_MAP[id];
+                if (chartKey && !this.renderedCharts[chartKey] && this.data) {
+                    setTimeout(() => this.renderOneChart(chartKey), 80);
+                }
+            }
+        },
+
+        bindPeriodSelector() {
+            const selector = document.getElementById('periodSelector');
+            if (!selector || selector.dataset.bound === 'true') return;
+            selector.dataset.bound = 'true';
+
+            selector.querySelectorAll('.period-btn').forEach((btn) => {
+                btn.addEventListener('click', () => {
+                    const period = btn.dataset.period;
+                    if (!period || period === this.period) return;
+
+                    selector.querySelectorAll('.period-btn').forEach((b) => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    this.period = period;
+                    this.load();
+                });
+            });
+        },
+
+        bindRefresh() {
+            const btn = document.getElementById('refreshMetrics');
+            if (!btn || btn.dataset.bound === 'true') return;
+            btn.dataset.bound = 'true';
+
+            btn.addEventListener('click', async () => {
+                if (this.loading) return;
+                btn.classList.add('loading');
+                await this.load();
+                btn.classList.remove('loading');
+                Toast.info('Métricas atualizadas');
+            });
+        },
+
+        async load() {
+            if (this.loading) return;
+            this.loading = true;
+
+            try {
+                const data = await API.get(`/metrics?period=${this.period}`);
+                this.data = data;
+
+                this.renderedCharts = {};
+                this.destroyAllCharts();
+
+                this.render();
+            } catch (error) {
+                console.error('Erro ao carregar métricas:', error);
+                Toast.error('Erro ao carregar métricas');
+            } finally {
+                this.loading = false;
+            }
+        },
+
+        render() {
+            const d = this.data;
+            if (!d) return;
+
+            this.renderKPIs(d.overview);
+            this.renderTopCustomersTable(d.top_customers);
+            this.renderFooter(d);
+
+            Object.keys(this.expandedCards).forEach((id) => {
+                if (this.expandedCards[id]) {
+                    const chartKey = this.CARD_MAP[id];
+                    if (chartKey && chartKey !== 'topCustomers') {
+                        this.renderOneChart(chartKey);
+                    }
+                }
+            });
+        },
+
+        renderOneChart(key) {
+            const d = this.data;
+            if (!d) return;
+
+            switch (key) {
+                case 'revenue': this.renderRevenueChart(d.revenue_timeseries); break;
+                case 'ordersStatus': this.renderOrdersStatusChart(d.orders_by_status); break;
+                case 'paymentMethods': this.renderPaymentMethodsChart(d.payment_methods); break;
+                case 'topCategories': this.renderTopCategoriesChart(d.top_categories); break;
+                case 'stockMovements': this.renderStockMovementsChart(d.stock_movements); break;
+                case 'newCustomers': this.renderNewCustomersChart(d.new_customers); break;
+                case 'priceDistribution': this.renderPriceDistributionChart(d.price_distribution); break;
+            }
+
+            this.renderedCharts[key] = true;
+        },
+
+        destroyChart(key) {
+            if (this.charts[key]) {
+                this.charts[key].destroy();
+                this.charts[key] = null;
+            }
+        },
+
+        destroyAllCharts() {
+            Object.keys(this.charts).forEach((k) => this.destroyChart(k));
+        },
+
+        formatShortDate(dateStr) {
+            if (!dateStr) return '';
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return dateStr;
+            return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+        },
+
+        formatShortMonth(dateStr) {
+            if (!dateStr) return '';
+            const d = new Date(dateStr);
+            if (isNaN(d.getTime())) return dateStr;
+            return d.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+        },
+
+        formatLabel(dateStr) {
+            if (this.period === '12m') return this.formatShortMonth(dateStr);
+            return this.formatShortDate(dateStr);
+        },
+
+        ensureChartAvailable() {
+            if (typeof Chart === 'undefined') {
+                console.warn('Chart.js não carregado — gráficos não serão renderizados');
+                return false;
+            }
+            Chart.defaults.font.family = "'Segoe UI', system-ui, -apple-system, sans-serif";
+            Chart.defaults.font.size = 12;
+            Chart.defaults.color = '#737373';
+            return true;
+        },
+
+        renderKPIs(overview) {
+            if (!overview) return;
+
+            const fmtCurrency = (v) => Utils.formatPrice(v);
+            const fmtNumber = (v) => Number(v || 0).toLocaleString('pt-BR');
+            const fmtPct = (v) => {
+                const n = parseFloat(v) || 0;
+                const sign = n > 0 ? '+' : '';
+                return `${sign}${n.toFixed(1)}%`;
+            };
+
+            const applyDelta = (el, pct) => {
+                if (!el) return;
+                el.classList.remove('positive', 'negative');
+                const n = parseFloat(pct) || 0;
+                if (n > 0) {
+                    el.classList.add('positive');
+                    el.innerHTML = `<i class="fas fa-arrow-up"></i> ${fmtPct(n)}`;
+                } else if (n < 0) {
+                    el.classList.add('negative');
+                    el.innerHTML = `<i class="fas fa-arrow-down"></i> ${fmtPct(n)}`;
+                } else {
+                    el.innerHTML = `<i class="fas fa-minus"></i> 0%`;
+                }
+            };
+
+            document.getElementById('metricsRevenue').textContent = fmtCurrency(overview.revenue.value);
+            document.getElementById('metricsOrders').textContent = fmtNumber(overview.orders.value);
+            document.getElementById('metricsTicketAvg').textContent = fmtCurrency(overview.ticket_avg.value);
+            document.getElementById('metricsCustomers').textContent = fmtNumber(overview.customers.value);
+
+            applyDelta(document.getElementById('metricsRevenueDelta'), overview.revenue.delta_pct);
+            applyDelta(document.getElementById('metricsOrdersDelta'), overview.orders.delta_pct);
+            applyDelta(document.getElementById('metricsTicketAvgDelta'), overview.ticket_avg.delta_pct);
+            applyDelta(document.getElementById('metricsCustomersDelta'), overview.customers.delta_pct);
+
+            this.bindKpiClick('metricsRevenue', 'revenue');
+            this.bindKpiClick('metricsOrders', 'orders');
+            this.bindKpiClick('metricsTicketAvg', 'ticket');
+            this.bindKpiClick('metricsCustomers', 'customers');
+        },
+
+        bindKpiClick(valueId, type) {
+            const el = document.getElementById(valueId);
+            if (!el) return;
+
+            const card = el.closest('.metrics-kpi-card');
+            if (!card) return;
+
+            card.classList.add('metrics-kpi-clickable');
+            card.setAttribute('role', 'button');
+            card.setAttribute('tabindex', '0');
+            card.setAttribute('title', 'Ver detalhes');
+
+            const trigger = () => {
+                MetricsDetailModal.open(type, this.period);
+            };
+
+            if (card.dataset.kpiClickBound === 'true') return;
+            card.dataset.kpiClickBound = 'true';
+
+            card.addEventListener('click', trigger);
+            card.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    trigger();
+                }
+            });
+        },
+
+        renderRevenueChart(data) {
+            if (!this.ensureChartAvailable()) return;
+            const canvas = document.getElementById('chartRevenue');
+            if (!canvas) return;
+
+            this.destroyChart('revenue');
+
+            const labels = data.map((d) => this.formatLabel(d.date));
+            const values = data.map((d) => d.revenue);
+
+            const ctx = canvas.getContext('2d');
+            const gradient = ctx.createLinearGradient(0, 0, 0, 300);
+            gradient.addColorStop(0, 'rgba(201, 169, 110, 0.35)');
+            gradient.addColorStop(1, 'rgba(201, 169, 110, 0)');
+
+            this.charts.revenue = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Receita (R$)',
+                        data: values,
+                        borderColor: this.COLORS.accent,
+                        backgroundColor: gradient,
+                        borderWidth: 2.5,
+                        tension: 0.35,
+                        fill: true,
+                        pointRadius: 3,
+                        pointHoverRadius: 6,
+                        pointBackgroundColor: this.COLORS.accent,
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#171717',
+                            padding: 12,
+                            callbacks: { label: (ctx) => `Receita: ${Utils.formatPrice(ctx.parsed.y)}` },
+                        },
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(0,0,0,0.05)' },
+                            ticks: { callback: (v) => `R$ ${Number(v).toLocaleString('pt-BR')}` },
+                        },
+                        x: { grid: { display: false } },
+                    },
+                },
+            });
+        },
+
+        renderOrdersStatusChart(data) {
+            if (!this.ensureChartAvailable()) return;
+            const canvas = document.getElementById('chartOrdersStatus');
+            if (!canvas) return;
+
+            this.destroyChart('ordersStatus');
+
+            const LABELS = {
+                pending: 'Pendente', paid: 'Pago', shipped: 'Enviado',
+                delivered: 'Entregue', cancelled: 'Cancelado',
+            };
+
+            const labels = data.map((d) => LABELS[d.status] || d.status);
+            const values = data.map((d) => d.count);
+
+            if (values.length === 0) {
+                this.renderEmptyChart(canvas, 'Nenhum pedido no período');
+                return;
+            }
+
+            this.charts.ordersStatus = new Chart(canvas.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: this.DONUT_PALETTE,
+                        borderWidth: 2,
+                        borderColor: '#fff',
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { padding: 12, usePointStyle: true, pointStyle: 'circle', font: { size: 12 } },
+                        },
+                        tooltip: {
+                            backgroundColor: '#171717',
+                            padding: 12,
+                            callbacks: {
+                                label: (ctx) => {
+                                    const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                                    const pct = ((ctx.parsed / total) * 100).toFixed(1);
+                                    return `${ctx.label}: ${ctx.parsed} (${pct}%)`;
+                                },
+                            },
+                        },
+                    },
+                },
+            });
+        },
+
+        renderPaymentMethodsChart(data) {
+            if (!this.ensureChartAvailable()) return;
+            const canvas = document.getElementById('chartPaymentMethods');
+            if (!canvas) return;
+
+            this.destroyChart('paymentMethods');
+
+            const LABELS = { pix: 'PIX', credit_card: 'Cartão', boleto: 'Boleto' };
+            const labels = data.map((d) => LABELS[d.method] || d.method);
+            const values = data.map((d) => d.count);
+
+            if (values.length === 0) {
+                this.renderEmptyChart(canvas, 'Nenhum pagamento no período');
+                return;
+            }
+
+            this.charts.paymentMethods = new Chart(canvas.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels,
+                    datasets: [{
+                        data: values,
+                        backgroundColor: this.DONUT_PALETTE.slice().reverse(),
+                        borderWidth: 2,
+                        borderColor: '#fff',
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '65%',
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { padding: 12, usePointStyle: true, pointStyle: 'circle', font: { size: 12 } },
+                        },
+                        tooltip: {
+                            backgroundColor: '#171717',
+                            padding: 12,
+                            callbacks: {
+                                label: (ctx) => {
+                                    const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+                                    const pct = ((ctx.parsed / total) * 100).toFixed(1);
+                                    return `${ctx.label}: ${ctx.parsed} (${pct}%)`;
+                                },
+                            },
+                        },
+                    },
+                },
+            });
+        },
+
+        renderTopCategoriesChart(data) {
+            if (!this.ensureChartAvailable()) return;
+            const canvas = document.getElementById('chartTopCategories');
+            if (!canvas) return;
+
+            this.destroyChart('topCategories');
+
+            if (!data || data.length === 0) {
+                this.renderEmptyChart(canvas, 'Nenhuma venda no período');
+                return;
+            }
+
+            const labels = data.map((d) => d.name);
+            const values = data.map((d) => d.revenue);
+
+            this.charts.topCategories = new Chart(canvas.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Receita (R$)',
+                        data: values,
+                        backgroundColor: this.COLORS.accent,
+                        hoverBackgroundColor: '#b8944f',
+                        borderRadius: 6,
+                        barThickness: 22,
+                    }],
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#171717',
+                            padding: 12,
+                            callbacks: { label: (ctx) => `Receita: ${Utils.formatPrice(ctx.parsed.x)}` },
+                        },
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(0,0,0,0.05)' },
+                            ticks: { callback: (v) => `R$ ${Number(v).toLocaleString('pt-BR')}` },
+                        },
+                        y: { grid: { display: false } },
+                    },
+                },
+            });
+        },
+
+        renderStockMovementsChart(data) {
+            if (!this.ensureChartAvailable()) return;
+            const canvas = document.getElementById('chartStockMovements');
+            if (!canvas) return;
+
+            this.destroyChart('stockMovements');
+
+            if (!data || data.length === 0) {
+                this.renderEmptyChart(canvas, 'Nenhuma movimentação no período');
+                return;
+            }
+
+            const labels = data.map((d) => this.formatLabel(d.date));
+            const inQty = data.map((d) => d.in_qty);
+            const outQty = data.map((d) => d.out_qty);
+
+            this.charts.stockMovements = new Chart(canvas.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Entradas',
+                            data: inQty,
+                            backgroundColor: this.COLORS.success,
+                            borderRadius: 4,
+                            stack: 'stock',
+                        },
+                        {
+                            label: 'Saídas',
+                            data: outQty,
+                            backgroundColor: this.COLORS.danger,
+                            borderRadius: 4,
+                            stack: 'stock',
+                        },
+                    ],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { padding: 12, usePointStyle: true, pointStyle: 'circle' },
+                        },
+                        tooltip: { backgroundColor: '#171717', padding: 12, mode: 'index', intersect: false },
+                    },
+                    scales: {
+                        x: { stacked: true, grid: { display: false } },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true,
+                            grid: { color: 'rgba(0,0,0,0.05)' },
+                            ticks: { precision: 0 },
+                        },
+                    },
+                },
+            });
+        },
+
+        renderNewCustomersChart(data) {
+            if (!this.ensureChartAvailable()) return;
+            const canvas = document.getElementById('chartNewCustomers');
+            if (!canvas) return;
+
+            this.destroyChart('newCustomers');
+
+            if (!data || data.length === 0) {
+                this.renderEmptyChart(canvas, 'Nenhum cliente no período');
+                return;
+            }
+
+            const labels = data.map((d) => this.formatLabel(d.date));
+            const values = data.map((d) => d.count);
+
+            this.charts.newCustomers = new Chart(canvas.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Novos clientes',
+                        data: values,
+                        backgroundColor: this.COLORS.info,
+                        hoverBackgroundColor: '#2563eb',
+                        borderRadius: 6,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: { backgroundColor: '#171717', padding: 12 },
+                    },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(0,0,0,0.05)' },
+                            ticks: { precision: 0 },
+                        },
+                    },
+                },
+            });
+        },
+
+        renderPriceDistributionChart(data) {
+            if (!this.ensureChartAvailable()) return;
+            const canvas = document.getElementById('chartPriceDistribution');
+            if (!canvas) return;
+
+            this.destroyChart('priceDistribution');
+
+            if (!data || data.length === 0) {
+                this.renderEmptyChart(canvas, 'Nenhum produto cadastrado');
+                return;
+            }
+
+            const labels = data.map((d) => `R$ ${d.range}`);
+            const values = data.map((d) => d.count);
+
+            this.charts.priceDistribution = new Chart(canvas.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Produtos',
+                        data: values,
+                        backgroundColor: this.COLORS.purple,
+                        hoverBackgroundColor: '#7c3aed',
+                        borderRadius: 6,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#171717',
+                            padding: 12,
+                            callbacks: { label: (ctx) => `${ctx.parsed.y} produto(s)` },
+                        },
+                    },
+                    scales: {
+                        x: { grid: { display: false } },
+                        y: {
+                            beginAtZero: true,
+                            grid: { color: 'rgba(0,0,0,0.05)' },
+                            ticks: { precision: 0 },
+                        },
+                    },
+                },
+            });
+        },
+
+        renderTopCustomersTable(customers) {
+            const tbody = document.querySelector('#topCustomersTable tbody');
+            if (!tbody) return;
+
+            if (!customers || customers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="table-empty">Nenhum cliente com compras no período.</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = customers.map((c, i) => `
+                <tr>
+                    <td>${i + 1}º</td>
+                    <td>${Utils.escapeHtml(c.full_name)}</td>
+                    <td>${Utils.escapeHtml(c.email)}</td>
+                    <td>${c.orders_count}</td>
+                    <td>${Utils.formatPrice(c.revenue)}</td>
+                </tr>
+            `).join('');
+        },
+
+        renderFooter(data) {
+            const el = document.getElementById('metricsGeneratedAt');
+            if (!el || !data.generated_at) return;
+
+            const date = new Date(data.generated_at);
+            const formatted = date.toLocaleString('pt-BR', {
+                day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit',
+            });
+            el.textContent = `Gerado em ${formatted} · Período: ${data.overview.label}`;
+        },
+
+        renderEmptyChart(canvas, message) {
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width = canvas.offsetWidth || 300;
+            const h = canvas.height = canvas.offsetHeight || 200;
+
+            ctx.clearRect(0, 0, w, h);
+            ctx.fillStyle = '#a3a3a3';
+            ctx.font = '14px "Segoe UI", system-ui, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(message, w / 2, h / 2);
+        },
+    };
+
+    // ======================================================
     // PEDIDOS — Página de listagem + gestão
     // ======================================================
     const OrdersPage = {
