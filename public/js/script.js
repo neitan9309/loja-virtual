@@ -1507,6 +1507,39 @@ const MobileMenu = {
         },
     };
 
+// CONTROLE DE VISIBILIDADE DO CARRINHO (FAB)
+// ======================================================
+const CartFabVisibility = {
+    init() {
+        this.fab = document.getElementById('cartFab');
+        this.hero = document.getElementById('heroCarousel');
+
+        // Se não houver hero ou FAB na página, não faz nada
+        if (!this.fab || !this.hero) return;
+
+        // Configura o observador: dispara quando 20% do hero está visível
+        const observerOptions = {
+            root: null, // viewport
+            threshold: 0.8 // 80% de visibilidade
+        };
+
+        const observerCallback = (entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    // Usuário está olhando para o hero -> Esconde o FAB
+                    this.fab.classList.add('fab-hidden');
+                } else {
+                    // Usuário saiu do hero -> Mostra o FAB
+                    this.fab.classList.remove('fab-hidden');
+                }
+            });
+        };
+
+        this.observer = new IntersectionObserver(observerCallback, observerOptions);
+        this.observer.observe(this.hero);
+    }
+};
+
 // ======================================================
 // INICIALIZAÇÃO
 // ======================================================
@@ -1538,6 +1571,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     LocationModal.init();
     Newsletter.init();
     CustomerService.init();
+    CartFabVisibility.init();
 
     await Promise.all([
         FeaturedProducts.load(),

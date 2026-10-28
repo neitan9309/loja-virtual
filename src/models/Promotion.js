@@ -121,7 +121,7 @@ const Promotion = {
             name, description, code, discount_type, discount_value,
             min_purchase, max_discount, usage_limit, user_limit,
             start_date, end_date, is_active, applies_to_all,
-            restricted_category_id,
+            restricted_category_id, is_first_purchase_only,
         } = data;
 
         const query = `
@@ -129,8 +129,8 @@ const Promotion = {
                 name, description, code, discount_type, discount_value,
                 min_purchase, max_discount, usage_limit, user_limit,
                 start_date, end_date, is_active, applies_to_all,
-                restricted_category_id
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+                restricted_category_id, is_first_purchase_only
+            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
             RETURNING *
         `;
         const values = [
@@ -142,6 +142,7 @@ const Promotion = {
             is_active !== undefined ? is_active : true,
             applies_to_all !== undefined ? applies_to_all : true,
             restricted_category_id || null,
+            is_first_purchase_only || false,
         ];
 
         const result = await pool.query(query, values);
@@ -170,7 +171,7 @@ const Promotion = {
             'name', 'description', 'code', 'discount_type', 'discount_value',
             'min_purchase', 'max_discount', 'usage_limit', 'user_limit',
             'start_date', 'end_date', 'is_active', 'applies_to_all',
-            'restricted_category_id',
+            'restricted_category_id', 'is_first_purchase_only',
         ];
         const fields = [];
         const values = [];
@@ -246,18 +247,16 @@ const Promotion = {
         const candidates = result.rows;
 
         let usedIds = [];
+        let userHasOrders = false;
+
         if (userId) {
-            // SÓ bloqueia se o uso for ATUAL (is_reset = FALSE)
             const usageQuery = `
                 SELECT promotion_id FROM promotion_usage 
                 WHERE user_id = $1 AND is_reset = FALSE
             `;
             const usageResult = await pool.query(usageQuery, [userId]);
             usedIds = usageResult.rows.map((r) => r.promotion_id);
-        }
 
-        let userHasOrders = false;
-        if (userId) {
             const orderCheck = await pool.query(
                 "SELECT 1 FROM orders WHERE user_id = $1 AND status != 'cancelled' LIMIT 1",
                 [userId]
@@ -270,9 +269,9 @@ const Promotion = {
         for (const promo of candidates) {
             if (usedIds.includes(promo.id)) continue;
 
-if (promo.is_first_purchase_only && userHasOrders) {
-    continue; // Esconde o cupom
-}
+            if (promo.is_first_purchase_only && userHasOrders) {
+                continue;
+            }
 
             let eligibleSubtotal = subtotal;
             let hasEligibleItems = true;
@@ -323,6 +322,7 @@ if (promo.is_first_purchase_only && userHasOrders) {
                 applies_to_all: promo.applies_to_all,
                 savings: Math.round(savings * 100) / 100,
                 eligible_subtotal: Math.round(eligibleSubtotal * 100) / 100,
+                is_first_purchase_only: promo.is_first_purchase_only,
             });
         }
 
@@ -337,7 +337,7 @@ if (promo.is_first_purchase_only && userHasOrders) {
         const query = `
             SELECT id FROM promotion_usage
             WHERE user_id = $1 AND promotion_id = $2
-              AND is_reset = FALSE -- Ignora usos antigos que já foram resetados
+              AND is_reset = FALSE
             LIMIT 1
         `;
         const result = await pool.query(query, [userId, promotionId]);
@@ -358,14 +358,13 @@ if (promo.is_first_purchase_only && userHasOrders) {
     },
 
     // ==================================================
-    // RESETAR CUPOM (Marca usos antigos como resetados, mantendo histórico)
+    // RESETAR CUPOM
     // ==================================================
     async resetUsage(promotionId) {
         const client = await pool.connect();
         try {
             await client.query('BEGIN');
 
-            // 1. Marca todos os usos atuais como "resetados" (não os apaga do histórico)
             const updateUsageQuery = `
                 UPDATE promotion_usage 
                 SET is_reset = TRUE 
@@ -374,7 +373,6 @@ if (promo.is_first_purchase_only && userHasOrders) {
             `;
             const updateResult = await client.query(updateUsageQuery, [promotionId]);
 
-            // 2. Zera o contador global (usage_count)
             await client.query('UPDATE promotions SET usage_count = 0 WHERE id = $1', [promotionId]);
 
             await client.query('COMMIT');
@@ -392,7 +390,7 @@ if (promo.is_first_purchase_only && userHasOrders) {
     },
 
     // ==================================================
-    // LISTAR HISTÓRICO COMPLETO DE USOS (Mostra TUDO, inclusive resetados)
+    // LISTAR HISTÓRICO COMPLETO DE USOS
     // ==================================================
     async findUsages(promotionId) {
         const query = `

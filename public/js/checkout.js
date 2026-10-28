@@ -206,6 +206,7 @@
                 container.style.display = 'block';
                 formContainer.style.display = 'none';
 
+                // Renderiza os cards de endereço
                 container.innerHTML = `
                     <div class="checkout-address-list">
                         ${addresses.map(addr => `
@@ -239,26 +240,81 @@
                     });
                 });
 
-                // Toggle para novo endereço
+                // ==================================================
+                // LÓGICA CORRETA DOS BOTÕES
+                // ==================================================
+                
+                // 1. Botão "Cadastrar novo endereço" -> Mostra o formulário
                 const toggleBtn = document.getElementById('btnToggleNewAddress');
                 if (toggleBtn && !toggleBtn.dataset.bound) {
                     toggleBtn.dataset.bound = 'true';
                     toggleBtn.addEventListener('click', () => {
-                        const isHidden = formContainer.style.display === 'none';
-                        formContainer.style.display = isHidden ? 'block' : 'none';
-                        container.style.display = isHidden ? 'none' : 'block';
+                        formContainer.style.display = 'block';
+                        container.style.display = 'none';
                         
-                        if (isHidden) {
-                            state.selectedAddressId = null;
-                            container.querySelectorAll('input[name="saved_address"]').forEach(r => r.checked = false);
-                            this.fillAddressFields({ cep: '', street: '', number: '', complement: '', neighborhood: '', city: '', state: '' });
-                        } else {
-                            if (defaultAddress) {
-                                state.selectedAddressId = defaultAddress.id;
-                                this.fillAddressFields(defaultAddress);
-                                const radio = container.querySelector(`input[value="${defaultAddress.id}"]`);
-                                if (radio) radio.checked = true;
-                            }
+                        // Limpa os campos para um novo cadastro
+                        state.selectedAddressId = null;
+                        document.querySelectorAll('input[name="saved_address"]').forEach(r => r.checked = false);
+                        document.getElementById('addressForm').reset(); // Limpa todos os inputs
+                        document.getElementById('coCep').focus();
+                    });
+                }
+
+                // 2. Botão "Cancelar" -> Esconde o formulário e volta para a lista
+                const cancelBtn = document.getElementById('btnCancelNewAddress');
+                if (cancelBtn && !cancelBtn.dataset.bound) {
+                    cancelBtn.dataset.bound = 'true';
+                    cancelBtn.addEventListener('click', () => {
+                        formContainer.style.display = 'none';
+                        container.style.display = 'block';
+                        
+                        // Restaura o endereço padrão se existir
+                        if (defaultAddress) {
+                            state.selectedAddressId = defaultAddress.id;
+                            this.fillAddressFields(defaultAddress);
+                            const radio = container.querySelector(`input[value="${defaultAddress.id}"]`);
+                            if (radio) radio.checked = true;
+                        }
+                    });
+                }
+
+                // 3. Botão "Salvar Endereço" -> Salva e recarrega a lista
+                const saveBtn = document.getElementById('btnSaveNewAddress');
+                if (saveBtn && !saveBtn.dataset.bound) {
+                    saveBtn.dataset.bound = 'true';
+                    saveBtn.addEventListener('click', async () => {
+                        // Validações
+                        const cep = document.getElementById('coCep').value.replace(/\D/g, '');
+                        if (cep.length !== 8) return C.createToast('CEP inválido', 'error');
+                        if (!document.getElementById('coNumber').value) return C.createToast('Informe o número', 'error');
+
+                        const data = {
+                            label: 'Novo Endereço', // Pode adicionar um campo para o usuário digitar o label
+                            cep: document.getElementById('coCep').value,
+                            street: document.getElementById('coStreet').value,
+                            number: document.getElementById('coNumber').value,
+                            complement: document.getElementById('coComplement').value,
+                            neighborhood: document.getElementById('coNeighborhood').value,
+                            city: document.getElementById('coCity').value,
+                            state: document.getElementById('coState').value,
+                            is_default: addresses.length === 0 // Se for o primeiro, define como padrão
+                        };
+
+                        try {
+                            saveBtn.disabled = true;
+                            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Salvando...';
+                            
+                            await API.post('/addresses', data);
+                            C.createToast('Endereço salvo com sucesso!', 'success');
+                            
+                            // Recarrega a lista de endereços para atualizar a tela
+                            await this.loadSavedAddresses();
+                            
+                        } catch (error) {
+                            C.createToast(error.data?.error || 'Erro ao salvar endereço', 'error');
+                        } finally {
+                            saveBtn.disabled = false;
+                            saveBtn.innerHTML = '<i class="fas fa-check"></i> Salvar Endereço';
                         }
                     });
                 }

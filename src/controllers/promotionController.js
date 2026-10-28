@@ -166,7 +166,6 @@ const promotionController = {
                 }
             }
 
-            // Garante que o campo is_first_purchase_only seja tratado corretamente
             if (req.body.is_first_purchase_only === undefined) {
                 req.body.is_first_purchase_only = false;
             }
@@ -292,8 +291,7 @@ const promotionController = {
     },
 
     // ==================================================
-    // RESETAR CONTADOR GLOBAL (chamado pelo admin)
-    // Mantém o histórico de uso, apenas zera o teto
+    // RESETAR CONTADOR GLOBAL
     // ==================================================
     async adminResetUsage(req, res) {
         try {
@@ -307,7 +305,7 @@ const promotionController = {
             res.json({
                 message: `Contador resetado com sucesso!`,
                 new_usage_count: result.new_usage_count,
-                history_kept: result.history_kept
+                history_kept: result.history_cleared
             });
         } catch (error) {
             console.error('Erro ao resetar uso:', error);

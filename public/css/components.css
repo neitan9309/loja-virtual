@@ -1141,3 +1141,26 @@ body.cart-modal-open .cart-fab {
         margin-top: 0.25rem;
     }
 }
+
+/* ======================================================
+   ESCONDER O FAB DO CARRINHO (Na seção Hero)
+   ====================================================== */
+#cartFab.fab-hidden {
+    /* Mantém a transição explícita para todas as propriedades que mudam */
+    transition: opacity 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+    
+    /* Esconde visualmente */
+    opacity: 0;
+    
+    /* Impede o clique */
+    pointer-events: none;
+    
+    /* Efeito de "esconder para baixo" */
+    transform: translateY(20px) scale(0.9);
+    
+    /* Adiciona um leve desfoque para suavizar a saída */
+    filter: blur(4px);
+    
+    /* Remove a sombra enquanto escondido */
+    box-shadow: none;
+}

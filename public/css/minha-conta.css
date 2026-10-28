@@ -1172,38 +1172,36 @@
 }
 
 /* ======================================================
-   NOVO: SEÇÃO DE ENDEREÇOS (Alinhamento e Estilo)
+   SEÇÃO DE ENDEREÇOS (PADRONIZADA)
    ====================================================== */
 
-/* Centraliza o header da aba "Endereço" */
+/* Garante que o painel de endereços tenha o mesmo visual dos outros */
+.account-panel[data-panel="address"] {
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: 12px;
+    padding: 2rem;
+}
+
+/* Alinha o cabeçalho da mesma forma que os outros painéis (à esquerda) */
 .account-panel[data-panel="address"] .panel-header {
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.5rem;
+    text-align: left;
+    display: block;
 }
 
 .account-panel[data-panel="address"] .panel-header h1 {
-    text-align: center;
-    margin: 0;
+    text-align: left;
 }
 
 .account-panel[data-panel="address"] .panel-header p {
-    text-align: center;
-    margin: 0;
+    text-align: left;
 }
 
+/* Ajusta o botão "Novo Endereço" para ficar abaixo do título, alinhado à esquerda */
 .account-panel[data-panel="address"] .panel-header .btn {
     margin-top: 1rem;
-    align-self: center;
-}
-
-/* Remove a borda dupla do painel de endereço no desktop */
-.account-panel[data-panel="address"] {
-    background: transparent;
-    border: none;
-    padding: 0;
+    align-self: flex-start;
+    display: inline-flex;
 }
 
 /* ======================================================
@@ -1357,4 +1355,27 @@
 .modal-content.modal-address .close-modal:hover {
     background: var(--gray-200);
     color: var(--gray-900);
+}
+
+/* ======================================================
+   CORREÇÃO DO BOTÃO "EXPLORAR PRODUTOS" (FAVORITOS VAZIO)
+   ====================================================== */
+
+.orders-empty .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    white-space: nowrap;
+    text-align: center;
+    padding: 0.85rem 1.5rem;
+    flex-direction: row; /* Força o layout em linha */
+}
+
+.orders-empty .btn svg,
+.orders-empty .btn img {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0; /* Impede que o ícone encolha */
+    margin: 0;
 }

@@ -90,14 +90,18 @@
         // TABS
         // ==================================================
         initTabs() {
-            // Sidebar (desktop)
+            // Sidebar (desktop) e Accordion (mobile)
             document.querySelectorAll('.account-nav-item[data-tab]').forEach((btn) => {
-                btn.addEventListener('click', () => {
+                btn.addEventListener('click', (e) => {
+                    // Verifica se o clique foi originado pelo usuário ou pelo código (isTrusted)
+                    const isUserClick = e.isTrusted;
                     const tab = btn.dataset.tab;
 
+                    // 1. Atualiza classes ativas do menu
                     document.querySelectorAll('.account-nav-item').forEach((b) => b.classList.remove('active'));
                     btn.classList.add('active');
 
+                    // 2. Atualiza classes ativas dos painéis
                     document.querySelectorAll('.account-accordion-item').forEach((item) => {
                         item.classList.remove('active');
                     });
@@ -109,14 +113,31 @@
                         if (header) header.setAttribute('aria-expanded', 'true');
                     }
 
-                    target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    // ==================================================
+                    // ✅ CORREÇÃO DEFINITIVA DA ROLAGEM
+                    // ==================================================
+                    // Só rola se for um clique do usuário E se estiver no mobile
+                    if (isUserClick && window.innerWidth <= 900) {
+                        // Pequeno atraso para garantir que o DOM foi atualizado
+                        setTimeout(() => {
+                            const elementPosition = target.getBoundingClientRect().top;
+                            // Subtrai a altura do header fixo (aprox. 100px) para não esconder atrás dele
+                            const offsetPosition = elementPosition + window.pageYOffset - 100;
 
+                            window.scrollTo({
+                                top: offsetPosition,
+                                behavior: 'smooth'
+                            });
+                        }, 50);
+                    }
+
+                    // 3. Carrega dados sob demanda
                     if (tab === 'favorites') this.loadFavorites();
                     if (tab === 'address') this.loadAddresses();
                 });
             });
 
-            // Accordion (mobile)
+            // Accordion (mobile) - Clique direto no cabeçalho do accordion
             document.querySelectorAll('.account-accordion-header').forEach((header) => {
                 header.addEventListener('click', () => {
                     const item = header.closest('.account-accordion-item');
@@ -156,7 +177,15 @@
             const params = new URLSearchParams(window.location.search);
             if (params.get('tab') === 'favorites') {
                 const favBtn = document.querySelector('.account-nav-item[data-tab="favorites"]');
-                if (favBtn) setTimeout(() => favBtn.click(), 100);
+                if (favBtn) {
+                    // O setTimeout 100ms garante que o carregamento inicial da página
+                    // (que às vezes restaura a posição do scroll) já tenha terminado.
+                    setTimeout(() => {
+                        // Como o clique é programático, o 'isTrusted' será false, 
+                        // então a rolagem do mobile NÃO será ativada.
+                        favBtn.click();
+                    }, 100);
+                }
             }
         },
 
@@ -384,13 +413,15 @@
 
                 container.innerHTML = addresses.map(addr => this.buildAddressCard(addr)).join('');
 
+                // ✅ CORREÇÃO: Vinculando os eventos corretamente, capturando o ID numérico
                 container.querySelectorAll('[data-address-action]').forEach(btn => {
                     btn.addEventListener('click', () => {
                         const action = btn.dataset.addressAction;
-                        const id = btn.dataset.addressId;
+                        const id = parseInt(btn.dataset.addressId, 10); // Garante que é um número
+
                         if (action === 'delete') this.deleteAddress(id);
                         if (action === 'default') this.setDefaultAddress(id);
-                        if (action === 'edit') this.openAddressModal(addr => null, id); // Passamos o ID para editar
+                        if (action === 'edit') this.openAddressModal(id);
                     });
                 });
             } catch (error) {
@@ -421,177 +452,158 @@
             `;
         },
 
-openAddressModal(addressId = null) {
-    const modal = document.createElement('div');
-    modal.className = 'modal active';
-    modal.innerHTML = `
-        <div class="modal-content modal-address" style="max-width: 500px; padding: 2rem;">
-            <button class="close-modal" aria-label="Fechar">&times;</button>
-            <h2 style="margin-bottom: 1.5rem; text-transform: uppercase; font-size: 1.2rem; text-align: center;">
-                ${addressId ? 'Editar Endereço' : 'Novo Endereço'}
-            </h2>
-            
-            <form id="addressModalForm" class="address-form">
-                <div class="address-form-field">
-                    <label>Identificação (Ex: Casa, Trabalho) *</label>
-                    <input type="text" name="label" required maxlength="50" placeholder="Ex: Minha Casa">
+        openAddressModal(addressId = null) {
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.innerHTML = `
+                <div class="modal-content modal-address" style="max-width: 500px; padding: 2rem;">
+                    <button class="close-modal" aria-label="Fechar">&times;</button>
+                    <h2 style="margin-bottom: 1.5rem; text-transform: uppercase; font-size: 1.2rem; text-align: center;">
+                        ${addressId ? 'Editar Endereço' : 'Novo Endereço'}
+                    </h2>
+                    
+                    <form id="addressModalForm" class="address-form">
+                        <div class="address-form-field">
+                            <label>Identificação (Ex: Casa, Trabalho) *</label>
+                            <input type="text" name="label" required maxlength="50" placeholder="Ex: Minha Casa">
+                        </div>
+                        
+                        <div class="address-form-field">
+                            <label>CEP *</label>
+                            <input type="text" name="cep" id="modalCep" required maxlength="9" inputmode="numeric" placeholder="00000-000">
+                        </div>
+                        
+                        <div class="address-form-field">
+                            <label>Rua *</label>
+                            <input type="text" name="street" id="modalStreet" required readonly placeholder="Preenchido pelo CEP">
+                        </div>
+                        
+                        <div class="address-form-row">
+                            <div class="address-form-field">
+                                <label>Número *</label>
+                                <input type="text" name="number" id="modalNumber" required placeholder="123">
+                            </div>
+                            <div class="address-form-field">
+                                <label>Complemento</label>
+                                <input type="text" name="complement" id="modalComplement" placeholder="Apto, bloco...">
+                            </div>
+                        </div>
+                        
+                        <div class="address-form-field">
+                            <label>Bairro *</label>
+                            <input type="text" name="neighborhood" id="modalNeighborhood" required readonly placeholder="Preenchido pelo CEP">
+                        </div>
+                        
+                        <div class="address-form-row">
+                            <div class="address-form-field">
+                                <label>Cidade *</label>
+                                <input type="text" name="city" id="modalCity" required readonly placeholder="Preenchido pelo CEP">
+                            </div>
+                            <div class="address-form-field">
+                                <label>Estado *</label>
+                                <input type="text" name="state" id="modalState" required readonly maxlength="2" placeholder="UF">
+                            </div>
+                        </div>
+                        
+                        <div class="address-form-field checkbox-field">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="is_default"> Definir como endereço padrão
+                            </label>
+                        </div>
+                        
+                        <div class="address-form-actions">
+                            <button type="button" class="btn btn-secondary" id="cancelAddressBtn">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Salvar</button>
+                        </div>
+                    </form>
                 </div>
-                
-                <div class="address-form-field">
-                    <label>CEP *</label>
-                    <input type="text" name="cep" id="modalCep" required maxlength="9" inputmode="numeric" placeholder="00000-000">
-                </div>
-                
-                <div class="address-form-field">
-                    <label>Rua *</label>
-                    <input type="text" name="street" id="modalStreet" required readonly placeholder="Preenchido pelo CEP">
-                </div>
-                
-                <div class="address-form-row">
-                    <div class="address-form-field">
-                        <label>Número *</label>
-                        <input type="text" name="number" id="modalNumber" required placeholder="123">
-                    </div>
-                    <div class="address-form-field">
-                        <label>Complemento</label>
-                        <input type="text" name="complement" id="modalComplement" placeholder="Apto, bloco...">
-                    </div>
-                </div>
-                
-                <div class="address-form-field">
-                    <label>Bairro *</label>
-                    <input type="text" name="neighborhood" id="modalNeighborhood" required readonly placeholder="Preenchido pelo CEP">
-                </div>
-                
-                <div class="address-form-row">
-                    <div class="address-form-field">
-                        <label>Cidade *</label>
-                        <input type="text" name="city" id="modalCity" required readonly placeholder="Preenchido pelo CEP">
-                    </div>
-                    <div class="address-form-field">
-                        <label>Estado *</label>
-                        <input type="text" name="state" id="modalState" required readonly maxlength="2" placeholder="UF">
-                    </div>
-                </div>
-                
-                <div class="address-form-field checkbox-field">
-                    <label class="checkbox-label">
-                        <input type="checkbox" name="is_default"> Definir como endereço padrão
-                    </label>
-                </div>
-                
-                <div class="address-form-actions">
-                    <button type="button" class="btn btn-secondary" id="cancelAddressBtn">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar</button>
-                </div>
-            </form>
-        </div>
-    `;
-    document.body.appendChild(modal);
-    document.body.style.overflow = 'hidden'; // Trava o scroll do fundo
+            `;
+            document.body.appendChild(modal);
+            document.body.style.overflow = 'hidden';
 
-    const form = modal.querySelector('#addressModalForm');
-    const cepInput = modal.querySelector('#modalCep');
-    const closeBtn = modal.querySelector('.close-modal');
-    const cancelBtn = modal.querySelector('#cancelAddressBtn');
+            const form = modal.querySelector('#addressModalForm');
+            const cepInput = modal.querySelector('#modalCep');
+            const closeBtn = modal.querySelector('.close-modal');
+            const cancelBtn = modal.querySelector('#cancelAddressBtn');
 
-    // ==================================================
-    // FUNÇÃO PARA FECHAR O MODAL (Limpa tudo)
-    // ==================================================
-    const closeModal = () => {
-        modal.remove();
-        document.body.style.overflow = '';
-        document.removeEventListener('keydown', handleEsc);
-    };
+            const closeModal = () => {
+                modal.remove();
+                document.body.style.overflow = '';
+                document.removeEventListener('keydown', handleEsc);
+            };
 
-    // ==================================================
-    // FECHAR COM ESC
-    // ==================================================
-    const handleEsc = (e) => {
-        if (e.key === 'Escape') closeModal();
-    };
-    document.addEventListener('keydown', handleEsc);
+            const handleEsc = (e) => {
+                if (e.key === 'Escape') closeModal();
+            };
+            document.addEventListener('keydown', handleEsc);
 
-    // ==================================================
-    // FECHAR COM BOTÃO X E BOTÃO CANCELAR
-    // ==================================================
-    closeBtn.addEventListener('click', closeModal);
-    cancelBtn.addEventListener('click', closeModal);
+            closeBtn.addEventListener('click', closeModal);
+            cancelBtn.addEventListener('click', closeModal);
 
-    // ==================================================
-    // FECHAR AO CLICAR FORA DO CONTEÚDO
-    // ==================================================
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) closeModal();
-    });
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeModal();
+            });
 
-    // ==================================================
-    // MÁSCARA DE CEP
-    // ==================================================
-    cepInput.addEventListener('input', (e) => {
-        e.target.value = U.maskCep(e.target.value);
-    });
+            cepInput.addEventListener('input', (e) => {
+                e.target.value = U.maskCep(e.target.value);
+            });
 
-    // ==================================================
-    // BUSCA CEP
-    // ==================================================
-    cepInput.addEventListener('blur', async () => {
-        const cep = cepInput.value.replace(/\D/g, '');
-        if (cep.length !== 8) return;
-        try {
-            const data = await API.get(`/cep/${cep}`);
-            modal.querySelector('#modalStreet').value = data.street || '';
-            modal.querySelector('#modalNeighborhood').value = data.neighborhood || '';
-            modal.querySelector('#modalCity').value = data.city || '';
-            modal.querySelector('#modalState').value = data.state || '';
-            modal.querySelector('#modalNumber').focus();
-        } catch (e) { /* ignora */ }
-    });
+            cepInput.addEventListener('blur', async () => {
+                const cep = cepInput.value.replace(/\D/g, '');
+                if (cep.length !== 8) return;
+                try {
+                    const data = await API.get(`/cep/${cep}`);
+                    modal.querySelector('#modalStreet').value = data.street || '';
+                    modal.querySelector('#modalNeighborhood').value = data.neighborhood || '';
+                    modal.querySelector('#modalCity').value = data.city || '';
+                    modal.querySelector('#modalState').value = data.state || '';
+                    modal.querySelector('#modalNumber').focus();
+                } catch (e) { /* ignora */ }
+            });
 
-    // ==================================================
-    // PREENCHER DADOS PARA EDIÇÃO
-    // ==================================================
-    if (addressId) {
-        API.get(`/addresses`).then(list => {
-            const addr = list.find(a => a.id == addressId);
-            if (addr) {
-                form.querySelector('[name="label"]').value = addr.label;
-                form.querySelector('[name="cep"]').value = addr.cep;
-                form.querySelector('[name="street"]').value = addr.street;
-                form.querySelector('[name="number"]').value = addr.number;
-                form.querySelector('[name="complement"]').value = addr.complement || '';
-                form.querySelector('[name="neighborhood"]').value = addr.neighborhood;
-                form.querySelector('[name="city"]').value = addr.city;
-                form.querySelector('[name="state"]').value = addr.state;
-                form.querySelector('[name="is_default"]').checked = addr.is_default;
-            }
-        });
-    }
-
-    // ==================================================
-    // SUBMIT
-    // ==================================================
-    form.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const formData = new FormData(form);
-        const data = Object.fromEntries(formData.entries());
-        data.is_default = formData.get('is_default') === 'on';
-
-        try {
+            // ✅ CORREÇÃO: Preencher dados para edição usando o ID correto
             if (addressId) {
-                await API.put(`/addresses/${addressId}`, data);
-                C.createToast('Endereço atualizado!', 'success');
-            } else {
-                await API.post('/addresses', data);
-                C.createToast('Endereço criado!', 'success');
+                API.get(`/addresses`).then(list => {
+                    const addr = list.find(a => a.id === addressId);
+                    if (addr) {
+                        form.querySelector('[name="label"]').value = addr.label;
+                        form.querySelector('[name="cep"]').value = addr.cep;
+                        form.querySelector('[name="street"]').value = addr.street;
+                        form.querySelector('[name="number"]').value = addr.number;
+                        form.querySelector('[name="complement"]').value = addr.complement || '';
+                        form.querySelector('[name="neighborhood"]').value = addr.neighborhood;
+                        form.querySelector('[name="city"]').value = addr.city;
+                        form.querySelector('[name="state"]').value = addr.state;
+                        form.querySelector('[name="is_default"]').checked = addr.is_default;
+                    }
+                }).catch(err => {
+                    console.error("Erro ao buscar endereço para edição:", err);
+                    C.createToast('Erro ao carregar dados do endereço', 'error');
+                    closeModal();
+                });
             }
-            closeModal();
-            this.loadAddresses();
-        } catch (error) {
-            C.createToast(error.data?.error || 'Erro ao salvar', 'error');
-        }
-    });
-},
+
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData.entries());
+                data.is_default = formData.get('is_default') === 'on';
+
+                try {
+                    if (addressId) {
+                        await API.put(`/addresses/${addressId}`, data);
+                        C.createToast('Endereço atualizado!', 'success');
+                    } else {
+                        await API.post('/addresses', data);
+                        C.createToast('Endereço criado!', 'success');
+                    }
+                    closeModal();
+                    this.loadAddresses();
+                } catch (error) {
+                    C.createToast(error.data?.error || 'Erro ao salvar', 'error');
+                }
+            });
+        },
 
         async deleteAddress(id) {
             if (!confirm('Remover este endereço?')) return;
