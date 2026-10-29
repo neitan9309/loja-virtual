@@ -738,6 +738,40 @@
 }
 
 /* ======================================================
+   PADRONIZAÇÃO DA IMAGEM NA AVALIAÇÃO (QUADRADA)
+   ====================================================== */
+
+.review-image-wrapper {
+    margin-top: 1rem;
+    display: flex;
+    align-items: flex-start; /* Alinha a imagem à esquerda */
+}
+
+.review-image-zoom {
+    width: 120px;          /* Largura fixa */
+    height: 120px;         /* Altura fixa para garantir o quadrado */
+    object-fit: cover;     /* Corta a imagem para preencher o quadrado sem distorcer */
+    border-radius: 8px;
+    border: 1px solid var(--gray-200);
+    cursor: zoom-in;       /* Indica que a imagem pode ser ampliada */
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    background-color: var(--gray-100); /* Fundo para imagens transparentes */
+}
+
+.review-image-zoom:hover {
+    transform: scale(1.05); /* Efeito sutil ao passar o mouse */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Opcional: Ajuste para telas menores */
+@media (max-width: 600px) {
+    .review-image-zoom {
+        width: 100px;
+        height: 100px;
+    }
+}
+
+/* ======================================================
    PRODUTOS RELACIONADOS
    ====================================================== */
 .related-products-section h2 {

@@ -888,13 +888,13 @@
                 const initials = author.charAt(0).toUpperCase();
                 const isMine = myReview && myReview.id === review.id;
 
-                // ✅ NOVO: Bloco para exibir a imagem da avaliação
+                // ✅ NOVO: Removemos o style inline e deixamos o CSS cuidar do formato
                 const imageHtml = review.image_url
-                    ? `<div class="review-image-wrapper" style="margin-top: 1rem;">
+                    ? `<div class="review-image-wrapper">
                            <img src="${U.escapeAttr(review.image_url)}" 
                                 alt="Foto da avaliação de ${U.escapeAttr(author)}"
-                                style="max-width: 200px; border-radius: 8px; border: 1px solid var(--gray-200); cursor: pointer;"
-                                onclick="window.open('${U.escapeAttr(review.image_url)}', '_blank')">
+                                class="review-image-zoom"
+                                data-image-src="${U.escapeAttr(review.image_url)}">
                        </div>`
                     : '';
 
@@ -915,13 +915,22 @@
                         </div>
                         ${review.title ? `<div class="review-title">${U.escapeHtml(review.title)}</div>` : ''}
                         ${review.comment ? `<div class="review-comment">${U.escapeHtml(review.comment)}</div>` : ''}
-                        
-                        <!-- ✅ EXIBE A IMAGEM AQUI -->
                         ${imageHtml}
-                        
                     </div>
                 `;
             }).join('');
+
+            // ✅ NOVO: Vincula o evento de clique em todas as imagens de avaliação
+            el.querySelectorAll('.review-image-zoom').forEach((img) => {
+                img.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const src = img.dataset.imageSrc;
+                    if (src) {
+                        // Chama o método openZoom que já existe no ProductPage
+                        this.openZoom(src);
+                    }
+                });
+            });
         },
 
         // ==================================================
