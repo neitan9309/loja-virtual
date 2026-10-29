@@ -52,6 +52,18 @@
                 <span>Métricas</span>
             </button>
 
+            <!-- ✅ NOVAS ABAS ADICIONADAS AQUI -->
+            <button class="nav-item" data-target="section-reviews">
+                <i class="fas fa-star"></i>
+                <span>Avaliações</span>
+            </button>
+
+            <button class="nav-item" data-target="section-qna">
+                <i class="fas fa-question-circle"></i>
+                <span>Perguntas</span>
+            </button>
+            <!-- ✅ FIM DAS NOVAS ABAS -->
+
             <div class="nav-group open" id="navGroupRegistro">
                 <button class="nav-item nav-item-parent" data-toggle="registro" aria-expanded="true">
                     <i class="fas fa-plus-circle"></i>
@@ -472,6 +484,48 @@
             <footer class="metrics-footer">
                 <span id="metricsGeneratedAt"></span>
             </footer>
+        </section>
+
+        <!-- ==================== AVALIAÇÕES ==================== -->
+        <section class="section" id="section-reviews">
+            <header class="section-header">
+                <div>
+                    <h1>Avaliações</h1>
+                    <p class="section-subtitle">Gerencie as avaliações dos produtos</p>
+                </div>
+                <button class="btn-refresh" id="refreshReviews">
+                    <i class="fas fa-sync-alt"></i> Atualizar
+                </button>
+            </header>
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-list"></i> Lista de Avaliações</h2>
+                </div>
+                <div class="card-body" id="reviewsList">
+                    <div class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== PERGUNTAS E RESPOSTAS ==================== -->
+        <section class="section" id="section-qna">
+            <header class="section-header">
+                <div>
+                    <h1>Perguntas e Respostas</h1>
+                    <p class="section-subtitle">Responda às perguntas dos clientes</p>
+                </div>
+                <button class="btn-refresh" id="refreshQna">
+                    <i class="fas fa-sync-alt"></i> Atualizar
+                </button>
+            </header>
+            <div class="card">
+                <div class="card-header">
+                    <h2><i class="fas fa-comments"></i> Perguntas Recebidas</h2>
+                </div>
+                <div class="card-body" id="qnaListContainer">
+                    <div class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>
+                </div>
+            </div>
         </section>
 
         <!-- ==================== REGISTRAR NOVO PRODUTO ==================== -->

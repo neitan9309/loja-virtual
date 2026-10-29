@@ -917,11 +917,13 @@
     color: var(--gray-500);
 }
 
-/* ---------- Estrelas interativas ---------- */
+/* ======================================================
+   ESTRELAS INTERATIVAS (FORMULÁRIO)
+   ====================================================== */
 .review-stars-input {
     display: flex;
     gap: 0.35rem;
-    margin-bottom: 0.35rem;
+    margin-bottom: 0.5rem;
 }
 
 .review-star {
@@ -940,7 +942,12 @@
 }
 
 .review-star i {
-    pointer-events: none;
+    pointer-events: none; /* Garante que o clique seja no botão, não no ícone */
+}
+
+/* Quando a estrela está ativa (marcada) */
+.review-star.active i {
+    font-weight: 900; /* Força o ícone "fas" (sólido) */
 }
 
 /* ---------- Feedback ---------- */

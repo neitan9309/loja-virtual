@@ -5,20 +5,15 @@ const { Review, Product } = require('../models');
 
 const reviewController = {
     // ==================================================
-    // GET /api/products/:productId/reviews
+    // LISTAR AVALIAÇÕES DE UM PRODUTO
     // ==================================================
     async list(req, res) {
         try {
             const { productId } = req.params;
-
-            if (isNaN(productId)) {
-                return res.status(400).json({ error: 'ID inválido' });
-            }
+            if (isNaN(productId)) return res.status(400).json({ error: 'ID inválido' });
 
             const product = await Product.findById(productId);
-            if (!product) {
-                return res.status(404).json({ error: 'Produto não encontrado' });
-            }
+            if (!product) return res.status(404).json({ error: 'Produto não encontrado' });
 
             const [reviews, stats] = await Promise.all([
                 Review.findByProduct(productId, { limit: 50 }),
@@ -33,16 +28,13 @@ const reviewController = {
     },
 
     // ==================================================
-    // GET /api/products/:productId/reviews/mine
+    // BUSCAR AVALIAÇÃO DO USUÁRIO
     // ==================================================
     async getMine(req, res) {
         try {
             const { productId } = req.params;
             const userId = req.userId;
-
-            if (isNaN(productId)) {
-                return res.status(400).json({ error: 'ID inválido' });
-            }
+            if (isNaN(productId)) return res.status(400).json({ error: 'ID inválido' });
 
             const review = await Review.findByUserAndProduct(userId, productId);
             res.json({ review });
@@ -53,17 +45,15 @@ const reviewController = {
     },
 
     // ==================================================
-    // POST /api/products/:productId/reviews
+    // CRIAR AVALIAÇÃO (com imagem)
     // ==================================================
     async create(req, res) {
         try {
             const { productId } = req.params;
             const userId = req.userId;
-            const { rating, title, comment } = req.body;
+            const { rating, title, comment, image_url } = req.body;
 
-            if (isNaN(productId)) {
-                return res.status(400).json({ error: 'ID inválido' });
-            }
+            if (isNaN(productId)) return res.status(400).json({ error: 'ID inválido' });
 
             const ratingNum = parseInt(rating, 10);
             if (isNaN(ratingNum) || ratingNum < 1 || ratingNum > 5) {
@@ -73,15 +63,12 @@ const reviewController = {
             if (title && title.length > 100) {
                 return res.status(400).json({ error: 'Título muito longo (máx. 100 caracteres)' });
             }
-
             if (comment && comment.length > 1000) {
                 return res.status(400).json({ error: 'Comentário muito longo (máx. 1000 caracteres)' });
             }
 
             const product = await Product.findById(productId);
-            if (!product) {
-                return res.status(404).json({ error: 'Produto não encontrado' });
-            }
+            if (!product) return res.status(404).json({ error: 'Produto não encontrado' });
 
             const existing = await Review.findByUserAndProduct(userId, productId);
             if (existing) {
@@ -98,14 +85,12 @@ const reviewController = {
                 rating: ratingNum,
                 title: title ? title.trim() : null,
                 comment: comment ? comment.trim() : null,
+                image_url: image_url || null,
             });
 
             await Review.syncProductRating(productId);
 
-            res.status(201).json({
-                message: 'Avaliação criada com sucesso!',
-                review,
-            });
+            res.status(201).json({ message: 'Avaliação criada com sucesso!', review });
         } catch (error) {
             console.error('Erro ao criar avaliação:', error);
             res.status(500).json({ error: 'Erro ao criar avaliação' });
@@ -113,7 +98,7 @@ const reviewController = {
     },
 
     // ==================================================
-    // PUT /api/products/:productId/reviews/:reviewId
+    // ATUALIZAR AVALIAÇÃO
     // ==================================================
     async update(req, res) {
         try {
@@ -121,9 +106,7 @@ const reviewController = {
             const userId = req.userId;
             const { rating, title, comment } = req.body;
 
-            if (isNaN(productId) || isNaN(reviewId)) {
-                return res.status(400).json({ error: 'ID inválido' });
-            }
+            if (isNaN(productId) || isNaN(reviewId)) return res.status(400).json({ error: 'ID inválido' });
 
             let ratingNum = null;
             if (rating !== undefined && rating !== null) {
@@ -139,44 +122,30 @@ const reviewController = {
                 comment: comment !== undefined ? (comment ? comment.trim() : null) : undefined,
             });
 
-            if (!review) {
-                return res.status(404).json({ error: 'Avaliação não encontrada' });
-            }
+            if (!review) return res.status(404).json({ error: 'Avaliação não encontrada' });
 
             await Review.syncProductRating(productId);
 
-            res.json({
-                message: 'Avaliação atualizada com sucesso!',
-                review,
-            });
+            res.json({ message: 'Avaliação atualizada com sucesso!', review });
         } catch (error) {
             console.error('Erro ao atualizar avaliação:', error);
             res.status(500).json({ error: 'Erro ao atualizar avaliação' });
         }
     },
 
-        // ==================================================
-    // DELETE /api/products/:productId/reviews/:reviewId
-    // Remove a própria avaliação
+    // ==================================================
+    // DELETAR AVALIAÇÃO (pelo próprio usuário)
     // ==================================================
     async delete(req, res) {
         try {
             const { productId, reviewId } = req.params;
             const userId = req.userId;
-
-            if (isNaN(productId) || isNaN(reviewId)) {
-                return res.status(400).json({ error: 'ID inválido' });
-            }
+            if (isNaN(productId) || isNaN(reviewId)) return res.status(400).json({ error: 'ID inválido' });
 
             const result = await Review.delete(reviewId, userId);
+            if (!result) return res.status(404).json({ error: 'Avaliação não encontrada' });
 
-            if (!result) {
-                return res.status(404).json({ error: 'Avaliação não encontrada' });
-            }
-
-            // Recalcula rating do produto
             await Review.syncProductRating(productId);
-
             res.json({ message: 'Avaliação removida com sucesso' });
         } catch (error) {
             console.error('Erro ao deletar avaliação:', error);

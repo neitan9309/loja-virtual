@@ -14,6 +14,7 @@ const Review = {
                 pr.rating,
                 pr.title,
                 pr.comment,
+                pr.image_url,
                 pr.is_verified_purchase,
                 pr.helpful_count,
                 pr.created_at,
@@ -62,13 +63,13 @@ const Review = {
     },
 
     // ==================================================
-    // CRIAR (aprova automaticamente)
+    // CRIAR (com imagem opcional)
     // ==================================================
-    async create({ product_id, user_id, rating, title, comment }) {
+    async create({ product_id, user_id, rating, title, comment, image_url }) {
         const query = `
             INSERT INTO product_reviews
-                (product_id, user_id, rating, title, comment, is_approved)
-            VALUES ($1, $2, $3, $4, $5, TRUE)
+                (product_id, user_id, rating, title, comment, image_url, is_approved)
+            VALUES ($1, $2, $3, $4, $5, $6, TRUE)
             RETURNING *
         `;
         const result = await pool.query(query, [
@@ -77,6 +78,7 @@ const Review = {
             rating,
             title || null,
             comment || null,
+            image_url || null,
         ]);
         return result.rows[0];
     },
@@ -136,6 +138,33 @@ const Review = {
             RETURNING product_id
         `;
         const result = await pool.query(query, [id, userId]);
+        return result.rows[0] || null;
+    },
+
+    // ==================================================
+    // ADMIN — LISTAR TODAS
+    // ==================================================
+    async findAll() {
+        const query = `
+            SELECT pr.*, p.name AS product_name, p.slug AS product_slug, u.full_name AS user_name
+            FROM product_reviews pr
+            INNER JOIN products p ON p.id = pr.product_id
+            INNER JOIN users u ON u.id = pr.user_id
+            ORDER BY pr.created_at DESC
+        `;
+        const result = await pool.query(query);
+        return result.rows;
+    },
+
+    // ==================================================
+    // ADMIN — DELETAR
+    // ==================================================
+    async adminDelete(id) {
+        const query = 'DELETE FROM product_reviews WHERE id = $1 RETURNING product_id';
+        const result = await pool.query(query, [id]);
+        if (result.rows[0]) {
+            await this.syncProductRating(result.rows[0].product_id);
+        }
         return result.rows[0] || null;
     },
 };

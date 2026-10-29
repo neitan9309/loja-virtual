@@ -17,7 +17,8 @@ const uploadRoutes = require('./upload');
 const orderRoutes = require('./orders');
 const metricsRoutes = require('./metrics');
 const wishlistRoutes = require('./wishlist');
-const addressRoutes = require('./addresses');   // ← ADICIONADO
+const addressRoutes = require('./addresses');
+const qnaRoutes = require('./qna'); // <-- NOVO
 
 router.use('/products', productRoutes);
 router.use('/categories', categoryRoutes);
@@ -32,6 +33,7 @@ router.use('/upload', uploadRoutes);
 router.use('/orders', orderRoutes);
 router.use('/metrics', metricsRoutes);
 router.use('/wishlist', wishlistRoutes);
-router.use('/addresses', addressRoutes);   // ← ADICIONADO
+router.use('/addresses', addressRoutes);
+router.use('/qna', qnaRoutes); // <-- NOVO
 
 module.exports = router;

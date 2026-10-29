@@ -1,7 +1,7 @@
 // ======================================================
 // src/controllers/productController.js
 // ======================================================
-const { Product } = require('../models');
+const { Product, Review } = require('../models');
 
 const productController = {
     // ==================================================
@@ -578,6 +578,40 @@ async adminStats(req, res) {
             res.status(500).json({ error: 'Erro ao buscar estatísticas' });
         }
     },
+
+// ... (dentro do productController)
+
+    // ==================================================
+    // ADMIN — Listar todas as avaliações
+    // ==================================================
+    async adminListReviews(req, res) {
+        try {
+            const reviews = await Review.findAll();
+            res.json({ reviews });
+        } catch (error) {
+            console.error('Erro ao listar avaliações:', error);
+            res.status(500).json({ error: 'Erro ao listar avaliações' });
+        }
+    },
+
+    // ==================================================
+    // ADMIN — Deletar avaliação
+    // ==================================================
+    async adminDeleteReview(req, res) {
+        try {
+            const { id } = req.params;
+            if (isNaN(id)) return res.status(400).json({ error: 'ID inválido' });
+            
+            const result = await Review.adminDelete(id);
+            if (!result) return res.status(404).json({ error: 'Avaliação não encontrada' });
+            
+            res.status(204).send();
+        } catch (error) {
+            console.error('Erro ao deletar avaliação:', error);
+            res.status(500).json({ error: 'Erro ao deletar avaliação' });
+        }
+    },
+
 };
 
 module.exports = productController;

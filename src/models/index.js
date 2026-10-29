@@ -13,20 +13,10 @@ const Order = require('./Order');
 const Payment = require('./Payment');
 const Metrics = require('./Metrics');
 const Wishlist = require('./Wishlist');
-const Address = require('./Address');   // ← ADICIONADO
+const Address = require('./Address');
+const QnA = require('./QnA');
 
 module.exports = {
-    Product,
-    Category,
-    Brand,
-    Promotion,
-    Inventory,
-    User,
-    Cart,
-    Review,
-    Order,
-    Payment,
-    Metrics,
-    Wishlist,
-    Address,  // ← ADICIONADO
+    Product, Category, Brand, Promotion, Inventory, User,
+    Cart, Review, Order, Payment, Metrics, Wishlist, Address, QnA,
 };

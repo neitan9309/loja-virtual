@@ -428,6 +428,8 @@
                 case 'section-register-product': ProductForm.loadRecentProducts(); break;
                 case 'section-register-movement': MovementForm.loadRecentMovements(); break;
                 case 'section-edit-product': EditProduct.onEnter(); break;
+                case 'section-reviews': ReviewsPage.init(); break;
+                case 'section-qna': QnAPage.init(); break;
             }
         },
     };
@@ -4650,6 +4652,196 @@
     };
 
     // ======================================================
+    // REVIEWS PAGE (ADMIN)
+    // ======================================================
+    const ReviewsPage = {
+        init() { this.bindRefresh(); this.load(); },
+        bindRefresh() {
+            const btn = document.getElementById('refreshReviews');
+            if (btn && !btn.dataset.bound) {
+                btn.dataset.bound = 'true';
+                btn.addEventListener('click', async () => { 
+                    btn.classList.add('loading');
+                    await this.load(); 
+                    btn.classList.remove('loading');
+                    Toast.info('Avaliações atualizadas'); 
+                });
+            }
+        },
+        async load() {
+            const container = document.getElementById('reviewsList');
+            if (!container) return;
+            container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>';
+            try {
+                const data = await API.get('/products/admin/reviews');
+                const reviews = data.reviews || [];
+                if (reviews.length === 0) {
+                    container.innerHTML = '<div class="table-empty">Nenhuma avaliação registrada.</div>';
+                    return;
+                }
+                container.innerHTML = `<div class="table-wrapper"><table class="data-table">
+                    <thead><tr><th>Produto</th><th>Cliente</th><th>Nota</th><th>Comentário</th><th>Foto</th><th>Ações</th></tr></thead>
+                    <tbody>
+                        ${reviews.map(r => `
+                            <tr>
+                                <td><a href="/produto/${Utils.escapeAttr(r.product_slug)}" target="_blank">${Utils.escapeHtml(r.product_name)}</a></td>
+                                <td>${Utils.escapeHtml(r.user_name)}</td>
+                                <td>${'★'.repeat(r.rating)}${'☆'.repeat(5-r.rating)}</td>
+                                <td style="max-width: 300px; white-space: normal;">${Utils.escapeHtml(r.comment || '—')}</td>
+                                <td>${r.image_url ? `<a href="${r.image_url}" target="_blank"><img src="${r.image_url}" style="width: 40px; border-radius: 4px;"></a>` : '—'}</td>
+                                <td><button class="btn-icon" onclick="ReviewsPage.deleteReview(${r.id})" title="Excluir"><i class="fas fa-trash-alt"></i></button></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table></div>`;
+            } catch (error) {
+                console.error(error);
+                container.innerHTML = '<div class="table-empty">Erro ao carregar avaliações.</div>';
+            }
+        },
+        async deleteReview(id) {
+            if (!confirm('Excluir esta avaliação?')) return;
+            try {
+                await API.delete(`/products/admin/reviews/${id}`);
+                Toast.success('Avaliação removida');
+                await this.load();
+            } catch (error) {
+                Toast.error('Erro ao remover avaliação');
+            }
+        }
+    };
+
+    // ======================================================
+    // QNA PAGE (ADMIN) - Corrigido
+    // ======================================================
+    const QnAPage = {
+        init() {
+            this.bindRefresh();
+            this.load();
+        },
+        bindRefresh() {
+            const btn = document.getElementById('refreshQna');
+            if (btn && !btn.dataset.bound) {
+                btn.dataset.bound = 'true';
+                btn.addEventListener('click', async () => { 
+                    btn.classList.add('loading');
+                    await this.load(); 
+                    btn.classList.remove('loading');
+                    Toast.info('Perguntas atualizadas'); 
+                });
+            }
+        },
+        async load() {
+            const container = document.getElementById('qnaListContainer');
+            if (!container) return;
+            container.innerHTML = '<div class="loading"><i class="fas fa-spinner fa-spin"></i> Carregando...</div>';
+            try {
+                const questions = await API.get('/qna/admin/list');
+                if (!questions || questions.length === 0) {
+                    container.innerHTML = '<div class="table-empty">Nenhuma pergunta recebida.</div>';
+                    return;
+                }
+                
+                // Para cada pergunta não respondida, precisamos buscar as respostas
+                // Como a adminList não retorna as respostas, vamos fazer um loop para buscar cada uma
+                // (Seria mais eficiente se o backend já retornasse, mas assim é mais simples de implementar agora)
+                
+                container.innerHTML = await Promise.all(questions.map(async q => {
+                    let answersHtml = '';
+                    
+                    if (q.is_answered) {
+                        // Busca o detalhe da pergunta para pegar as respostas
+                        try {
+                            const detail = await API.get(`/qna/admin/${q.id}`);
+                            if (detail.answers && detail.answers.length > 0) {
+                                answersHtml = detail.answers.map(a => `
+                                    <div class="detail-item" style="margin-top: 0.5rem; background: #fff; padding: 0.75rem; border-radius: 6px; border-left: 3px solid var(--accent);">
+                                        <div style="font-size: 0.85rem; color: var(--gray-700);">${Utils.escapeHtml(a.answer)}</div>
+                                        <div style="font-size: 0.7rem; color: var(--gray-400); margin-top: 0.25rem;">
+                                            Respondido em ${Utils.formatDate(a.created_at)}
+                                        </div>
+                                    </div>
+                                `).join('');
+                            }
+                        } catch (err) {
+                            console.error('Erro ao buscar respostas:', err);
+                        }
+                    }
+
+                    return `
+                        <div class="card" style="margin-bottom: 1rem; border-left: 4px solid ${q.is_answered ? 'var(--success)' : 'var(--warning)'};">
+                            <div class="card-body">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                    <div>
+                                        <strong>${Utils.escapeHtml(q.product_name)}</strong>
+                                        <span style="font-size: 0.8rem; color: var(--gray-500); margin-left: 0.5rem;">
+                                            por ${Utils.escapeHtml(q.user_name)} em ${Utils.formatDate(q.created_at)}
+                                        </span>
+                                    </div>
+                                    <button class="btn-icon btn-delete-qna" data-id="${q.id}" title="Excluir">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                                <div style="margin: 1rem 0; padding: 1rem; background: var(--gray-50); border-radius: 8px;">
+                                    ${Utils.escapeHtml(q.question)}
+                                </div>
+                                
+                                ${q.is_answered ? `
+                                    <div style="color: var(--success); font-size: 0.9rem; margin-bottom: 0.5rem;">
+                                        <i class="fas fa-check-circle"></i> Respondida
+                                    </div>
+                                    ${answersHtml}
+                                ` : `
+                                    <div style="margin-top: 1rem;">
+                                        <textarea id="answer-${q.id}" rows="3" placeholder="Digite sua resposta..." style="width: 100%; padding: 0.5rem; border-radius: 4px; border: 1px solid var(--gray-300);"></textarea>
+                                        <button class="btn btn-primary btn-answer-qna" data-id="${q.id}" style="margin-top: 0.5rem;">
+                                            <i class="fas fa-reply"></i> Responder
+                                        </button>
+                                    </div>
+                                `}
+                            </div>
+                        </div>
+                    `;
+                })).then(htmls => htmls.join('')); // Finaliza o Promise.all
+
+                // Vincula os eventos de resposta e exclusão usando delegação de eventos ou querySelector
+                container.querySelectorAll('.btn-answer-qna').forEach(btn => {
+                    btn.addEventListener('click', () => this.answerQuestion(btn.dataset.id));
+                });
+                
+                container.querySelectorAll('.btn-delete-qna').forEach(btn => {
+                    btn.addEventListener('click', () => this.deleteQuestion(btn.dataset.id));
+                });
+
+            } catch (error) {
+                console.error(error);
+                container.innerHTML = '<div class="table-empty">Erro ao carregar perguntas.</div>';
+            }
+        },
+        async answerQuestion(id) {
+            const answer = document.getElementById(`answer-${id}`).value.trim();
+            if (!answer) return Toast.warning('Digite uma resposta');
+            try {
+                await API.post(`/qna/admin/${id}/answer`, { answer });
+                Toast.success('Resposta enviada!');
+                await this.load();
+            } catch (error) {
+                Toast.error('Erro ao responder');
+            }
+        },
+        async deleteQuestion(id) {
+            if (!confirm('Excluir esta pergunta e todas as suas respostas?')) return;
+            try {
+                await API.delete(`/qna/admin/question/${id}`);
+                Toast.success('Pergunta removida');
+                await this.load();
+            } catch (error) {
+                Toast.error('Erro ao remover pergunta');
+            }
+        }
+    };
+
+    // ======================================================
     // INICIALIZAÇÃO
     // ======================================================
     document.addEventListener('DOMContentLoaded', async () => {
@@ -4673,6 +4865,8 @@
         OrderDetailModal.init();
         CouponModal.init();
         CouponUsagesModal.init();
+        ReviewsPage.init();
+        QnAPage.init();
 
         await ProductForm.init();
         await MovementForm.init();

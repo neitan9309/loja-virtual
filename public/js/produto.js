@@ -66,7 +66,8 @@
             this.renderVariations();
             this.renderDescription();
             this.renderSpecs();
-            this.loadReviews();        // ✅ async — carrega via API
+            this.loadReviews();  
+            this.loadQnA(); // <-- ADICIONE ESTA LINHA      // ✅ async — carrega via API
             this.attachActions();
             this.loadRelated();
         },
@@ -384,6 +385,75 @@
             }
         },
 
+        async loadQnA() {
+    const container = document.getElementById('productQnA');
+    const formContainer = document.getElementById('qnaFormContainer');
+    if (!container || !formContainer) return;
+
+    try {
+        const data = await API.get(`/qna/product/${this.product.id}`);
+        const questions = data.questions || [];
+
+        if (API.isLoggedIn()) {
+            formContainer.innerHTML = `
+                <div class="review-form">
+                    <h3 class="review-form-title"><i class="fas fa-question-circle"></i> Faça uma pergunta</h3>
+                    <div class="review-form-field">
+                        <textarea id="newQuestion" rows="3" placeholder="Digite sua pergunta sobre o produto..." maxlength="1000"></textarea>
+                    </div>
+                    <div class="review-form-actions">
+                        <button type="button" class="btn btn-primary" id="submitQuestionBtn">Enviar Pergunta</button>
+                    </div>
+                </div>
+            `;
+            formContainer.querySelector('#submitQuestionBtn')?.addEventListener('click', async () => {
+                const q = formContainer.querySelector('#newQuestion').value.trim();
+                if (!q || q.length < 5) return C.createToast('Pergunta muito curta', 'error');
+                try {
+                    await API.post(`/qna/product/${this.product.id}`, { question: q });
+                    C.createToast('Pergunta enviada!', 'success');
+                    this.loadQnA();
+                } catch (err) {
+                    C.createToast(err.data?.error || 'Erro ao enviar pergunta', 'error');
+                }
+            });
+        } else {
+            formContainer.innerHTML = `<p class="review-login-prompt">Faça <a href="/login">login</a> para fazer uma pergunta.</p>`;
+        }
+
+        if (questions.length === 0) {
+            container.innerHTML = '<p class="review-empty">Nenhuma pergunta ainda. Seja o primeiro a perguntar!</p>';
+            return;
+        }
+
+        container.innerHTML = questions.map(q => `
+            <div class="review-card" style="background: var(--gray-50);">
+                <div class="review-header">
+                    <div class="review-author-block">
+                        <div class="review-avatar">${U.escapeHtml((q.user_name || '?').charAt(0))}</div>
+                        <div>
+                            <div class="review-author">${U.escapeHtml(q.user_name || 'Cliente')}</div>
+                            <div class="review-date">${U.formatDate(q.created_at)}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="review-comment" style="font-weight: 600; margin-bottom: 1rem;">${U.escapeHtml(q.question)}</div>
+                ${q.answers && q.answers.length > 0 ? q.answers.map(a => `
+                    <div class="order-detail-item" style="background: #fff; border-radius: 8px; padding: 1rem; border-left: 4px solid var(--accent);">
+                        <div style="font-size: 0.9rem; color: var(--gray-600);">${U.escapeHtml(a.answer)}</div>
+                        <div style="font-size: 0.75rem; color: var(--gray-400); margin-top: 0.5rem;">
+                            Respondido por <strong>${U.escapeHtml(a.admin_name || 'Administrador')}</strong> em ${U.formatDate(a.created_at)}
+                        </div>
+                    </div>
+                `).join('') : '<p class="review-empty" style="text-align: left; padding: 0;">Aguardando resposta da loja.</p>'}
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Erro ao carregar Q&A:', error);
+        container.innerHTML = '<p class="review-empty">Erro ao carregar perguntas.</p>';
+    }
+},
+
         // ==================================================
         // STATS
         // ==================================================
@@ -419,6 +489,7 @@
 
                     <div class="review-form-field">
                         <label>Sua nota *</label>
+                        <!-- Garante que a classe review-stars-input e os botões review-star estejam corretos -->
                         <div class="review-stars-input" id="reviewStarsInput" role="radiogroup" aria-label="Nota de 1 a 5 estrelas">
                             ${[1, 2, 3, 4, 5].map((n) => `
                                 <button type="button" class="review-star" data-value="${n}" aria-label="${n} estrela${n > 1 ? 's' : ''}">
@@ -440,6 +511,12 @@
                         <small class="review-form-hint">Máximo 1000 caracteres</small>
                     </div>
 
+                    <div class="review-form-field">
+                        <label for="reviewImage">Foto do produto (opcional)</label>
+                        <input type="file" id="reviewImageInput" accept="image/*">
+                        <div id="reviewImagePreview" style="margin-top: 1rem;"></div>
+                    </div>
+
                     <div class="review-form-feedback" id="reviewFormFeedback"></div>
 
                     <div class="review-form-actions">
@@ -452,7 +529,26 @@
             `;
 
             this.setupStarInput(el);
-            this.setupReviewSubmit(el);
+
+            let uploadedImageUrl = null;
+            const fileInput = el.querySelector('#reviewImageInput');
+            const preview = el.querySelector('#reviewImagePreview');
+
+            fileInput?.addEventListener('change', async (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+                preview.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enviando...';
+                try {
+                    const url = await API.upload(file);
+                    uploadedImageUrl = url;
+                    preview.innerHTML = `<img src="${url}" style="max-width: 150px; border-radius: 8px;">`;
+                } catch (err) {
+                    preview.innerHTML = '<span style="color: red;">Erro no upload</span>';
+                }
+            });
+
+            // Passa a função para pegar a imagem no momento do envio
+            this.setupReviewSubmit(el, null, () => uploadedImageUrl);
         },
 
         // ==================================================
@@ -703,7 +799,7 @@
         // ==================================================
         // SUBMIT DA AVALIAÇÃO
         // ==================================================
-        setupReviewSubmit(container, reviewId = null) {
+        setupReviewSubmit(container, reviewId = null, getImageUrl = null) {
             const btn = container.querySelector('#submitReviewBtn');
             const feedback = container.querySelector('#reviewFormFeedback');
 
@@ -792,6 +888,16 @@
                 const initials = author.charAt(0).toUpperCase();
                 const isMine = myReview && myReview.id === review.id;
 
+                // ✅ NOVO: Bloco para exibir a imagem da avaliação
+                const imageHtml = review.image_url
+                    ? `<div class="review-image-wrapper" style="margin-top: 1rem;">
+                           <img src="${U.escapeAttr(review.image_url)}" 
+                                alt="Foto da avaliação de ${U.escapeAttr(author)}"
+                                style="max-width: 200px; border-radius: 8px; border: 1px solid var(--gray-200); cursor: pointer;"
+                                onclick="window.open('${U.escapeAttr(review.image_url)}', '_blank')">
+                       </div>`
+                    : '';
+
                 return `
                     <div class="review-card ${isMine ? 'review-mine' : ''}">
                         <div class="review-header">
@@ -809,6 +915,10 @@
                         </div>
                         ${review.title ? `<div class="review-title">${U.escapeHtml(review.title)}</div>` : ''}
                         ${review.comment ? `<div class="review-comment">${U.escapeHtml(review.comment)}</div>` : ''}
+                        
+                        <!-- ✅ EXIBE A IMAGEM AQUI -->
+                        ${imageHtml}
+                        
                     </div>
                 `;
             }).join('');

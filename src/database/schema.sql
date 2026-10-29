@@ -1,11 +1,6 @@
 -- ======================================================
 -- LUXURY STORE - SCHEMA COMPLETO (UNIFICADO)
 -- ======================================================
--- Uso:
---   psql -U postgres -d luxury_store -f src/database/schema.sql
--- Ou:
---   node db-reset.js
--- ======================================================
 
 SET client_encoding = 'UTF8';
 
@@ -113,7 +108,7 @@ CREATE TABLE user_sessions (
 CREATE TABLE user_addresses (
     id SERIAL PRIMARY KEY,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    label VARCHAR(50) NOT NULL, -- Ex: "Casa", "Trabalho"
+    label VARCHAR(50) NOT NULL,
     cep VARCHAR(9) NOT NULL,
     street VARCHAR(150) NOT NULL,
     number VARCHAR(20) NOT NULL,
@@ -200,10 +195,11 @@ CREATE TABLE product_reviews (
     rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
     title VARCHAR(100),
     comment TEXT,
+    image_url VARCHAR(255), -- NOVA COLUNA
     pros TEXT,
     cons TEXT,
     is_verified_purchase BOOLEAN DEFAULT FALSE,
-    is_approved BOOLEAN DEFAULT FALSE,
+    is_approved BOOLEAN DEFAULT TRUE,
     helpful_count INTEGER DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -265,7 +261,7 @@ CREATE TABLE prices (
 );
 
 -- ======================================================
--- PROMOÇÕES (com restrição de categoria)
+-- PROMOÇÕES
 -- ======================================================
 CREATE TABLE promotions (
     id SERIAL PRIMARY KEY,
@@ -284,7 +280,7 @@ CREATE TABLE promotions (
     is_active BOOLEAN DEFAULT TRUE,
     applies_to_all BOOLEAN DEFAULT TRUE,
     restricted_category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL,
-    is_first_purchase_only BOOLEAN DEFAULT FALSE, 
+    is_first_purchase_only BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -298,7 +294,7 @@ CREATE TABLE promotion_products (
 );
 
 -- ======================================================
--- RELACIONADOS / BUNDLES / SPECS / Q&A
+-- RELACIONADOS / BUNDLES / SPECS
 -- ======================================================
 CREATE TABLE product_related (
     id SERIAL PRIMARY KEY,
@@ -337,10 +333,13 @@ CREATE TABLE product_specifications (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- ======================================================
+-- PERGUNTAS E RESPOSTAS (NOVO)
+-- ======================================================
 CREATE TABLE product_questions (
     id SERIAL PRIMARY KEY,
     product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-    user_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     question TEXT NOT NULL,
     is_public BOOLEAN DEFAULT TRUE,
     is_answered BOOLEAN DEFAULT FALSE,
@@ -419,14 +418,13 @@ CREATE TABLE orders (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Rastreia uso por usuário (1 uso por user por promo)
 CREATE TABLE promotion_usage (
     id SERIAL PRIMARY KEY,
     promotion_id INTEGER NOT NULL REFERENCES promotions(id) ON DELETE CASCADE,
     user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     order_id INTEGER REFERENCES orders(id) ON DELETE SET NULL,
     used_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    is_reset BOOLEAN DEFAULT FALSE -- NOVO: Indica se este uso foi "resetado" pelo admin
+    is_reset BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE order_items (
@@ -459,12 +457,8 @@ CREATE TABLE payments (
 -- ======================================================
 -- ÍNDICES
 -- ======================================================
-
--- Categorias
 CREATE INDEX idx_categories_parent_id ON categories(parent_id);
 CREATE INDEX idx_categories_slug ON categories(slug);
-
--- Produtos
 CREATE INDEX idx_products_category_id ON products(category_id);
 CREATE INDEX idx_products_brand_id ON products(brand_id);
 CREATE INDEX idx_products_slug ON products(slug);
@@ -477,25 +471,18 @@ CREATE INDEX idx_products_price ON products(price);
 CREATE INDEX idx_products_rating_avg ON products(rating_avg);
 CREATE INDEX idx_products_sales_count ON products(sales_count);
 CREATE INDEX idx_products_created_at ON products(created_at);
-
 CREATE INDEX idx_product_images_product_id ON product_images(product_id);
 CREATE INDEX idx_product_variations_product_id ON product_variations(product_id);
 CREATE INDEX idx_product_variations_sku ON product_variations(sku);
 CREATE INDEX idx_product_reviews_product_id ON product_reviews(product_id);
 CREATE INDEX idx_product_reviews_user_id ON product_reviews(user_id);
 CREATE INDEX idx_product_tags_product_id ON product_tags(product_id);
-
--- Estoque
 CREATE INDEX idx_inventory_product_id ON inventory(product_id);
 CREATE INDEX idx_inventory_variation_id ON inventory(variation_id);
 CREATE INDEX idx_inventory_movements_product_id ON inventory_movements(product_id);
 CREATE INDEX idx_inventory_movements_created_at ON inventory_movements(created_at);
-
--- Preços
 CREATE INDEX idx_prices_product_id ON prices(product_id);
 CREATE INDEX idx_prices_created_at ON prices(created_at);
-
--- Promoções
 CREATE INDEX idx_promotions_is_active ON promotions(is_active);
 CREATE INDEX idx_promotions_start_date ON promotions(start_date);
 CREATE INDEX idx_promotions_end_date ON promotions(end_date);
@@ -505,8 +492,6 @@ CREATE INDEX idx_promotion_products_product_id ON promotion_products(product_id)
 CREATE INDEX idx_promotion_usage_promotion_id ON promotion_usage(promotion_id);
 CREATE INDEX idx_promotion_usage_user_id ON promotion_usage(user_id);
 CREATE INDEX idx_promotion_usage_order_id ON promotion_usage(order_id);
-
--- Relacionados / Bundles
 CREATE INDEX idx_product_related_product_id ON product_related(product_id);
 CREATE INDEX idx_product_related_related_product_id ON product_related(related_product_id);
 CREATE INDEX idx_bundle_products_bundle_id ON bundle_products(bundle_id);
@@ -515,34 +500,24 @@ CREATE INDEX idx_product_specifications_product_id ON product_specifications(pro
 CREATE INDEX idx_product_questions_product_id ON product_questions(product_id);
 CREATE INDEX idx_product_questions_user_id ON product_questions(user_id);
 CREATE INDEX idx_product_answers_question_id ON product_answers(question_id);
-
--- Usuários
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_cpf ON users(cpf);
 CREATE INDEX idx_users_role ON users(role);
 CREATE INDEX idx_user_sessions_user_id ON user_sessions(user_id);
 CREATE INDEX idx_user_sessions_token ON user_sessions(token);
-
--- Carrinho
 CREATE INDEX idx_carts_user_id ON carts(user_id);
 CREATE INDEX idx_cart_items_cart_id ON cart_items(cart_id);
 CREATE INDEX idx_cart_items_product_id ON cart_items(product_id);
-
--- Wishlist
 CREATE INDEX idx_wishlists_user_id ON wishlists(user_id);
 CREATE INDEX idx_wishlists_product_id ON wishlists(product_id);
 CREATE INDEX idx_wishlists_created_at ON wishlists(created_at DESC);
-
--- Pedidos
 CREATE INDEX idx_orders_user_id ON orders(user_id);
 CREATE INDEX idx_orders_status ON orders(status);
 CREATE INDEX idx_orders_created_at ON orders(created_at DESC);
 CREATE INDEX idx_orders_payment_status ON orders(payment_status);
 CREATE INDEX idx_orders_user_status ON orders(user_id, status);
-
 CREATE INDEX idx_order_items_order_id ON order_items(order_id);
 CREATE INDEX idx_order_items_product_id ON order_items(product_id);
-
 CREATE INDEX idx_payments_order_id ON payments(order_id);
 CREATE INDEX idx_payments_status ON payments(status);
 
@@ -562,6 +537,8 @@ CREATE TRIGGER update_cart_items_updated_at BEFORE UPDATE ON cart_items FOR EACH
 CREATE TRIGGER update_product_reviews_updated_at BEFORE UPDATE ON product_reviews FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON orders FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 CREATE TRIGGER update_payments_updated_at BEFORE UPDATE ON payments FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+CREATE TRIGGER update_product_questions_updated_at BEFORE UPDATE ON product_questions FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+CREATE TRIGGER update_product_answers_updated_at BEFORE UPDATE ON product_answers FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 
 -- ======================================================
 -- FIM DO SCHEMA

@@ -1,13 +1,10 @@
 -- ======================================================
--- LUXURY STORE - SEEDS COMPLETO (V2 - CORRIGIDO)
+-- LUXURY STORE - SEEDS COMPLETO (V3 - COM FOTOS E Q&A)
 -- ======================================================
 -- Uso:
 --   psql -U postgres -d luxury_store -f src/database/seeds.sql
 -- Ou:
 --   node db-reset.js
---
--- ⚠️ Gerado com datas RELATIVAS (NOW() - INTERVAL 'X days').
---    Cada execução gera dados "frescos" nos últimos 90 dias.
 -- ======================================================
 
 SET client_encoding = 'UTF8';
@@ -15,6 +12,8 @@ SET client_encoding = 'UTF8';
 -- ======================================================
 -- LIMPEZA (caso seeds rode em um banco já populado)
 -- ======================================================
+TRUNCATE TABLE product_answers RESTART IDENTITY CASCADE;
+TRUNCATE TABLE product_questions RESTART IDENTITY CASCADE;
 TRUNCATE TABLE payments RESTART IDENTITY CASCADE;
 TRUNCATE TABLE order_items RESTART IDENTITY CASCADE;
 TRUNCATE TABLE orders RESTART IDENTITY CASCADE;
@@ -177,9 +176,8 @@ INSERT INTO users (
      TRUE, TRUE, NOW() - INTERVAL '3 days');
 
 -- ======================================================
--- PRODUTOS (Aumentado para ~50 produtos)
+-- PRODUTOS
 -- ======================================================
--- URLs de imagens estáveis do Pexels (IDs reais e funcionais)
 INSERT INTO products (
     id, name, slug, sku, description, short_description,
     category_id, brand_id, price, cost_price, discount_percent,
@@ -284,25 +282,20 @@ INSERT INTO inventory (product_id, quantity, min_quantity, location) VALUES
 (80, 25, 3, 'I-1'), (81, 60, 10, 'I-2'), (82, 40, 5, 'I-3');
 
 -- ======================================================
--- PROMOÇÕES (Novas e Corrigidas)
+-- PROMOÇÕES
 -- ======================================================
--- 1. FRETE99: Global, mínimo 99.90. Desconto fixo de 25 (simula frete grátis).
--- 2. BEMVINDO10: Global, 10% OFF, sem mínimo.
--- 3. MODA20: Restrito a Vestuário (ID 1), 20% OFF, mínimo 150.
--- 4. ESPORTE15: Restrito a Artigos Esportivos (ID 3), 15% OFF, mínimo 100.
-
 INSERT INTO promotions (
     id, name, description, code, discount_type, discount_value,
     min_purchase, usage_limit, usage_count, start_date, end_date,
     is_active, applies_to_all, restricted_category_id, is_first_purchase_only
 ) VALUES
 (1, 'Frete Grátis acima de R$99', 'Frete grátis para compras acima de R$99,90!', 'FRETE99', 'fixed', 25.00, 99.90, 5000, 0, NOW() - INTERVAL '90 days', NOW() + INTERVAL '180 days', true, true, NULL, false),
-(2, 'Boas-vindas 10% OFF', 'Ganhe 10% de desconto na sua primeira compra!', 'BEMVINDO10', 'percentage', 10.00, NULL, 1000, 0, NOW() - INTERVAL '90 days', NOW() + INTERVAL '180 days', true, true, NULL, true), -- <--- MARCADO COMO TRUE
+(2, 'Boas-vindas 10% OFF', 'Ganhe 10% de desconto na sua primeira compra!', 'BEMVINDO10', 'percentage', 10.00, NULL, 1000, 0, NOW() - INTERVAL '90 days', NOW() + INTERVAL '180 days', true, true, NULL, true),
 (3, 'Moda 20% OFF', 'Ganhe 20% de desconto em roupas e acessórios!', 'MODA20', 'percentage', 20.00, 150.00, 500, 0, NOW() - INTERVAL '90 days', NOW() + INTERVAL '180 days', true, false, 1, false),
 (4, 'Esportivos 15% OFF', 'Ganhe 15% de desconto em artigos esportivos!', 'ESPORTE15', 'percentage', 15.00, 100.00, 500, 0, NOW() - INTERVAL '90 days', NOW() + INTERVAL '180 days', true, false, 3, false);
 
 -- ======================================================
--- PEDIDOS (Lotes de 30, 30 e 30 para simular 90 dias)
+-- PEDIDOS (Geração automática)
 -- ======================================================
 DO $$
 DECLARE
@@ -323,7 +316,6 @@ DECLARE
     v_paid_at TIMESTAMP;
     v_created_at TIMESTAMP;
     
-    -- Pools
     products_pool INTEGER[] := ARRAY[1, 2, 3, 4, 5, 6, 10, 11, 12, 13, 14, 20, 21, 30, 31, 32, 40, 41, 42, 50, 60, 61, 62, 63, 70, 71, 72, 80, 81, 82];
     users_pool INTEGER[] := ARRAY[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13];
     
@@ -332,7 +324,7 @@ DECLARE
 BEGIN
     PERFORM setseed(0.42);
 
-    -- LOTE 1: Últimos 30 dias (30 pedidos)
+    -- LOTE 1: Últimos 30 dias
     FOR i IN 1..30 LOOP
         day_offset := floor(random() * random() * 30)::int;
         v_created_at := NOW() - (day_offset || ' days')::interval - ((floor(random() * 24)) || ' hours')::interval;
@@ -379,7 +371,7 @@ BEGIN
         END IF;
     END LOOP;
 
-    -- LOTE 2: 31 a 60 dias atrás (30 pedidos)
+    -- LOTE 2: 31 a 60 dias atrás
     PERFORM setseed(0.77);
     FOR i IN 1..30 LOOP
         day_offset := 31 + floor(random() * 30)::int;
@@ -425,7 +417,7 @@ BEGIN
         END IF;
     END LOOP;
 
-    -- LOTE 3: 61 a 90 dias atrás (20 pedidos)
+    -- LOTE 3: 61 a 90 dias atrás
     PERFORM setseed(0.99);
     FOR i IN 1..20 LOOP
         day_offset := 61 + floor(random() * 30)::int;
@@ -473,19 +465,31 @@ BEGIN
 END $$;
 
 -- ======================================================
--- AVALIAÇÕES (Amostra)
+-- AVALIAÇÕES (Amostra com FOTOS)
 -- ======================================================
-INSERT INTO product_reviews (product_id, user_id, rating, title, comment, is_verified_purchase, is_approved, helpful_count, created_at)
+INSERT INTO product_reviews (product_id, user_id, rating, title, comment, image_url, is_verified_purchase, is_approved, helpful_count, created_at)
 VALUES
-(1, 2, 5, 'Excelente qualidade', 'A camisa é de ótimo tecido, caimento perfeito.', TRUE, TRUE, 12, NOW() - INTERVAL '60 days'),
-(1, 3, 4, 'Muito boa', 'A qualidade é boa, mas achei o preço salgado.', TRUE, TRUE, 5, NOW() - INTERVAL '50 days'),
-(2, 4, 5, 'Clássico', 'Polo maravilhosa, recomendo.', TRUE, TRUE, 8, NOW() - INTERVAL '45 days'),
-(10, 5, 5, 'Apaixonada', 'Vestido lindo, tecido leve.', TRUE, TRUE, 10, NOW() - INTERVAL '35 days'),
-(11, 6, 4, 'Boa compra', 'Blusa de seda muito bonita, mas amassa fácil.', TRUE, TRUE, 6, NOW() - INTERVAL '25 days'),
-(30, 7, 5, 'Perfume incrível', 'Fragrância marcante, dura o dia todo.', TRUE, TRUE, 22, NOW() - INTERVAL '40 days'),
-(40, 8, 5, 'O melhor', 'Meu perfume favorito, cheiro maravilhoso.', TRUE, TRUE, 16, NOW() - INTERVAL '28 days'),
-(60, 9, 5, 'Ideal para treino', 'Absorve suor muito bem.', TRUE, TRUE, 11, NOW() - INTERVAL '18 days'),
-(71, 10, 5, 'Maravilhosa', 'Não é transparente, tecido grosso.', TRUE, TRUE, 21, NOW() - INTERVAL '6 days');
+(1, 2, 5, 'Excelente qualidade', 'A camisa é de ótimo tecido, caimento perfeito.', 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=400', TRUE, TRUE, 12, NOW() - INTERVAL '60 days'),
+(1, 3, 4, 'Muito boa', 'A qualidade é boa, mas achei o preço salgado.', NULL, TRUE, TRUE, 5, NOW() - INTERVAL '50 days'),
+(2, 4, 5, 'Clássico', 'Polo maravilhosa, recomendo.', NULL, TRUE, TRUE, 8, NOW() - INTERVAL '45 days'),
+(10, 5, 5, 'Apaixonada', 'Vestido lindo, tecido leve.', 'https://images.pexels.com/photos/1536619/pexels-photo-1536619.jpeg?auto=compress&cs=tinysrgb&w=400', TRUE, TRUE, 10, NOW() - INTERVAL '35 days'),
+(11, 6, 4, 'Boa compra', 'Blusa de seda muito bonita, mas amassa fácil.', NULL, TRUE, TRUE, 6, NOW() - INTERVAL '25 days'),
+(30, 7, 5, 'Perfume incrível', 'Fragrância marcante, dura o dia todo.', NULL, TRUE, TRUE, 22, NOW() - INTERVAL '40 days'),
+(40, 8, 5, 'O melhor', 'Meu perfume favorito, cheiro maravilhoso.', NULL, TRUE, TRUE, 16, NOW() - INTERVAL '28 days'),
+(60, 9, 5, 'Ideal para treino', 'Absorve suor muito bem.', 'https://images.pexels.com/photos/2294361/pexels-photo-2294361.jpeg?auto=compress&cs=tinysrgb&w=400', TRUE, TRUE, 11, NOW() - INTERVAL '18 days'),
+(71, 10, 5, 'Maravilhosa', 'Não é transparente, tecido grosso.', NULL, TRUE, TRUE, 21, NOW() - INTERVAL '6 days');
+
+-- ======================================================
+-- PERGUNTAS E RESPOSTAS (NOVO)
+-- ======================================================
+INSERT INTO product_questions (id, product_id, user_id, question, is_public, is_answered, created_at) VALUES
+(1, 1, 3, 'Qual é a composição do tecido? É 100% algodão?', TRUE, TRUE, NOW() - INTERVAL '10 days'),
+(2, 30, 5, 'Essa fragrância é mais indicada para o dia ou para a noite?', TRUE, FALSE, NOW() - INTERVAL '2 days'),
+(3, 62, 7, 'Esse tênis é bom para corridas de longa distância?', TRUE, TRUE, NOW() - INTERVAL '5 days');
+
+INSERT INTO product_answers (id, question_id, user_id, answer, is_approved, created_at) VALUES
+(1, 1, 1, 'Olá! A composição é 97% algodão egípcio e 3% elastano, proporcionando conforto e leve elasticidade.', TRUE, NOW() - INTERVAL '9 days'),
+(2, 3, 1, 'Sim, ele possui amortecimento de alto impacto e é ideal para maratonas e treinos longos.', TRUE, NOW() - INTERVAL '4 days');
 
 -- ======================================================
 -- RECALCULAR rating_avg E rating_count
@@ -511,6 +515,8 @@ SELECT setval('users_id_seq',               (SELECT MAX(id) FROM users));
 SELECT setval('orders_id_seq',              (SELECT MAX(id) FROM orders));
 SELECT setval('order_items_id_seq',         (SELECT MAX(id) FROM order_items));
 SELECT setval('payments_id_seq',            (SELECT MAX(id) FROM payments));
+SELECT setval('product_questions_id_seq',   (SELECT MAX(id) FROM product_questions));
+SELECT setval('product_answers_id_seq',     (SELECT MAX(id) FROM product_answers));
 
 -- ======================================================
 -- RELATÓRIO
@@ -527,6 +533,8 @@ BEGIN
     RAISE NOTICE '   Itens:       %', (SELECT COUNT(*) FROM order_items);
     RAISE NOTICE '   Pagamentos:  %', (SELECT COUNT(*) FROM payments);
     RAISE NOTICE '   Avaliações:  %', (SELECT COUNT(*) FROM product_reviews);
+    RAISE NOTICE '   Perguntas:   %', (SELECT COUNT(*) FROM product_questions);
+    RAISE NOTICE '   Respostas:   %', (SELECT COUNT(*) FROM product_answers);
     RAISE NOTICE '   Estoque:     %', (SELECT COUNT(*) FROM inventory);
     RAISE NOTICE '   Movimentos:  %', (SELECT COUNT(*) FROM inventory_movements);
     RAISE NOTICE '   Promoções:   %', (SELECT COUNT(*) FROM promotions);

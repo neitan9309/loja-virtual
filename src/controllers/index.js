@@ -14,23 +14,13 @@ const reviewController = require('./reviewController');
 const uploadController = require('./uploadController');
 const userController = require('./userController');
 const metricsController = require('./metricsController');
-const wishlistController = require('./wishlistController');   // ← ADICIONADO
+const wishlistController = require('./wishlistController');
 const addressController = require('./addressController');
+const qnaController = require('./qnaController');
 
 module.exports = {
-    authController,
-    brandController,
-    cartController,
-    categoryController,
-    cepController,
-    inventoryController,
-    orderController,
-    productController,
-    promotionController,
-    reviewController,
-    uploadController,
-    userController,
-    metricsController,
-    wishlistController,
-    addressController,   // ← ADICIONADO
+    authController, brandController, cartController, categoryController, cepController,
+    inventoryController, orderController, productController, promotionController,
+    reviewController, uploadController, userController, metricsController,
+    wishlistController, addressController, qnaController,
 };
